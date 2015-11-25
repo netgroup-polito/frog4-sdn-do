@@ -46,7 +46,7 @@ else:
 log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s'
 
 # START LOGGING
-logging.basicConfig( filename=conf.LOG_FILE, level=log_level, format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig( filename="../"+conf.LOG_FILE, level=log_level, format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
 logging.debug("Orchestrator Starting")
 
 
@@ -67,7 +67,7 @@ logging.info("Starting Orchestration Server application")
 
 
 #in_file = open("/home/giacomo/eclipse_workspace/frog-orchestrator/graphs/odlCA_graphHe_Hydrogen.json","r")
-in_file = open("/home/giacomo/eclipse_workspace/frog-orchestrator/graphs/odlCA_graphHe_Lithium.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/graphs/odlCA_graphHe_Lithium.json","r")
 
 # NF-FG File
 nf_fg_file = json.loads(in_file.read())
