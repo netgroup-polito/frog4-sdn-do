@@ -16,7 +16,7 @@ from odl_ca_core.sql.node import Node
 
 from odl_ca_core.ODL_Rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
-from odl_ca_core.NetGraph import NetGraph
+from odl_ca_core.netgraph import NetGraph
 
 DEBUG_MODE = Configuration().DEBUG_MODE
 JOLNET_NETWORKS = Configuration().JOLNET_NETWORKS
