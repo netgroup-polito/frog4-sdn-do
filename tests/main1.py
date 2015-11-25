@@ -50,7 +50,7 @@ logging.basicConfig( filename=conf.LOG_FILE, level=log_level, format=log_format,
 logging.debug("Orchestrator Starting")
 
 
-print "Welcome to the UN ODL_CA_core"
+print "Welcome to 'OpenDayLight Component Adapter'"
     
 
 # Falcon starts

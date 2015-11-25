@@ -10,8 +10,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `orchestrator`
 --
-CREATE DATABASE IF NOT EXISTS `orchestrator` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
-USE `orchestrator`;
+CREATE DATABASE IF NOT EXISTS `frog4_odl_ca` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
+USE `frog4_odl_ca`;
 
 -- --------------------------------------------------------
 
@@ -180,34 +180,6 @@ CREATE TABLE IF NOT EXISTS `openflow_controller` (
 
 -- --------------------------------------------------------
 
---
--- Struttura della tabella `openstack_network`
---
-
-DROP TABLE IF EXISTS `openstack_network`;
-CREATE TABLE IF NOT EXISTS `openstack_network` (
-  `id` varchar(64) NOT NULL,
-  `name` varchar(64) NOT NULL,
-  `status` varchar(64) NOT NULL,
-  `vlan_id` varchar(64) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `openstack_subnet`
---
-
-DROP TABLE IF EXISTS `openstack_subnet`;
-CREATE TABLE IF NOT EXISTS `openstack_subnet` (
-  `id` varchar(64) NOT NULL,
-  `name` varchar(64) NOT NULL,
-  `os_network_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
 
 --
 -- Struttura della tabella `port`
@@ -289,69 +261,6 @@ CREATE TABLE IF NOT EXISTS `user` (
 
 -- --------------------------------------------------------
 
---
--- Struttura della tabella `user_device`
---
-
-DROP TABLE IF EXISTS `user_device`;
-CREATE TABLE IF NOT EXISTS `user_device` (
-  `session_id` varchar(64) NOT NULL,
-  `mac_address` varchar(64) NOT NULL,
-  PRIMARY KEY (`session_id`,`mac_address`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `user_location`
---
-
-DROP TABLE IF EXISTS `user_location`;
-CREATE TABLE IF NOT EXISTS `user_location` (
-  `user_id` varchar(64) NOT NULL,
-  `node_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`user_id`,`node_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `vnf_image`
---
-
-DROP TABLE IF EXISTS `vnf_image`;
-CREATE TABLE IF NOT EXISTS `vnf_image` (
-  `id` varchar(255) NOT NULL,
-  `internal_id` varchar(255) NOT NULL,
-  `template` text NOT NULL,
-  `configuration_model` text,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `vnf_instance`
---
-
-DROP TABLE IF EXISTS `vnf_instance`;
-CREATE TABLE IF NOT EXISTS `vnf_instance` (
-  `id` int(64) NOT NULL,
-  `internal_id` varchar(64) DEFAULT NULL,
-  `graph_vnf_id` varchar(64) NOT NULL,
-  `graph_id` int(64) NOT NULL,
-  `name` varchar(64) NOT NULL,
-  `template_location` varchar(64) NOT NULL,
-  `image_location` varchar(64) DEFAULT NULL,
-  `location` varchar(64) DEFAULT NULL,
-  `type` varchar(64) DEFAULT NULL,
-  `status` varchar(64) DEFAULT NULL,
-  `creation_date` datetime NOT NULL,
-  `last_update` datetime DEFAULT NULL,
-  `availability_zone` varchar(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `graph_vnf_id` (`graph_vnf_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
