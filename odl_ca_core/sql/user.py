@@ -9,8 +9,8 @@ import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 import logging
 
-from ODL_CA_core.sql.sql_server import get_session
-from ODL_CA_core.exception import UserNotFound, TenantNotFound
+from odl_ca_core.sql.sql_server import get_session
+from odl_ca_core.exception import UserNotFound, TenantNotFound
 
 Base = declarative_base()
 

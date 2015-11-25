@@ -4,9 +4,9 @@ Created on Oct 1, 2014
 @author: fabiomignini
 '''
 from sqlalchemy import Column, DateTime, func, VARCHAR, Text, not_, desc
-from ODL_CA_core.sql.sql_server import get_session
+from odl_ca_core.sql.sql_server import get_session
 from sqlalchemy.ext.declarative import declarative_base
-from ODL_CA_core.exception import sessionNotFound
+from odl_ca_core.exception import sessionNotFound
 
 
 import datetime

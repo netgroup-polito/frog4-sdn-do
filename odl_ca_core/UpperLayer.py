@@ -9,23 +9,23 @@ import logging
 
 import uuid
 
-from ODL_CA_core.config import Configuration
+from odl_ca_core.config import Configuration
 
-from ODL_CA_core.sql.node import Node
-from ODL_CA_core.sql.session import Session
-from ODL_CA_core.sql.graph import Graph
+from odl_ca_core.sql.node import Node
+from odl_ca_core.sql.session import Session
+from odl_ca_core.sql.graph import Graph
 
-from ODL_CA_core.exception import sessionNotFound
-from ODL_CA_core.exception import NodeNotFound
+from odl_ca_core.exception import sessionNotFound
+from odl_ca_core.exception import NodeNotFound
 
-from ODL_CA_core.ODL_CA import OpenDayLight_CA
+from odl_ca_core.ODL_CA import OpenDayLight_CA
 
 DEBUG_MODE = Configuration().DEBUG_MODE
 
 
 class UpperLayer_ODL_CA(object):
     '''
-        Class that performs the logic of ODL_CA_core
+        Class that performs the logic of odl_ca_core
     '''
     def __init__(self, user_data):
         self.user_data = user_data

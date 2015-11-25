@@ -9,9 +9,9 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import logging
-from ODL_CA_core.config import Configuration
-from ODL_CA_core.exception import NodeNotFound, ControllerNotFound, UserLocationNotFound
-from ODL_CA_core.sql.sql_server import get_session
+from odl_ca_core.config import Configuration
+from odl_ca_core.exception import NodeNotFound, ControllerNotFound, UserLocationNotFound
+from odl_ca_core.sql.sql_server import get_session
 
 Base = declarative_base()
 

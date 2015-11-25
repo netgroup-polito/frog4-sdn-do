@@ -6,16 +6,16 @@ Created on Jun 20, 2015
 from exceptions import Exception 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from ODL_CA_core.sql.sql_server import get_session
+from odl_ca_core.sql.sql_server import get_session
 from sqlalchemy.sql import func
 from sqlalchemy.orm.exc import NoResultFound
 
-from ODL_CA_core.config import Configuration
-from ODL_CA_core.sql.session import Session
+from odl_ca_core.config import Configuration
+from odl_ca_core.sql.session import Session
 import datetime
 import logging
 from nffg_library.nffg import NF_FG, Port, EndPoint, FlowRule, Match, Action
-from ODL_CA_core.exception import EndpointNotFound, PortNotFound, GraphNotFound
+from odl_ca_core.exception import EndpointNotFound, PortNotFound, GraphNotFound
 
 Base = declarative_base()
 sqlserver = Configuration().CONNECTION

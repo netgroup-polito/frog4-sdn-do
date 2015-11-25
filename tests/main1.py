@@ -5,17 +5,17 @@ Created on Oct 1, 2014
 '''
 
 #import falcon
-#from ODL_CA_core.orchestrator import UpperLayerOrchestrator, TemplateAPI, YANGAPI, TemplateAPILocation, NFFGStatus
+#from odl_ca_core.orchestrator import UpperLayerOrchestrator, TemplateAPI, YANGAPI, TemplateAPILocation, NFFGStatus
 
 
 import logging, json
 
 # Configuration Parser
-from ODL_CA_core.config import Configuration
+from odl_ca_core.config import Configuration
 
 # Orchestrator Core
-from ODL_CA_core.userAuthentication import UserAuthentication
-from ODL_CA_core.UpperLayer import UpperLayer_ODL_CA
+from odl_ca_core.userAuthentication import UserAuthentication
+from odl_ca_core.UpperLayer import UpperLayer_ODL_CA
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
