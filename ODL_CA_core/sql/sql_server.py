@@ -5,7 +5,7 @@ Created on Jun 22, 2015
 '''
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
-from orchestrator_core.config import Configuration
+from ODL_CA_core.config import Configuration
 
 sqlserver = Configuration().CONNECTION
 

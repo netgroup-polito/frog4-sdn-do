@@ -8,21 +8,20 @@ from __builtin__ import str
 
 from nffg_library.nffg import FlowRule
 
-from orchestrator_core.config import Configuration
-from orchestrator_core.exception import GraphError
-from orchestrator_core.sql.graph import Graph
-from orchestrator_core.sql.node import Node
+from ODL_CA_core.config import Configuration
+from ODL_CA_core.exception import GraphError
 
-from orchestrator_core.component_adapter.interfaces import OrchestratorInterface
+from ODL_CA_core.sql.graph import Graph
+from ODL_CA_core.sql.node import Node
 
-from orchestrator_core.component_adapter.OpenDayLight_CA.rest import ODL
-from orchestrator_core.component_adapter.OpenDayLight_CA.resources import Action, Match, Flow, ProfileGraph, Endpoint
-from orchestrator_core.component_adapter.OpenDayLight_CA.NetGraph import NetGraph
+from ODL_CA_core.ODL_Rest import ODL_Rest
+from ODL_CA_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
+from ODL_CA_core.NetGraph import NetGraph
 
 DEBUG_MODE = Configuration().DEBUG_MODE
 JOLNET_NETWORKS = Configuration().JOLNET_NETWORKS
 
-class OpenDayLight_CA(OrchestratorInterface):
+class OpenDayLight_CA():
     
     def __init__(self, graph_id, userdata):
 
@@ -32,29 +31,29 @@ class OpenDayLight_CA(OrchestratorInterface):
         self.userdata = userdata
     
     
-    @property
-    def URI(self):
-        return self.compute_node_address
     
     '''
     ######################################################################################################
-    #########################    Orchestrator interface implementation        ############################
+    ##############################    Component Adapter Interface        #################################
     ######################################################################################################
     '''
-    def getStatus(self, node):
-        self.getAuthTokenAndEndpoints(node)
-        
-        # Dati attesi da 'openstackResourcesStatus'
-        status = {}
-        status['status'] = 'complete'
-        status['percentage_completed'] = 100
-        return status
+    
+    @property
+    def URI(self):
+        return self.compute_node_address
     
     
     
     def instantiateProfile(self, nf_fg, node):
         '''
-        Override method of the abstract class for instantiating the user graph
+        Instantiate the User Profile Graph
+        Args:
+            nffg:
+                Object of the Class Common.NF_FG.nf_fg.NF_FG
+            node:
+                Object of the class Common.SQL.node.NodeModel
+            Exceptions:
+                Raise some exception to be captured
         '''
         self.getAuthTokenAndEndpoints(node)
         
@@ -74,8 +73,17 @@ class OpenDayLight_CA(OrchestratorInterface):
     
     def updateProfile(self, new_nf_fg, old_nf_fg, node):
         '''
-        Override method of the abstract class for updating the user graph
-        '''        
+        Update a User Profile Graph
+        Args:
+            new_nffg:
+                Object of the Class Common.NF_FG.nf_fg.NF_FG
+            old_nffg:
+                Object of the Class Common.NF_FG.nf_fg.NF_FG
+            node:
+                Object of the class Common.SQL.node.NodeModel
+            Exceptions:
+                Raise some exception to be captured
+        '''       
         self.getAuthTokenAndEndpoints(node)
         
         try:
@@ -95,10 +103,17 @@ class OpenDayLight_CA(OrchestratorInterface):
             raise err
     
     
-        
+    
     def deinstantiateProfile(self, nf_fg, node):
         '''
-        Override method of the abstract class for deleting the user graph
+        De-instantiate the User Profile Graph
+        Args:
+            nffg:
+                Object of the Class Common.NF_FG.nf_fg.NF_FG
+            node_endpoint:
+                Object of the class Common.SQL.node.NodeModel
+            Exceptions:
+                Raise some exception to be captured
         '''
         self.getAuthTokenAndEndpoints(node)
         
@@ -278,7 +293,7 @@ class OpenDayLight_CA(OrchestratorInterface):
         for flow in flows:
             if flow.type == "external" and flow.status == "complete":
                 switch_id = Node().getNodeDomainID(flow.node_id)
-                ODL(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
                 
         #TODO: Delete also networks and subnets if previously created
         
@@ -292,7 +307,7 @@ class OpenDayLight_CA(OrchestratorInterface):
                 for flow in flows:
                     if flow.type == "external" and flow.status == "complete":
                         switch_id = Node().getNodeDomainID(flow.node_id)
-                        ODL(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.id)
+                        ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.id)
                         #Graph().deleteFlowRule(flow.db_id)
                 Graph().deleteEndpoint(endpoint.id, self.graph_id)
                 Graph().deleteEndpointResourceAndResources(endpoint.db_id)
@@ -324,7 +339,7 @@ class OpenDayLight_CA(OrchestratorInterface):
             switch2:
                 OpenDaylight identifier of the destination switch (example: openflow:987654321 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
         '''
-        json_data = ODL(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
+        json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
         topology = json.loads(json_data)
         if self.odlversion == "Hydrogen":
             tList = topology["edgeProperties"]
@@ -372,7 +387,7 @@ class OpenDayLight_CA(OrchestratorInterface):
         
         flowj = Flow("jolnetflow", flow_id, 0, 65535, True, 0, 0, actions, match)        
         json_req = flowj.getJSON(self.odlversion, source_node)
-        ODL(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, source_node, flow_id)
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, source_node, flow_id)
 
 
 
@@ -472,7 +487,7 @@ class OpenDayLight_CA(OrchestratorInterface):
                 flowname = str(flowrule.id)
                 flowj = Flow("flowrule", flowname, 0, flowrule.priority, True, 0, 0, actions, match1)        
                 json_req = flowj.getJSON(self.odlversion, endpoint1.switch_id)
-                ODL(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
+                ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
                 
                 flow_rule = FlowRule(_id=flowname,node_id=Node().getNodeFromDomainID(endpoint1.switch_id).id,_type='external', status='complete',priority=flowrule.priority, internal_id=flowrule.id)  
                 Graph().addFlowRule(self.graph_id, flow_rule, None)
@@ -715,7 +730,7 @@ class OpenDayLight_CA(OrchestratorInterface):
         
         #return
         
-        ODL(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
         
         flow_rule = FlowRule(_id=flowname,node_id=Node().getNodeFromDomainID(switch_id).id,_type='external', status='complete',priority=priority, internal_id=flow_id)  
         Graph().addFlowRule(self.graph_id, flow_rule, None)
@@ -730,7 +745,7 @@ class OpenDayLight_CA(OrchestratorInterface):
         for flow in flows:
             if flow.type == "external" and flow.status == "complete" and flow.internal_id == flowrule.id:
                 switch_id = Node().getNodeDomainID(flow.node_id)
-                ODL(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
                 Graph().deleteFlowRule(flow.id)
         Graph().deleteFlowRule(flowrule.db_id)
         nf_fg.flow_rules.remove(flowrule)

@@ -6,24 +6,31 @@ from __future__ import division
 
 import json
 import logging
-from scheduler import Scheduler
+
 import uuid
 
-from orchestrator_core.exception import sessionNotFound, GraphError
-from orchestrator_core.sql.session import Session
-from orchestrator_core.sql.graph import Graph
-from orchestrator_core.sql.node import Node 
-from orchestrator_core.config import Configuration
+from ODL_CA_core.config import Configuration
+
+from ODL_CA_core.sql.node import Node
+from ODL_CA_core.sql.session import Session
+from ODL_CA_core.sql.graph import Graph
+
+from ODL_CA_core.exception import sessionNotFound
+from ODL_CA_core.exception import NodeNotFound
+
+from ODL_CA_core.ODL_CA import OpenDayLight_CA
 
 DEBUG_MODE = Configuration().DEBUG_MODE
 
 
-class UpperLayerOrchestratorController(object):
+class UpperLayer_ODL_CA(object):
     '''
-        Class that performs the logic of orchestrator_core
+        Class that performs the logic of ODL_CA_core
     '''
     def __init__(self, user_data):
         self.user_data = user_data
+        
+        
 
     def get(self, nffg_id):
         session = Session().get_active_user_session_by_nf_fg_id(nffg_id, error_aware=False)
@@ -38,6 +45,8 @@ class UpperLayerOrchestratorController(object):
         # TODO: If the graph has been split, we need to rebuild the origina nffg
         return instantiated_nffgs[0].getJSON()
     
+    
+    
     def delete(self, nffg_id):        
         # Get the component adapter associated  to the node where the nffg was instantiated
         session = Session().get_active_user_session_by_nf_fg_id(nffg_id, error_aware=False)
@@ -51,18 +60,8 @@ class UpperLayerOrchestratorController(object):
             instantiated_nffg = Graph().get_nffg(graph_ref.id)
             logging.debug('NF-FG that we are going to delete: '+instantiated_nffg.getJSON())
             
-            # Check external connections, if a graph is connected to this, the deletion will be cancelled
-            #if self.checkExternalConnections(instantiated_nffg):
-            #    raise Exception("This graph has been connected with other graph, delete these graph before to delete this.")
-            
-            # Analyze end-point connections
-            #remote_nffgs_dict = self.analizeRemoteConnection(instantiated_nffg, node, delete=True)
-            
-            # If needed, update the remote graph
-            #self.updateRemoteGraph(remote_nffgs_dict)
-            
             # De-instantiate profile
-            orchestrator = Scheduler(graph_ref.id, self.user_data).getInstance(node)
+            orchestrator = OpenDayLight_CA(graph_ref.id, self.user_data)
             
             try:
                 orchestrator.deinstantiateProfile(instantiated_nffg, node)
@@ -74,6 +73,8 @@ class UpperLayerOrchestratorController(object):
         # Set the field ended in the table session to the actual datatime        
         Graph().delete_session(session.id)
         Session().set_ended(session.id)
+        
+        
     
     def update(self, nffg, delete = False):        
         session = Session().get_active_user_session_by_nf_fg_id(nffg.id, error_aware=True)
@@ -96,8 +97,9 @@ class UpperLayerOrchestratorController(object):
     
             # Get the component adapter associated  to the node where the nffg was instantiated
             old_node = Node().getNode(Graph().getNodeID(graphs_ref[0].id))
-            scheduler = Scheduler(old_nffg.db_id, self.user_data)
-            orchestrator, new_node = scheduler.schedule(nffg)
+            
+            orchestrator = OpenDayLight_CA(old_nffg.id, self.user_data) 
+            new_node = Node().getNodeFromDomainID(self.checkEndpointLocation(nffg))
             
             # If the orchestrator have to connect two graphs in different nodes,
             # the end-points must be characterized to allow a connection between nodes
@@ -134,6 +136,8 @@ class UpperLayerOrchestratorController(object):
         Session().updateStatus(session.id, 'complete')
         Session().updateSessionNode(session.id, new_node.id, new_node.id)
         return session.id
+    
+    
         
     def put(self, nffg):
         """
@@ -155,7 +159,8 @@ class UpperLayerOrchestratorController(object):
                 # TODO: To split the graph we have to loop the following three instructions
                 # Take a decision about where we should schedule the serving graph (UN or HEAT), and the node
                 Graph().id_generator(nffg, session_id)
-                orchestrator, node = Scheduler(nffg.db_id, self.user_data).schedule(nffg)
+                orchestrator = OpenDayLight_CA(nffg.db_id, self.user_data) 
+                node = Node().getNodeFromDomainID(self.checkEndpointLocation(nffg))
                 
                 # If the orchestrator have to connect two graphs in different nodes,
                 # the end-points must be characterized to allow a connection between nodes
@@ -201,20 +206,12 @@ class UpperLayerOrchestratorController(object):
         
         status = self.getResourcesStatus(session_id)
         
-        if status is None:
-            return False
-        # If the status of the graph is complete, return False
-        if status['status'] == 'complete' or DEBUG_MODE is True:
+        if DEBUG_MODE is True:
             return True
-        # If the graph is in ERROR.. raise a proper exception
-        if status['status'] == 'error':
-            raise GraphError("The graph has encountered a fatal error, contact the administrator")
-        # TODO:  If the graph is still under instantiation returns 409
-        if status['status'] == 'in_progress':
-            raise Exception("Graph busy")
-        # If the graph is deleted, return True
-        if status['status'] == 'ended' or status['status'] == 'not_found':
-            return False
+        
+        return status
+    
+    
     
     def getStatus(self, nffg_id):
         '''
@@ -228,15 +225,31 @@ class UpperLayerOrchestratorController(object):
         status = self.getResourcesStatus(session_id)
         return json.dumps(status)
     
+    
+    
     def getResourcesStatus(self, session_id):
         graphs_ref = Graph().getGraphs(session_id)
-        for graph_ref in graphs_ref:
-            # Check where the nffg is instantiated and get the instance of the CA and the endpoint of the node
-            node = Node().getNode(Graph().getNodeID(graph_ref.id))
-            
-            # Get the status of the resources
-            scheduler = Scheduler(graph_ref.id, self.user_data)  
-            orchestrator = scheduler.getInstance(node)
-            status = orchestrator.getStatus(node)
-            logging.debug(status)
-            return status
+        status = False
+        
+        if(len(graphs_ref) >0):
+            status = True
+        
+        logging.debug("Graph status: "+str(status))
+        return status
+        
+    
+    def checkEndpointLocation(self, nffg):
+        '''
+        Define the node where to instantiate the nffg
+        '''
+        node = None
+        for end_point in nffg.end_points:
+            if end_point.node is not None:
+                node = end_point.node
+                break
+            elif end_point.switch_id is not None:
+                node = end_point.switch_id
+                break
+        if node is None:
+            raise NodeNotFound("Unable to determine where to place this graph (endpoint.node or endpoint.switch_id missing)")
+        return node

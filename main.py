@@ -5,17 +5,17 @@ Created on Oct 1, 2014
 '''
 
 #import falcon
-#from orchestrator_core.orchestrator import UpperLayerOrchestrator, TemplateAPI, YANGAPI, TemplateAPILocation, NFFGStatus
+#from ODL_CA_core.orchestrator import UpperLayerOrchestrator, TemplateAPI, YANGAPI, TemplateAPILocation, NFFGStatus
 
 
 import logging, json
 
 # Configuration Parser
-from orchestrator_core.config import Configuration
+from ODL_CA_core.config import Configuration
 
 # Orchestrator Core
-from orchestrator_core.userAuthentication import UserAuthentication
-from orchestrator_core.controller import UpperLayerOrchestratorController
+from ODL_CA_core.userAuthentication import UserAuthentication
+from ODL_CA_core.UpperLayer import UpperLayer_ODL_CA
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -50,7 +50,7 @@ logging.basicConfig( filename=conf.LOG_FILE, level=log_level, format=log_format,
 logging.debug("Orchestrator Starting")
 
 
-print "Welcome to the UN orchestrator_core"
+print "Welcome to the UN ODL_CA_core"
     
 
 # Falcon starts
@@ -78,14 +78,17 @@ nf_fg.parseDict(nf_fg_file)
 
 # CONTROLLER
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
-controller = UpperLayerOrchestratorController(user)
+controller = UpperLayer_ODL_CA(user)
 controller.delete(977)
 controller.put(nf_fg)
 
+print("\n\nUpdating...")
+controller.put(nf_fg)
+print("\n\nEnd update")
 
 # 1) Grafi remoti ed endpoint remoti
 
-# Check ... TODO: remove
+# TODO: remove
 
 
 

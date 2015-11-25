@@ -6,16 +6,16 @@ Created on Jun 20, 2015
 from exceptions import Exception 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from orchestrator_core.sql.sql_server import get_session
+from ODL_CA_core.sql.sql_server import get_session
 from sqlalchemy.sql import func
 from sqlalchemy.orm.exc import NoResultFound
 
-from orchestrator_core.config import Configuration
-from orchestrator_core.sql.session import Session
+from ODL_CA_core.config import Configuration
+from ODL_CA_core.sql.session import Session
 import datetime
 import logging
-from nffg_library.nffg import NF_FG, VNF, Port, EndPoint, FlowRule, Match, Action
-from orchestrator_core.exception import EndpointNotFound, PortNotFound, GraphNotFound
+from nffg_library.nffg import NF_FG, Port, EndPoint, FlowRule, Match, Action
+from ODL_CA_core.exception import EndpointNotFound, PortNotFound, GraphNotFound
 
 Base = declarative_base()
 sqlserver = Configuration().CONNECTION
@@ -31,25 +31,7 @@ class GraphModel(Base):
     node_id = Column(VARCHAR(64))
     partial = Column(Boolean())
     
-class VNFInstanceModel(Base):
-    '''
-    Maps the database table node
-    '''
-    __tablename__ = 'vnf_instance'
-    attributes = ['id', 'internal_id', 'graph_vnf_id', 'graph_id', 'name','template_location', 'image_location', 'location','type', 'status', 'creation_date','last_update', 'availability_zone']
-    id = Column(Integer, primary_key=True)
-    internal_id = Column(VARCHAR(64)) # id in the infrastructure
-    graph_vnf_id = Column(VARCHAR(64)) # id in the json
-    graph_id = Column(Integer)
-    name = Column(VARCHAR(64))
-    template_location = Column(VARCHAR(64))
-    image_location = Column(VARCHAR(64))
-    location = Column(VARCHAR(64)) # node where the VNF is instantiated
-    type = Column(VARCHAR(64)) # es. docker or virtual-machine
-    status = Column(VARCHAR(64)) # initialization, complete, error
-    creation_date = Column(VARCHAR(64))
-    last_update = Column(VARCHAR(64))
-    availability_zone = Column(VARCHAR(64)) 
+
 
 class PortModel(Base):
     '''
@@ -176,27 +158,7 @@ class GraphConnectionModel(Base):
     attributes = ['endpoint_id_1', 'endpoint_id_2']
     endpoint_id_1 = Column(VARCHAR(64), primary_key=True)
     endpoint_id_2 = Column(VARCHAR(64), primary_key=True)
-    
-class OpenstackNetworkModel(Base):
-    '''
-    Maps the database table node
-    '''
-    __tablename__ = 'openstack_network'
-    attributes = ['id', 'name', 'status','vlan_id']
-    id = Column(VARCHAR(64), primary_key=True)
-    name = Column(VARCHAR(64))
-    status = Column(VARCHAR(64))
-    vlan_id = Column(VARCHAR(64))
-    
-class OpenstackSubnetModel(Base):
-    '''
-    Maps the database table node
-    '''
-    __tablename__ = 'openstack_subnet'
-    attributes = ['id', 'name', 'os_neutron_id']
-    id = Column(VARCHAR(64), primary_key=True)
-    name = Column(VARCHAR(64))
-    os_network_id = Column(VARCHAR(64))
+
     
 class Graph(object):
     def __init__(self):
@@ -214,16 +176,7 @@ class Graph(object):
             nffg.id = service_graph_info_ref.service_graph_id
         nffg.name = service_graph_info_ref.service_graph_name
         nffg.db_id = graph_ref.id
-        vnfs_ref = session.query(VNFInstanceModel).filter_by(graph_id = graph_id).all()
-        for vnf_ref in vnfs_ref:
-            vnf = VNF(_id=vnf_ref.graph_vnf_id, name=vnf_ref.name, vnf_template_location=vnf_ref.template_location,
-                db_id=vnf_ref.id, internal_id=vnf_ref.internal_id)
-            nffg.addVNF(vnf)
-            ports_ref = session.query(PortModel).filter_by(graph_id = graph_id).filter_by(vnf_id = str(vnf.db_id)).all()
-            for port_ref in ports_ref:
-                port = Port(_id=port_ref.graph_port_id, name=port_ref.name, _type=port_ref.type,
-                      db_id=port_ref.id, internal_id=port_ref.internal_id)
-                vnf.addPort(port)
+        
         flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
         for flow_rule_ref in flow_rules_ref:
             if flow_rule_ref.type == 'external':
@@ -233,13 +186,11 @@ class Graph(object):
             nffg.addFlowRule(flow_rule)
             try:
                 match_ref = session.query(MatchModel).filter_by(flow_rule_id = flow_rule.db_id).one()
-                if match_ref.port_in_type == 'port':
-                    port_ref = session.query(PortModel).filter_by(id = match_ref.port_in).first()
-                    vnf_ref = session.query(VNFInstanceModel).filter_by(id = port_ref.vnf_id).first()
-                    port_in = 'vnf:'+vnf_ref.graph_vnf_id+':'+port_ref.graph_port_id
-                elif match_ref.port_in_type == 'endpoint':
+                
+                if match_ref.port_in_type == 'endpoint':
                     end_point_ref = session.query(EndpointModel).filter_by(id = match_ref.port_in).first()
                     port_in = match_ref.port_in_type+':'+end_point_ref.graph_endpoint_id
+                    
                 match = Match(port_in=port_in, ether_type=match_ref.ether_type, vlan_id=match_ref.vlan_id,
                        vlan_priority=match_ref.vlan_priority, source_mac=match_ref.source_mac,
                         dest_mac=match_ref.dest_mac, source_ip=match_ref.source_ip, dest_ip=match_ref.dest_ip,
@@ -252,13 +203,10 @@ class Graph(object):
                 actions_ref = session.query(ActionModel).filter_by(flow_rule_id = flow_rule.db_id).all()
                 for action_ref in actions_ref:
                     output = None
-                    if action_ref.output_type == 'port':
-                        port_ref = session.query(PortModel).filter_by(id = action_ref.output).first()
-                        vnf_ref = session.query(VNFInstanceModel).filter_by(id = port_ref.vnf_id).first()
-                        output = 'vnf:'+vnf_ref.graph_vnf_id+':'+port_ref.graph_port_id
-                    elif action_ref.output_type == 'endpoint':
+                    if action_ref.output_type == 'endpoint':
                         end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output).first()
                         output = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
+                    
                     action = Action(output=output, controller=action_ref.controller, drop=action_ref._drop, set_vlan_id=action_ref.set_vlan_id,
                                     set_vlan_priority=action_ref.set_vlan_priority, pop_vlan=action_ref.pop_vlan, 
                                     set_ethernet_src_address=action_ref.set_ethernet_src_address, 
@@ -308,17 +256,6 @@ class Graph(object):
             self.id_generator(nffg, session_id)
             graph_ref = GraphModel(id=nffg.db_id, session_id=session_id, partial=partial)
             session.add(graph_ref)
-            for vnf in nffg.vnfs:
-                vnf_ref = VNFInstanceModel(id=vnf.db_id, graph_vnf_id = vnf.id,
-                                           graph_id=nffg.db_id, name=vnf.name, template_location=vnf.vnf_template_location,
-                                           creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(),
-                                            status=vnf.status)
-                session.add(vnf_ref)
-                for port in vnf.ports:
-                    port_ref = PortModel(id=port.db_id, graph_port_id = port.id, graph_id=nffg.db_id, 
-                                         name=port.id, vnf_id=vnf.db_id, creation_date=datetime.datetime.now(),
-                                         last_update=datetime.datetime.now(), status=port.status)
-                    session.add(port_ref)                        
                             
             for flow_rule in nffg.flow_rules:
                 
@@ -369,10 +306,7 @@ class Graph(object):
                 match_db_id = flow_rule_db_id
                 port_in_type = None
                 port_in = None
-                if flow_rule.match.port_in.split(':')[0] == 'vnf':
-                    port_in_type = 'port'
-                    port_in = nffg.getVNF(flow_rule.match.port_in.split(':')[1]).getPort(flow_rule.match.port_in.split(':')[2]+':'+flow_rule.match.port_in.split(':')[3]).db_id
-                elif flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                if flow_rule.match.port_in.split(':')[0] == 'endpoint':
                     port_in_type = 'endpoint'
                     port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
                 match_ref = MatchModel(id=match_db_id, flow_rule_id=flow_rule_db_id, port_in_type = port_in_type, port_in=port_in,
@@ -393,10 +327,7 @@ class Graph(object):
                 for action in flow_rule.actions:
                     output_type = None
                     output = None
-                    if action.output != None and action.output.split(':')[0] == 'vnf':
-                        output_type = 'port'
-                        output = nffg.getVNF(action.output.split(':')[1]).getPort(action.output.split(':')[2]+':'+action.output.split(':')[3]).db_id
-                    elif action.output != None and action.output.split(':')[0] == 'endpoint':
+                    if action.output != None and action.output.split(':')[0] == 'endpoint':
                         output_type = 'endpoint'
                         output = nffg.getEndPoint(action.output.split(':')[1]).db_id
                     action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
@@ -430,10 +361,7 @@ class Graph(object):
                 match_db_id = flow_rule_db_id
                 port_in_type = None
                 port_in = None
-                if flow_rule.match.port_in.split(':')[0] == 'vnf':
-                    port_in_type = 'port'
-                    port_in = nffg.getVNF(flow_rule.match.port_in.split(':')[1]).getPort(flow_rule.match.port_in.split(':')[2]+':'+flow_rule.match.port_in.split(':')[3]).db_id
-                elif flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                if flow_rule.match.port_in.split(':')[0] == 'endpoint':
                     port_in_type = 'endpoint'
                     port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
                 match_ref = MatchModel(id=match_db_id, flow_rule_id=flow_rule_db_id, port_in_type = port_in_type, port_in=port_in,
@@ -454,10 +382,7 @@ class Graph(object):
                 for action in flow_rule.actions:
                     output_type = None
                     output = None
-                    if action.output != None and action.output.split(':')[0] == 'vnf':
-                        output_type = 'port'
-                        output = nffg.getVNF(action.output.split(':')[1]).getPort(action.output.split(':')[2]+':'+action.output.split(':')[3]).db_id
-                    elif action.output != None and action.output.split(':')[0] == 'endpoint':
+                    if action.output != None and action.output.split(':')[0] == 'endpoint':
                         output_type = 'endpoint'
                         output = nffg.getEndPoint(action.output.split(':')[1]).db_id
                     action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
@@ -482,20 +407,7 @@ class Graph(object):
         with session.begin():
             self.id_generator(nffg=nffg, session_id=None, update=True, graph_id=graph_id)
             #graph_ref = GraphModel(id=nffg.db_id, session_id=session_id, partial=partial)
-            #session.add(graph_ref)
-            for vnf in nffg.vnfs:
-                if vnf.status == 'new' or vnf.status is None:
-                    vnf_ref = VNFInstanceModel(id=vnf.db_id, graph_vnf_id = vnf.id,
-                                           graph_id=nffg.db_id, name=vnf.name, template_location=vnf.vnf_template_location,
-                                           creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(),
-                                            status=vnf.status)
-                    session.add(vnf_ref)
-                for port in vnf.ports:
-                    if port.status == 'new' or port.status is None:
-                        port_ref = PortModel(id=port.db_id, graph_port_id = port.id, graph_id=nffg.db_id, 
-                                         name=port.id, vnf_id=vnf.db_id, creation_date=datetime.datetime.now(),
-                                         last_update=datetime.datetime.now(), status=port.status)
-                        session.add(port_ref)                        
+            #session.add(graph_ref)           
                             
             for flow_rule in nffg.flow_rules:
                 if flow_rule.status == 'new' or flow_rule.status is None:
@@ -539,19 +451,6 @@ class Graph(object):
         session = get_session()
         with session.begin():
             session.query(GraphModel).filter_by(id = graph_id).delete()
-            subnets_ref = session.query(OpenstackSubnetModel.id).\
-                filter(OpenstackNetworkModel.id == OpenstackSubnetModel.os_network_id).\
-                filter(OpenstackNetworkModel.id == PortModel.os_network_id).\
-                filter(PortModel.graph_id == graph_id).all()
-            for subnet_ref in subnets_ref:
-                session.query(OpenstackSubnetModel).filter_by(id=subnet_ref.id).delete()
-            networks_ref = session.query(OpenstackNetworkModel.id).filter(OpenstackNetworkModel.id == PortModel.os_network_id).filter(PortModel.graph_id == graph_id).all()
-            for network_ref in networks_ref:
-                session.query(OpenstackNetworkModel).filter_by(id=network_ref.id).delete()
-            vnfs_ref = session.query(VNFInstanceModel).filter_by(graph_id = graph_id).all()
-            for vnf_ref in vnfs_ref:
-                session.query(PortModel).filter_by(vnf_id = vnf_ref.id).delete()
-            session.query(VNFInstanceModel).filter_by(graph_id = graph_id).delete()
             
             session.query(PortModel).filter_by(graph_id = graph_id).delete()
               
@@ -569,7 +468,6 @@ class Graph(object):
         
     def id_generator(self, nffg, session_id, update=False, graph_id=None):
         graph_base_id = self._get_higher_graph_id()
-        vnf_base_id = self._get_higher_vnf_id()
         port_base_id = self._get_higher_port_id()
         endpoint_base_id = self._get_higher_endpoint_id()
         flow_rule_base_id = self._get_higher_flow_rule_id()
@@ -578,10 +476,10 @@ class Graph(object):
             self.graph_id = int(graph_base_id) + 1
         else:
             self.graph_id = 0
-        if vnf_base_id is not None:
-            self.vnf_id = int(vnf_base_id) + 1
-        else:
-            self.vnf_id = 0
+        
+        # TODO: remove
+        self.vnf_id = 0
+        
         if port_base_id is not None:
             self.port_id = int(port_base_id) + 1
         else:
@@ -607,14 +505,6 @@ class Graph(object):
                 nffg.db_id = graphs_ref[0].id
             else:
                 nffg.db_id = graph_id
-        for vnf in nffg.vnfs:
-            if vnf.status is None or vnf.status == "new":
-                vnf.db_id = self.vnf_id
-                self.vnf_id = self.vnf_id+1
-            for port in vnf.ports:
-                if port.status is None or port.status == "new":
-                    port.db_id = self.port_id
-                    self.port_id = self.port_id + 1
         for flow_rule in nffg.flow_rules: 
             if flow_rule.status is None or flow_rule.status == "new": 
                 flow_rule.db_id = self.flow_rule_id
@@ -631,10 +521,6 @@ class Graph(object):
     def _get_higher_graph_id(self):  
         session = get_session()  
         return session.query(func.max(GraphModel.id).label("max_id")).one().max_id
-    
-    def _get_higher_vnf_id(self):
-        session = get_session()  
-        return session.query(func.max(VNFInstanceModel.id).label("max_id")).one().max_id
         
     def _get_higher_port_id(self):
         session = get_session()  
@@ -656,84 +542,13 @@ class Graph(object):
         session = get_session()
         return session.query(GraphModel).filter_by(session_id=session_id).all()
     
-    def getUnusedNetworks(self):
-        '''
-        select openstack_network.id
-        from openstack_network
-        where openstack_network.id 
-        not in ( select os_network_id 
-                 from port 
-                 where os_network_id is not NULL )
-        '''
-        session = get_session()
-        used_networks_ref = session.query(PortModel.os_network_id).filter(PortModel.os_network_id != None)
-        query = session.query(OpenstackNetworkModel.id).filter(~OpenstackNetworkModel.id.in_(used_networks_ref))
-        unsed_networks_ref = query.all()
-        return unsed_networks_ref
-
-    def getNetwork(self, port_id):
-        session = get_session()
-        return session.query(OpenstackNetworkModel).\
-                filter(OpenstackNetworkModel.id == PortModel.os_network_id).\
-                filter(PortModel.id == port_id).one()
-                
-    def getHigherNumberOfNet(self, graph_id):
-        session = get_session()
-        networks = session.query(OpenstackNetworkModel.name).filter(PortModel.os_network_id == OpenstackNetworkModel.id).filter(PortModel.graph_id == graph_id).all()
-        net_max = -1
-        for network in networks:
-            net_number = int(network.name.split('fakenet_')[1])
-            if net_max < net_number:
-                net_max = net_number
-        return net_max+1
-    
     def getFlowRules(self, graph_id):
         session = get_session()
         return session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
     
-    def getVNFs(self, graph_id):
-        session = get_session()
-        return session.query(VNFInstanceModel).filter_by(graph_id = graph_id).all()
-    
     def getPorts(self, graph_id):
         session = get_session()
         return session.query(PortModel).filter_by(graph_id = graph_id).all()
-
-    def getSubnets(self, graph_id):
-        session = get_session()
-        return session.query(OpenstackSubnetModel.id).\
-                filter(OpenstackNetworkModel.id == OpenstackSubnetModel.os_network_id).\
-                filter(OpenstackNetworkModel.id == PortModel.os_network_id).\
-                filter(PortModel.graph_id == graph_id).all()
-    
-    def getSubnet(self, os_network_id):
-        session = get_session()
-        return session.query(OpenstackSubnetModel.id).filter_by(os_network_id=os_network_id).one()
-        
-    def getNetworks(self, graph_id):
-        session = get_session()
-        return session.query(OpenstackNetworkModel.id).filter(OpenstackNetworkModel.id == PortModel.os_network_id).filter(PortModel.graph_id == graph_id).all()
-    
-    def getAllNetworks(self):
-        session = get_session()
-        return session.query(OpenstackNetworkModel).all()
-    
-    def setOSNetwork(self, os_network_id, port_name, vnf_id, internal_id, graph_id, vlan_id = None, status='complete'):
-        session = get_session()  
-        with session.begin():
-            assert (session.query(PortModel).filter_by(name = port_name).filter_by(vnf_id = vnf_id).filter_by(graph_id = graph_id).update({"os_network_id": os_network_id, 'vlan_id':vlan_id, "last_update":datetime.datetime.now(), 'status':status})==1)
-       
-    def addOSNetwork(self, os_network_id, name, status='complete', vlan_id = None):
-        session = get_session() 
-        with session.begin():            
-            os_network_ref = OpenstackNetworkModel(id = os_network_id, name = name, status=status, vlan_id=vlan_id)
-            session.add(os_network_ref)
-    
-    def addOSSubNet(self, os_subnet_id, name, os_network_id):
-        session = get_session() 
-        with session.begin():            
-            os_network_ref = OpenstackSubnetModel(id = os_subnet_id, name = name, os_network_id=os_network_id)
-            session.add(os_network_ref)
     
     def setPortInternalID(self, graph_id, vnf_id, port_graph_id, port_internal_id, port_status, port_type):
         session = get_session()
@@ -752,12 +567,7 @@ class Graph(object):
         session = get_session()  
         with session.begin():
             session.query(PortModel).filter_by(mac_address = mac_address).one()
-                    
-    def setVNFInternalID(self, graph_id, graph_vnf_id, internal_id, status):
-        session = get_session()  
-        with session.begin():
-            assert (session.query(VNFInstanceModel).filter_by(graph_vnf_id = graph_vnf_id).filter_by(graph_id = graph_id).update({"internal_id": internal_id, "last_update":datetime.datetime.now(), 'status':status})==1)
-  
+
     def setFlowRuleInternalID(self, graph_id, graph_flow_rule_id, internal_id, status='complete'):
         session = get_session()  
         with session.begin():
@@ -821,29 +631,6 @@ class Graph(object):
         session_id = self.user_session.get_active_user_session(user_id)
         nffg = self.get_nffg(session_id.id)    
         return nffg
-    
-    def deleteNetwork(self, network_id):
-        session = get_session()
-        with session.begin():
-            session.query(OpenstackNetworkModel).filter_by(id = network_id).delete()
-    
-    def deleteVNFNetworks(self, graph_id, vnf_id):
-        #TODO: check if it is the only VNF using that ports before deleting       
-        session = get_session()
-        ports = session.query(PortModel).filter_by(graph_id = graph_id).filter_by(vnf_id = vnf_id).all()
-        for port in ports:
-            with session.begin():
-                session.query(OpenstackNetworkModel).filter_by(id = port.os_network_id).delete()
-    
-    def deleteSubnet(self, os_network_id):
-        session = get_session()
-        with session.begin():
-            session.query(OpenstackSubnetModel).filter_by(os_network_id = os_network_id).delete()
-    
-    def deleteVNF(self, graph_vnf_id, graph_id):
-        session = get_session()
-        with session.begin():
-            session.query(VNFInstanceModel).filter_by(graph_id = graph_id).filter_by(graph_vnf_id = graph_vnf_id).delete()
 
     def deletePort(self, port_id, graph_id, vnf_id=None):
         session = get_session()
@@ -852,22 +639,7 @@ class Graph(object):
                 session.query(PortModel).filter_by(graph_id = graph_id).filter_by(id = port_id).delete()
             else:
                 session.query(PortModel).filter_by(graph_id = graph_id).filter_by(vnf_id = vnf_id).delete()
-    
-    def deleteFlowRuleFromVNF(self, vnf_id):
-        session = get_session()
-        with session.begin():
-            ports_ref = session.query(PortModel.id).filter_by(vnf_id = vnf_id)
-            for port_ref in ports_ref:
-                flow_rules_ref = session.query(FlowRuleModel.id).\
-                    filter(FlowRuleModel.id == ActionModel.flow_rule_id).\
-                    filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
-                    filter(MatchModel.port_in == port_ref.id).\
-                    filter(MatchModel.port_in_type == 'port').all()
-                for flow_rule_ref in flow_rules_ref:
-                    session.query(FlowRuleModel).filter_by(id = flow_rule_ref.id).delete()
-                    session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-                    session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-    
+
     def deleteFlowspecFromPort(self, port_id):
         session = get_session()
         with session.begin():

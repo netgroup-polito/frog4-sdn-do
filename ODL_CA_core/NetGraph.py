@@ -4,11 +4,13 @@ Created on Nov 10, 2015
 @author: giacomo
 '''
 
-import logging, json
+#TODO: import logging
+
+import json
 import networkx as nx
 #from networkx.readwrite import json_graph
 
-from orchestrator_core.component_adapter.OpenDayLight_CA.rest import ODL
+from ODL_CA_core.ODL_Rest import ODL_Rest
 
 
 class NetGraph():
@@ -41,14 +43,14 @@ class NetGraph():
          
         if self.odlversion == "Hydrogen":
             
-            json_data = ODL(self.odlversion).getControllerNodes(self.odlendpoint, self.odlusername, self.odlpassword)
+            json_data = ODL_Rest(self.odlversion).getControllerNodes(self.odlendpoint, self.odlusername, self.odlpassword)
             nodes = json.loads(json_data)
 
             for node in nodes["node"]:
                 swList.append({'node_id':node["id"]})
 
         else:
-            json_data = ODL(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
+            json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
             tp = json.loads(json_data)
             nodes = tp["network-topology"]["topology"][0]["node"]
             
@@ -64,7 +66,7 @@ class NetGraph():
         lkList = list()
          
         if self.odlversion == "Hydrogen":
-            json_data = ODL(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
+            json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
             tp = json.loads(json_data)
 
             for link in tp["edgeProperties"]:
@@ -73,7 +75,7 @@ class NetGraph():
                 lkList.append({'head':head,'tail':tail})
 
         else:
-            json_data = ODL(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
+            json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
             tp = json.loads(json_data)
             links = tp["network-topology"]["topology"][0]["link"]
             

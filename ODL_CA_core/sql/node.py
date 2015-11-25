@@ -9,9 +9,9 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import logging
-from orchestrator_core.config import Configuration
-from orchestrator_core.exception import NodeNotFound, ControllerNotFound, UserLocationNotFound
-from orchestrator_core.sql.sql_server import get_session
+from ODL_CA_core.config import Configuration
+from ODL_CA_core.exception import NodeNotFound, ControllerNotFound, UserLocationNotFound
+from ODL_CA_core.sql.sql_server import get_session
 
 Base = declarative_base()
 
@@ -62,16 +62,6 @@ class OpenflowControllerModel(Base):
     version = Column(VARCHAR(64))
     username = Column(VARCHAR(64))
     password = Column(VARCHAR(64))
-
-#TODO: to be used into the SLApp DB and not into the orchestrator_core one    
-class UserLocationModel(Base):
-    '''
-    Maps the database table node (used only by the Service layer)
-    '''
-    __tablename__ = 'user_location'
-    attributes = ['user_id', 'node_id']
-    user_id = Column(VARCHAR(64), primary_key=True)
-    node_id = Column(VARCHAR(64))
 
 class Node(object):
     def __init__(self):
@@ -156,14 +146,3 @@ class Node(object):
         except Exception as ex:
             logging.error(ex)
             raise ControllerNotFound("Node not found: "+str(controller_id))
-        
-    def getUserLocation(self, user_id):
-        '''
-        Ruturns the id of the node, where the User is connected
-        '''
-        session = get_session()
-        try:
-            return session.query(UserLocationModel.node_id).filter_by(user_id = user_id).one().node_id
-        except Exception as ex:
-            logging.error(ex)
-            raise UserLocationNotFound("It is not defined a default location for the user: "+str(user_id))

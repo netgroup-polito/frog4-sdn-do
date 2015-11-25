@@ -5,7 +5,7 @@ Created on 18 set 2015
 '''
 
 from sql.user import User
-from orchestrator_core.exception import unauthorizedRequest
+from ODL_CA_core.exception import unauthorizedRequest
 
 class UserData(object):
     

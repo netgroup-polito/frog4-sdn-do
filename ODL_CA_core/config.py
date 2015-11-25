@@ -4,7 +4,7 @@ Created on Oct 1, 2014
 @author: fabiomignini
 '''
 import ConfigParser, os, inspect
-from orchestrator_core.exception import WrongConfigurationFile 
+from ODL_CA_core.exception import WrongConfigurationFile 
 
 
 class Configuration(object):
