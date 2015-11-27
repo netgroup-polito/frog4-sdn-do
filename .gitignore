@@ -1,6 +1,6 @@
 *.pyc
-#*.log
-*.conf
+*.log
+#*.conf
 *.project
 *.pydevproject
 *.DS_Store
