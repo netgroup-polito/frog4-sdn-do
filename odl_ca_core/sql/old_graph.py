@@ -164,91 +164,7 @@ class Graph(object):
     def __init__(self):
         self.user_session = Session()
 
-    def get_nffg(self, graph_id):
-        nffg = NF_FG()
-        session = get_session()
-        graph_ref = session.query(GraphModel).filter_by(id = graph_id).one()
-        service_graph_info_ref = Session().get_service_graph_info(graph_ref.session_id)
-
-        if graph_ref.partial is True:
-            nffg.id = graph_ref.id
-        else:
-            nffg.id = service_graph_info_ref.service_graph_id
-        nffg.name = service_graph_info_ref.service_graph_name
-        nffg.db_id = graph_ref.id
-        
-        flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
-        for flow_rule_ref in flow_rules_ref:
-            if flow_rule_ref.type == 'external':
-                continue
-            flow_rule = FlowRule(_id=flow_rule_ref.graph_flow_rule_id, priority=int(flow_rule_ref.priority),
-                      db_id=flow_rule_ref.id, internal_id=flow_rule_ref.internal_id)
-            nffg.addFlowRule(flow_rule)
-            try:
-                match_ref = session.query(MatchModel).filter_by(flow_rule_id = flow_rule.db_id).one()
-                
-                if match_ref.port_in_type == 'endpoint':
-                    end_point_ref = session.query(EndpointModel).filter_by(id = match_ref.port_in).first()
-                    port_in = match_ref.port_in_type+':'+end_point_ref.graph_endpoint_id
-                    
-                match = Match(port_in=port_in, ether_type=match_ref.ether_type, vlan_id=match_ref.vlan_id,
-                       vlan_priority=match_ref.vlan_priority, source_mac=match_ref.source_mac,
-                        dest_mac=match_ref.dest_mac, source_ip=match_ref.source_ip, dest_ip=match_ref.dest_ip,
-                        tos_bits=match_ref.tos_bits, source_port=match_ref.source_port, dest_port=match_ref.dest_port,
-                         protocol=match_ref.protocol, db_id=match_ref.id)
-                flow_rule.match = match
-            except NoResultFound:
-                logging.info("Found flowrule without a match")
-            try:
-                actions_ref = session.query(ActionModel).filter_by(flow_rule_id = flow_rule.db_id).all()
-                for action_ref in actions_ref:
-                    output = None
-                    if action_ref.output_type == 'endpoint':
-                        end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output).first()
-                        output = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
-                    
-                    action = Action(output=output, controller=action_ref.controller, drop=action_ref._drop, set_vlan_id=action_ref.set_vlan_id,
-                                    set_vlan_priority=action_ref.set_vlan_priority, pop_vlan=action_ref.pop_vlan, 
-                                    set_ethernet_src_address=action_ref.set_ethernet_src_address, 
-                                    set_ethernet_dst_address=action_ref.set_ethernet_dst_address, 
-                                    set_ip_src_address=action_ref.set_ip_src_address, set_ip_dst_address=action_ref.set_ip_dst_address, 
-                                    set_ip_tos=action_ref.set_ip_tos, set_l4_src_port=action_ref.set_l4_src_port, 
-                                    set_l4_dst_port=action_ref.set_l4_dst_port, output_to_queue=action_ref.output_to_queue,
-                                    db_id=action_ref.id)
-                    flow_rule.actions.append(action)
-            except NoResultFound:
-                logging.debug("Found flowrule without actions")
-            
-                            
-        end_points_ref = session.query(EndpointModel).filter_by(graph_id = graph_id).all()
-        for end_point_ref in end_points_ref:
-            end_point = EndPoint(_id=end_point_ref.graph_endpoint_id, name=end_point_ref.name, _type=end_point_ref.type,
-                                 db_id=end_point_ref.id, internal_id=end_point_ref.internal_id)
-            nffg.addEndPoint(end_point)
-            
-            
-            # End_point resource
-            end_point_resorces_ref = session.query(EndpointResourceModel).filter_by(endpoint_id = end_point_ref.id).all()
-            for end_point_resorce_ref in end_point_resorces_ref:
-                if end_point_resorce_ref.resource_type == 'port':
-                    try:
-                        port = self._getPort(end_point_resorce_ref.resource_id)
-                    except PortNotFound:
-                        raise Exception("I dont'know when I'm here. There was a continue here, why?")
-                        #continue
-                        
-                    end_point.node = port.location
-                    end_point.switch_id = port.virtual_switch
-                    end_point.interface = port.graph_port_id
-                    end_point.vlan_id = port.vlan_id
-                    
-            graph_connections_ref = session.query(GraphConnectionModel).filter_by(endpoint_id_1 = end_point_ref.id).all()
-            for graph_connection_ref in graph_connections_ref:
-                ext_endpoint = self._getEndpoint(graph_connection_ref.endpoint_id_2)
-                ext_nffg_id = ext_endpoint.graph_id
-                ext_end_point_id = ext_endpoint.graph_endpoint_id       
-                end_point.remote_endpoint_id = ext_nffg_id+':'+ext_end_point_id
-        return nffg
+    
         
     def addNFFG(self, nffg, session_id, partial=False):
         session = get_session()  
@@ -402,149 +318,22 @@ class Graph(object):
                                                               resource_id=flow_rule_db_id)
             session.add(endpoint_resource_ref)
     
-    def updateNFFG(self, nffg, graph_id, partial=False):
-        session = get_session()  
-        with session.begin():
-            self.id_generator(nffg=nffg, session_id=None, update=True, graph_id=graph_id)
-            #graph_ref = GraphModel(id=nffg.db_id, session_id=session_id, partial=partial)
-            #session.add(graph_ref)           
-                            
-            for flow_rule in nffg.flow_rules:
-                if flow_rule.status == 'new' or flow_rule.status is None:
-                    self.addFlowRule(nffg.db_id, flow_rule, nffg)            
+    
+    
 
-            for endpoint in nffg.end_points:
-                if endpoint.status == 'new' or endpoint.status is None:        
-                    endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             graph_id=nffg.db_id, name = endpoint.name, type=endpoint.type)
-                    session.add(endpoint_ref)
-                    
-                    # Add end-point resources
-                    # End-point attached to something that is not another graph
-                    if "interface" in endpoint.type or endpoint.type == "vlan":
-                        port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, graph_id=nffg.db_id, 
-                                             internal_id=endpoint.interface, name=endpoint.interface, location=endpoint.node,
-                                             virtual_switch=endpoint.switch_id, vlan_id=endpoint.vlan_id, creation_date=datetime.datetime.now(), 
-                                             last_update=datetime.datetime.now())
-                        session.add(port_ref)
-                        endpoint_resource_ref = EndpointResourceModel(endpoint_id=endpoint.db_id,
-                                              resource_type='port',
-                                              resource_id=self.port_id)
-                        session.add(endpoint_resource_ref)
-                        self.port_id = self.port_id + 1
-                        
-                    # End-point attached to another graph
-                    if endpoint.remote_endpoint_id is not None:
-                        # TODO: Add graph connection
-                        remote_graph_db_id =  endpoint.remote_endpoint_id.split(':')[0]
-                        endpoint2_db_id = self._getEndpointID(endpoint.remote_endpoint_id.split(':')[1], remote_graph_db_id)
-                        graph_connection_ref = GraphConnectionModel(endpoint_id_1=endpoint.db_id, endpoint_id_2=endpoint2_db_id)
-                        session.add(graph_connection_ref)
     
-    def delete_session(self, session_id):
-        session = get_session()
-        graphs_ref = session.query(GraphModel).filter_by(session_id = session_id).all()
-        for graph_ref in graphs_ref:
-            self.delete_graph(graph_ref.id)
     
-    def delete_graph(self, graph_id):
-        session = get_session()
-        with session.begin():
-            session.query(GraphModel).filter_by(id = graph_id).delete()
-            
-            session.query(PortModel).filter_by(graph_id = graph_id).delete()
-              
-            flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
-            for flow_rule_ref in flow_rules_ref:
-                session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-                session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-            session.query(FlowRuleModel).filter_by(graph_id = graph_id).delete()
-            endpoints_ref = session.query(EndpointModel.id).filter_by(graph_id = graph_id).all()
-            for endpoint_ref in endpoints_ref:
-                session.query(GraphConnectionModel).filter_by(endpoint_id_1 = endpoint_ref.id).delete()
-                session.query(GraphConnectionModel).filter_by(endpoint_id_2 = endpoint_ref.id).delete()
-                session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_ref.id).delete()
-            session.query(EndpointModel).filter_by(graph_id = graph_id).delete()
         
-    def id_generator(self, nffg, session_id, update=False, graph_id=None):
-        graph_base_id = self._get_higher_graph_id()
-        port_base_id = self._get_higher_port_id()
-        endpoint_base_id = self._get_higher_endpoint_id()
-        flow_rule_base_id = self._get_higher_flow_rule_id()
-        action_base_id = self._get_higher_action_id()
-        if graph_base_id is not None:
-            self.graph_id = int(graph_base_id) + 1
-        else:
-            self.graph_id = 0
-        
-        # TODO: remove
-        self.vnf_id = 0
-        
-        if port_base_id is not None:
-            self.port_id = int(port_base_id) + 1
-        else:
-            self.port_id = 0
-        if endpoint_base_id is not None:
-            self.endpoint_id = int(endpoint_base_id) + 1
-        else:
-            self.endpoint_id = 0
-        if flow_rule_base_id is not None:
-            self.flow_rule_id = int(flow_rule_base_id) + 1
-        else:
-            self.flow_rule_id = 0
-        if action_base_id is not None:
-            self.action_id = int(action_base_id) + 1
-        else:
-            self.action_id = 0  
-        if update == False:
-            nffg.db_id = self.graph_id
-        else:
-            session = get_session()  
-            if graph_id is None:
-                graphs_ref = session.query(GraphModel).filter_by(session_id = session_id).all()
-                nffg.db_id = graphs_ref[0].id
-            else:
-                nffg.db_id = graph_id
-        for flow_rule in nffg.flow_rules: 
-            if flow_rule.status is None or flow_rule.status == "new": 
-                flow_rule.db_id = self.flow_rule_id
-                self.flow_rule_id = self.flow_rule_id +1
-            for action in flow_rule.actions:
-                if flow_rule.status is None or flow_rule.status == "new":
-                    action.db_id = self.action_id
-                    self.action_id = self.action_id + 1
-        for endpoint in nffg.end_points:
-            if endpoint.status is None or endpoint.status == "new":   
-                endpoint.db_id = self.endpoint_id 
-                self.endpoint_id = self.endpoint_id + 1
+   
+   
+   
+   
+   
     
-    def _get_higher_graph_id(self):  
-        session = get_session()  
-        return session.query(func.max(GraphModel.id).label("max_id")).one().max_id
-        
-    def _get_higher_port_id(self):
-        session = get_session()  
-        return session.query(func.max(PortModel.id).label("max_id")).one().max_id
-        
-    def _get_higher_endpoint_id(self):
-        session = get_session()  
-        return session.query(func.max(EndpointModel.id).label("max_id")).one().max_id
-        
-    def _get_higher_flow_rule_id(self):
-        session = get_session()  
-        return session.query(func.max(FlowRuleModel.id).label("max_id")).one().max_id
     
-    def _get_higher_action_id(self):
-        session = get_session()  
-        return session.query(func.max(ActionModel.id).label("max_id")).one().max_id
+
     
-    def getGraphs(self, session_id):
-        session = get_session()
-        return session.query(GraphModel).filter_by(session_id=session_id).all()
     
-    def getFlowRules(self, graph_id):
-        session = get_session()
-        return session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
     
     def getPorts(self, graph_id):
         session = get_session()
@@ -622,11 +411,7 @@ class Graph(object):
         session = get_session()  
         return session.query(EndpointModel).filter_by(graph_id = graph_id).all()
     
-    def setEndpointLocation(self, graph_id, graph_endpoint_id, location):
-        session = get_session()
-        with session.begin():
-            assert (session.query(EndpointModel).filter_by(graph_id = graph_id).filter_by(graph_endpoint_id = graph_endpoint_id).update({"location": location}) == 1)
-
+    
     def get_instantiated_nffg(self, user_id):
         session_id = self.user_session.get_active_user_session(user_id)
         nffg = self.get_nffg(session_id.id)    
@@ -653,68 +438,19 @@ class Graph(object):
                 session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
                 session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
     
-    def deleteFlowRule(self, flow_rule_id):
-        session = get_session()
-        with session.begin():
-            session.query(FlowRuleModel).filter_by(id = flow_rule_id).delete()
-            session.query(MatchModel).filter_by(flow_rule_id = flow_rule_id).delete()
-            session.query(ActionModel).filter_by(flow_rule_id = flow_rule_id).delete()
+    
             
     def deleteActions(self, flow_rule_id):
         session = get_session()
         with session.begin():
             session.query(ActionModel).filter_by(flow_rule_id = flow_rule_id).delete()
     
-    def deleteEndpoint(self, graph_endpoint_id, graph_id):
-        session = get_session()
-        with session.begin():
-            session.query(EndpointModel).filter_by(graph_id = graph_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
     
-    def deleteEndpointResource(self, endpoint_id):
-        session = get_session()
-        with session.begin():
-            session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).delete()
             
-    def deleteEndpointResourceAndResources(self, endpoint_id):
-        session = get_session()
-        with session.begin():
-            end_point_resources_ref = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).all()
-            for end_point_resource_ref in end_point_resources_ref:
-                if end_point_resource_ref.resource_type == 'port':
-                    session.query(PortModel).filter_by(id = end_point_resource_ref.resource_id).delete()
-                elif end_point_resource_ref.resource_type == 'flowrule':
-                    session.query(FlowRuleModel).filter_by(id = end_point_resource_ref.resource_id).delete()
-                    session.query(MatchModel).filter_by(flow_rule_id = end_point_resource_ref.resource_id).delete()
-                    session.query(ActionModel).filter_by(flow_rule_id = end_point_resource_ref.resource_id).delete()    
-            session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).delete()
+    
             
-    def getEndpointResource(self, endpoint_id, resource_type=None):
-        session = get_session()
-        resources=[]
-        with session.begin():
-            if resource_type is None:
-                end_point_resources_ref = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).all()
-            else:
-                end_point_resources_ref = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).filter_by(resource_type = resource_type).all()
-            for end_point_resource_ref in end_point_resources_ref:
-                if end_point_resource_ref.resource_type == 'port':
-                    port_ref = session.query(PortModel).filter_by(id = end_point_resource_ref.resource_id).one()
-                    port = Port(_id=port_ref.graph_port_id, name=port_ref.name, _type=port_ref.type,
-                      db_id=port_ref.id, internal_id=port_ref.internal_id)
-                    resources.append(port)
-                elif end_point_resource_ref.resource_type == 'flowrule':
-                    flow_rule_ref = session.query(FlowRuleModel).filter_by(id = end_point_resource_ref.resource_id).one()
-                    flow_rule = FlowRule(_id=flow_rule_ref.graph_flow_rule_id, priority=int(flow_rule_ref.priority),
-                      db_id=flow_rule_ref.id, internal_id=flow_rule_ref.internal_id, node_id=flow_rule_ref.node_id, _type=flow_rule_ref.type, status=flow_rule_ref.status)
-                    resources.append(flow_rule)
-                #TODO: actions and match not considered
-            return resources
-                        
-    def deleteGraphConnection(self, endpoint_id1):
-        #only unilateral 
-        session = get_session()
-        with session.begin():
-            session.query(GraphConnectionModel).filter_by(endpoint_id_1 = endpoint_id1).delete()
+    
+    
     
     def getPortFromInternalID(self, internal_id, graph_id):
         session = get_session()  

@@ -1,6 +1,7 @@
 '''
 Created on 13/apr/2015
 @author: vida
+@author: giacomoratta
 '''
 
 import logging, json
@@ -11,10 +12,10 @@ from nffg_library.nffg import FlowRule
 from odl_ca_core.config import Configuration
 from odl_ca_core.exception import GraphError
 
-from odl_ca_core.sql.graph import Graph
+from odl_ca_core.sql.graph2 import Graph2
 from odl_ca_core.sql.node import Node
 
-from odl_ca_core.ODL_Rest import ODL_Rest
+from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
 
@@ -23,45 +24,80 @@ JOLNET_NETWORKS = Configuration().JOLNET_NETWORKS
 
 class OpenDayLight_CA():
     
-    def __init__(self, graph_id, userdata):
+    def __init__(self, session_id, userdata):
 
-        self.graph_id = graph_id
-        
-        #credentials to get Keystone token for the user
+        self.session_id = session_id
         self.userdata = userdata
+        
+        # Dati ODL
+        if(False):
+            self.odlendpoint = "http://127.0.0.1:8080"
+            self.odlversion = "Hydrogen"
+        else:
+            self.odlendpoint = "http://127.0.0.1:8181"
+            self.odlversion = "Lithium"
+        self.odlusername = "admin"
+        self.odlpassword = "admin"
+        self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
     
     
     
-    '''
-    ######################################################################################################
-    ##############################    Component Adapter Interface        #################################
-    ######################################################################################################
-    '''
+    def buildProfileGraph(self, nffg):
+        '''
+        Create a ProfileGraph with the flowrules and endpoint specified in nffg.
+        Args:
+            nffg:
+                Object of the Class Common.NF_FG.nffg.NF_FG
+        Return:
+            Object of the Class odl_ca_core.resources.ProfileGraph
+        '''
+        profile_graph = ProfileGraph()
+        profile_graph.setId(nffg.db_id)
+
+        for endpoint in nffg.end_points:
+            
+            if endpoint.status is None:
+                status = "new"
+            else:
+                status = endpoint.status
+
+            if endpoint.remote_endpoint_id is not None:
+                delimiter = endpoint.remote_endpoint_id.find(":")
+                remote_graph_id = endpoint.remote_endpoint_id[:delimiter]
+                remote_id = endpoint.remote_endpoint_id[delimiter+1:]
+                remote_session = Graph2().get_active_user_session_by_nf_fg_id(self.userdata.getUserID(),remote_graph_id,error_aware=True)
+                ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, 
+                              endpoint.interface, status, remote_session.session_id, remote_id)
+            else:
+                ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
+
+            profile_graph.addEndpoint(ep)
+        
+        for flowrule in nffg.flow_rules:
+            if flowrule.status is None:
+                flowrule.status = 'new'
+            profile_graph.addFlowrule(flowrule)
+                  
+        return profile_graph
     
-    @property
-    def URI(self):
-        return self.compute_node_address
     
     
-    
-    def instantiateProfile(self, nf_fg, node):
+    def instantiateProfile(self, nffg):
         '''
         Instantiate the User Profile Graph
         Args:
             nffg:
-                Object of the Class Common.NF_FG.nf_fg.NF_FG
-            node:
-                Object of the class Common.SQL.node.NodeModel
+                Object of the Class Common.NF_FG.nffg.NF_FG
+
             Exceptions:
                 Raise some exception to be captured
         '''
-        self.getAuthTokenAndEndpoints(node)
         
-        logging.debug("Forwarding graph: " + nf_fg.getJSON(True))
+        logging.debug("Forwarding graph: " + nffg.getJSON(True))
         try:            
-            #Read the nf_fg JSON structure and map it into the proper objects and db entries
-            profile_graph = self.buildProfileGraph(nf_fg)
-            self.openstackResourcesInstantiation(profile_graph, nf_fg)
+            #Read the nffg JSON structure and map it into the proper objects and db entries
+            profile_graph = self.buildProfileGraph(nffg)
+            self.opendaylightFlowsInstantiation(profile_graph, nffg)
             logging.debug("Graph " + profile_graph.id + " correctly instantiated!")
             
         except Exception as err:
@@ -71,7 +107,7 @@ class OpenDayLight_CA():
     
     
     
-    def updateProfile(self, new_nf_fg, old_nf_fg, node):
+    def updateProfile(self, new_nffg, old_nffg):
         '''
         Update a User Profile Graph
         Args:
@@ -79,23 +115,21 @@ class OpenDayLight_CA():
                 Object of the Class Common.NF_FG.nf_fg.NF_FG
             old_nffg:
                 Object of the Class Common.NF_FG.nf_fg.NF_FG
-            node:
-                Object of the class Common.SQL.node.NodeModel
             Exceptions:
                 Raise some exception to be captured
-        '''       
-        self.getAuthTokenAndEndpoints(node)
+        '''
         
         try:
-            updated_nffg = old_nf_fg.diff(new_nf_fg)
+            updated_nffg = old_nffg.diff(new_nffg)
+            updated_nffg.db_id = old_nffg.db_id
             logging.debug("Diff: "+updated_nffg.getJSON(True))            
                 
-            #self.openstackResourcesControlledDeletion(updated_nffg, self.token.get_token())
-            self.openstackResourcesControlledDeletion(updated_nffg, None)
-            Graph().updateNFFG(updated_nffg, self.graph_id)
+            self.opendaylightFlowsControlledDeletion(updated_nffg)
+            
+            Graph2().updateNFFG(updated_nffg, self.session_id)
             profile_graph = self.buildProfileGraph(updated_nffg)
-            self.openstackResourcesInstantiation(profile_graph, updated_nffg)
-            logging.debug("Graph " + old_nf_fg.id + " correctly updated!")
+            self.opendaylightFlowsInstantiation(profile_graph, updated_nffg)
+            logging.debug("Graph " + old_nffg.id + " correctly updated!")
             
         except Exception as err:
             logging.error(err.message)
@@ -104,23 +138,20 @@ class OpenDayLight_CA():
     
     
     
-    def deinstantiateProfile(self, nf_fg, node):
+    def deinstantiateProfile(self, nf_fg):
         '''
         De-instantiate the User Profile Graph
         Args:
             nffg:
                 Object of the Class Common.NF_FG.nf_fg.NF_FG
-            node_endpoint:
-                Object of the class Common.SQL.node.NodeModel
             Exceptions:
                 Raise some exception to be captured
         '''
-        self.getAuthTokenAndEndpoints(node)
         
         logging.debug("Forwarding graph: " + nf_fg.getJSON())
         
         try:
-            self.openstackResourcesDeletion()
+            self.opendaylightFlowsDeletion()
             logging.debug("Graph " + nf_fg.id + " correctly deleted!") 
         except Exception as err:
             logging.error(err.message)
@@ -130,106 +161,21 @@ class OpenDayLight_CA():
  
  
  
- 
-    '''
-    ######################################################################################################
-    ######################   Authentication towards infrastructure controllers        ####################
-    ######################################################################################################
-    ''' 
-    def getAuthTokenAndEndpoints(self, node):
-
-        # Dati ODL
-        odl = Node().getOpenflowController(node.openflow_controller)
-        self.odlendpoint = odl.endpoint
-        self.odlusername = odl.username
-        self.odlpassword = odl.password
-        self.odlversion = odl.version
-        self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    '''
-    ######################################################################################################
-    #############################    Resources preparation phase        ##################################
-    ######################################################################################################
-    '''      
-    def buildProfileGraph(self, nf_fg):
-        profile_graph = ProfileGraph()
-        profile_graph.setId(nf_fg.id)
-        
-        #Remove from the pool of available openstack networks vlans used in endpoints of type vlan
-        for endpoint in nf_fg.end_points:
-            if endpoint.type == 'vlan':
-                if endpoint.vlan_id.isdigit() is False:
-                    name = endpoint.vlan_id
-                else:                                
-                    name = "exp" + str(endpoint.vlan_id)                
-                JOLNET_NETWORKS.remove(name)
-        
-        '''
-        for vnf in nf_fg.vnfs:
-            nf = self.buildVNF(vnf)
-            profile_graph.addVNF(nf)
-        
-        for vnf in profile_graph.functions.values():
-            #nf = profile_graph.functions[vnf.id]
-            self.setVNFNetwork(nf_fg, vnf, profile_graph)
-            #self.setVNFNetwork(nf_fg, vnf, nf)
-        '''
-
-        for endpoint in nf_fg.end_points:
-            ep = self.buildEndpoint(endpoint)
-            profile_graph.addEndpoint(ep)
-        
-        for flowrule in nf_fg.flow_rules:
-            if flowrule.status is None:
-                flowrule.status = 'new'
-            profile_graph.addFlowrule(flowrule)
-                  
-        return profile_graph                        
-    
-              
-                
-    def buildEndpoint(self, endpoint):
-        if endpoint.status is None:
-            status = "new"
-        else:
-            status = endpoint.status
-        
-        '''
-        if endpoint.remote_endpoint_id is not None:
-            delimiter = endpoint.remote_endpoint_id.find(":")
-            remote_graph = endpoint.remote_endpoint_id[:delimiter]
-            remote_id = endpoint.remote_endpoint_id[delimiter+1:] 
-            return Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status, remote_graph, remote_id)
-        else:
-        '''
-        return Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
-    
-    
-    
     
     '''
     ######################################################################################################
     ##########################    Resources instantiation and deletion        ############################
     ######################################################################################################
     ''' 
-    def openstackResourcesInstantiation(self, profile_graph, nf_fg):        
+    def opendaylightFlowsInstantiation(self, profile_graph, nf_fg):        
                    
         #Create flow on the SDN network for graphs interconnection
         for endpoint in profile_graph.endpoints.values():
             if endpoint.status == "new":
                 
-                '''
                 if endpoint.remote_id is not None:
                     #Check if the remote graph exists and the requested endpoint is available
-                    graph = Graph().get_nffg(endpoint.remote_graph)
+                    graph = Graph2().get_nffg(endpoint.remote_graph)
                     remote_endpoint = None
                     remote_endpoint = graph.getEndPoint(endpoint.remote_id)
                     
@@ -238,85 +184,70 @@ class OpenDayLight_CA():
                         switch1 = endpoint.switch_id
                         port1 = endpoint.interface                                       
                                                                   
-                        switch1_id = Node().getNodeFromDomainID(switch1).id
-                        switch2_id = Graph().getNodeID(endpoint.remote_graph)
-                        switch2 = Node().getNodeDomainID(switch2_id)     
+                        #switch1_id = Node().getNodeFromDomainID(switch1).id
+                        #switch2_id = Graph2().getNodeID(endpoint.remote_graph)
+                        #switch2 = Node().getNodeDomainID(switch2_id)     
                         port2 = remote_endpoint.interface
                         
                         #TODO: add the port on the endpoint switch
-                        self.linkZones(self.graph_id, switch1, port1, switch1_id, switch2, port2, switch2_id, vlan, nf_fg.getEndPoint(endpoint.id).db_id)
+                        self.linkZones(self.session_id, switch1, port1, switch1_id, switch2, port2, switch2_id, vlan, nf_fg.getEndPoint(endpoint.id).db_id)
                     else:
                         logging.error("Remote graph " + endpoint.remote_graph + " has not a " + endpoint.id + " endpoint available!")
-                '''
                 
-                Graph().setEndpointLocation(self.graph_id, endpoint.id, endpoint.interface)
-          
-        
+                # Set the port of this endpoint (that is the "location").
+                # Cannot move this instruction in Graph2().addNFFG because "addNFFG" is called once,
+                # whereas 'opendaylightFlowsInstantiation' is called by instantiateProfile and by updateProfile.
+                # We need to set endpoint location in both instantiate and update time.
+                Graph2().setEndpointLocation(self.session_id, endpoint.id, endpoint.interface)
+
         for flowrule in profile_graph.flowrules.values():
             if flowrule.status =='new':
+                
                 #TODO: check priority
+                
                 if flowrule.match is not None:
                     if flowrule.match.port_in is not None:
+                        
                         tmp1 = flowrule.match.port_in.split(':')
                         port1_type = tmp1[0]
                         port1_id = tmp1[1]
                         
-                        '''
-                        if port1_type == 'vnf':
-                            if len(flowrule.actions) > 1 or flowrule.actions[0].output is None:
-                                raise GraphError("Multiple actions or action different from output are not supported between vnfs")
-                        elif port1_type == 'endpoint':
-                        '''
-                        
                         if port1_type == 'endpoint':
-                            '''
-                            endpoint_to_vnf = False
-                            for action in flowrule.actions:
-                                if action.output is not None and action.output.split(':')[0] == "vnf":
-                                    endpoint_to_vnf= True
-                                    break
-                            if endpoint_to_vnf is True:
-                                if len(flowrule.actions) > 1:
-                                    raise GraphError("Multiple actions are not supported between an endpoint and a vnf")
-                                else:
-                                    continue
-                            '''
                             endp1 = profile_graph.endpoints[port1_id]
                             if endp1.type == 'interface':        
                                 self.processFlowrule(endp1, flowrule, profile_graph)  
           
                                   
             
-    def openstackResourcesDeletion(self):       
+    def opendaylightFlowsDeletion(self):       
         #Delete every resource one by one
-        flows = Graph().getFlowRules(self.graph_id)
+        flows = Graph2().getFlowRules(self.session_id)
         for flow in flows:
             if flow.type == "external" and flow.status == "complete":
-                switch_id = Node().getNodeDomainID(flow.node_id)
-                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
                 
-        #TODO: Delete also networks and subnets if previously created
-        
-        
-        
-    def openstackResourcesControlledDeletion(self, updated_nffg, token_id):
 
+        
+    def opendaylightFlowsControlledDeletion(self, updated_nffg):
+        
         for endpoint in updated_nffg.end_points[:]:
-            if endpoint.status == 'to_be_deleted':                      
-                flows = Graph().getEndpointResource(endpoint.db_id, "flowrule")
+            if endpoint.status == 'to_be_deleted':
+                
+                # Search and delete all record with with type="flowrule" from the table "endpoint_resource" 
+                flows = Graph2().getEndpointResource(endpoint.db_id, "flowrule")
                 for flow in flows:
                     if flow.type == "external" and flow.status == "complete":
-                        switch_id = Node().getNodeDomainID(flow.node_id)
-                        ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.id)
-                        #Graph().deleteFlowRule(flow.db_id)
-                Graph().deleteEndpoint(endpoint.id, self.graph_id)
-                Graph().deleteEndpointResourceAndResources(endpoint.db_id)
+                        ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.node_id, flow.id)
+                        Graph2().deleteFlowRule(flow.db_id)
+                Graph2().deleteEndpoint(endpoint.id, self.session_id)
+                Graph2().deleteEndpointResourceAndResources(endpoint.db_id)
                 if endpoint.remote_endpoint_id is not None:
-                    Graph().deleteGraphConnection(endpoint.db_id) 
+                    Graph2().deleteGraphConnection(endpoint.db_id)
                 updated_nffg.end_points.remove(endpoint)  
                       
         for flowrule in updated_nffg.flow_rules[:]:
             if flowrule.status == 'to_be_deleted' and flowrule.type != 'external':
+            
                 self.deleteFlowRule(flowrule, updated_nffg)
 
      
@@ -330,17 +261,31 @@ class OpenDayLight_CA():
     ######################################################################################################
     ''' 
     
+    def pushFlow(self, switch_id, actions, match, flowname, priority, flow_id):
+        flowname = flowname.replace(' ', '')
+        flowtype = 'external'
+        
+        # ODL/Switch: Add flow rule
+        flowj = Flow("flowrule", flowname, 0, priority, True, 0, 0, actions, match)
+        json_req = flowj.getJSON(self.odlversion, switch_id)
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
+        
+        # DATABASE: Add flow rule
+        flow_rule = FlowRule(_id=flowname,node_id=Node().getNodeFromDomainID(switch_id).id, _type=flowtype, status='complete',priority=priority, internal_id=flow_id)  
+        Graph2().addFlowRule(self.session_id, switch_id, flow_rule, None)
+
+        
+
     def getLinkBetweenSwitches(self, switch1, switch2):             
         '''
-        Retrieve the link between two switches, where you can find ports to use
-        Args:
-            switch1:
-                OpenDaylight identifier of the source switch (example: openflow:123456789 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
-            switch2:
-                OpenDaylight identifier of the destination switch (example: openflow:987654321 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
+        Retrieve the link between two switches, where you can find ports to use.
+        switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
         '''
+        
+        # Get Topology
         json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
         topology = json.loads(json_data)
+        
         if self.odlversion == "Hydrogen":
             tList = topology["edgeProperties"]
             for link in tList:
@@ -355,116 +300,34 @@ class OpenDayLight_CA():
                 dest_node = link["destination"]["dest-node"]
                 if (source_node == switch1 and dest_node == switch2):
                     return link
+        return None
+
+
     
-    
-    
-    
-    
-    def pushVlanFlow(self, source_node, flow_id, vlan, in_port, out_port):
-        '''
-        Push a flow into a Jolnet switch with 
-            matching on VLAN id and input port
-            output through the specified port
-        Args:
-            source_node:
-                OpenDaylight identifier of the source switch (example: openflow:123456789 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
-            flow_id:
-                unique identifier of the flow on the whole OpenDaylight domain
-            vlan:
-                VLAN id of the traffic (for matching)
-            in_port:
-                ingoing port of the traffic (for matching)
-            out_port:
-                output port where to send out the traffic (action)
-        '''
-        action1 = Action()
-        action1.setOutputAction(out_port, 65535)
-        actions = [action1]
+    def getLinkPortsBetweenSwitches(self, switch1, switch2):
+        link = self.getLinkBetweenSwitches(switch1, switch2)
+        if link is None:
+            return None,None
         
-        match = Match()
-        match.setInputMatch(in_port)
-        match.setVlanMatch(vlan)
-        
-        flowj = Flow("jolnetflow", flow_id, 0, 65535, True, 0, 0, actions, match)        
-        json_req = flowj.getJSON(self.odlversion, source_node)
-        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, source_node, flow_id)
-
-
-
-
-
-    def linkZones(self, graph_id, switch_user, port_vms_user, switch_user_id, switch_isp, port_vms_isp, switch_isp_id, vlan_id, endpoint_db_id):
-        '''
-        Link two graphs (or two parts of a single graph) through the SDN network
-        Args:
-            graph_id:
-                id of the user's graph
-            switch_user:
-                OpenDaylight identifier of the first switch (example: openflow:123456789 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
-            port_vms_user:
-                port on the OpenFlow switch where virtual machines are linked
-            switch_user_id:
-                id of the node in the database
-            switch_isp:
-                OpenDaylight identifier of the second switch (example: openflow:987654321 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
-            port_vms_isp:
-                port on the OpenFlow switch where virtual machines are linked
-            switch_isp_id:
-                id of the node in the database
-            vlan_id:
-                VLAN id of the OpenStack network which links the graphs
-        '''
-        edge = None
-        link = None
         if self.odlversion == "Hydrogen":
-            edge = self.getLinkBetweenSwitches(switch_user, switch_isp)
-            if edge is not None:
-                port12 = edge["edge"]["headNodeConnector"]["id"]
-                port21 = edge["edge"]["tailNodeConnector"]["id"]    
+            port12 = link["edge"]["headNodeConnector"]["id"]
+            port21 = link["edge"]["tailNodeConnector"]["id"]
         else:
-            link = self.getLinkBetweenSwitches(switch_user, switch_isp)
-            if link is not None:        
-                tmp = link["source"]["source-tp"]
-                tmpList = tmp.split(":")
-                port12 = tmpList[2]
-                    
-                tmp = link["destination"]["dest-tp"]
-                tmpList = tmp.split(":")
-                port21 = tmpList[2]
-                
-        if link is not None or edge is not None:
-            fid = int(str(vlan_id) + str(1))              
-            self.pushVlanFlow(switch_user, fid, vlan_id, port_vms_user, port12)
-            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_user).id,_type='external', status='complete',priority=65535)  
-            #Graph().addFlowRule(self.graph_id, flow_rule, None)
-            Graph().addFlowRuleAsEndpointResource(self.graph_id, flow_rule, None, endpoint_db_id)
-            
-            fid = int(str(vlan_id) + str(2))
-            self.pushVlanFlow(switch_isp, fid, vlan_id, port21, port_vms_isp)
-            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_isp).id,_type='external', status='complete',priority=65535)  
-            #Graph().addFlowRule(self.graph_id, flow_rule, None)
-            Graph().addFlowRuleAsEndpointResource(self.graph_id, flow_rule, None, endpoint_db_id)
-            
-            fid = int(str(vlan_id) + str(3))               
-            self.pushVlanFlow(switch_isp, fid, vlan_id, port_vms_isp, port21)
-            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_isp).id,_type='external', status='complete',priority=65535)  
-            #Graph().addFlowRule(self.graph_id, flow_rule, None)
-            Graph().addFlowRuleAsEndpointResource(self.graph_id, flow_rule, None, endpoint_db_id)
+            tmp = link["source"]["source-tp"]
+            tmpList = tmp.split(":")
+            port12 = tmpList[2]
 
-            fid = int(str(vlan_id) + str(4))               
-            self.pushVlanFlow(switch_user, fid, vlan_id, port12, port_vms_user)
-            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_user).id,_type='external', status='complete',priority=65535)  
-            #Graph().addFlowRule(self.graph_id, flow_rule, None)
-            Graph().addFlowRuleAsEndpointResource(self.graph_id, flow_rule, None, endpoint_db_id)
-        else:
-            logging.debug("[linkZones] Cannot find a link between " + switch_user + " and " + switch_isp)
-            
-    
-    
-    
+            tmp = link["destination"]["dest-tp"]
+            tmpList = tmp.split(":")
+            port21 = tmpList[2]
+        
+        # Return port12@switch1 and port21@switch2
+        return port12,port21
+
+
             
     def processFlowrule(self, endpoint1, flowrule, profile_graph):
-        #flowrule = copy.deepcopy(flowrule_original)
+        #Process a flow rule written in the section "big switch" of a nffg json.
         match1 = Match(flowrule.match)
         match2 = None
         actions1 = []
@@ -473,12 +336,12 @@ class OpenDayLight_CA():
         switch2 = None
         flowname1 = None
         flowname2 = None        
-        #second_flow = False
         
         nodes_path = None
         nodes_path_flag = None
         print "\n\n\nprocessFlowrule"
         
+        # Add "Drop" flow rules only, and return
         for act in flowrule.actions:
             if act.drop is True:
                 action = Action(act)
@@ -490,9 +353,9 @@ class OpenDayLight_CA():
                 ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
                 
                 flow_rule = FlowRule(_id=flowname,node_id=Node().getNodeFromDomainID(endpoint1.switch_id).id,_type='external', status='complete',priority=flowrule.priority, internal_id=flowrule.id)  
-                Graph().addFlowRule(self.graph_id, flow_rule, None)
+                Graph2().addFlowRule(self.session_id, endpoint1.switch_id, flow_rule, None)
                 return  
-    
+        
         for act in flowrule.actions:
             if act.output is not None:
                 
@@ -515,36 +378,14 @@ class OpenDayLight_CA():
                             flowname1 = str(flowrule.id)
                             switch1 = endpoint1.switch_id              
                     else:
-                        edge = None
-                        link = None
-                        if self.odlversion == "Hydrogen":
-                            edge = self.getLinkBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)
-                            if edge is not None:
-                                port12 = edge["edge"]["headNodeConnector"]["id"]
-                                port21 = edge["edge"]["tailNodeConnector"]["id"]        
-                        else:
-                            link = self.getLinkBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)
-                            if link is not None:            
-                                tmp = link["source"]["source-tp"]
-                                tmpList = tmp.split(":")
-                                port12 = tmpList[2]
-                                        
-                                tmp = link["destination"]["dest-tp"]
-                                tmpList = tmp.split(":")
-                                port21 = tmpList[2]
-                                
-                        if link is not None or edge is not None:
+                        port12,port21 = self.getLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
+                        if port12 is not None and port21 is not None:
+
                             if endpoint1.interface != port12 and endpoint2.interface != port21:
                                 # endpoints are not on the link: 2 flows 
                                 action1 = Action(act)
-                                
-                                #print vars(action1)
-                                
-                                #self.netgraph.print_json(json.load(action1))
                                 action1.setOutputAction(port12, 65535)
                                 actions1.append(action1)
-                                
-                                #print vars(action1)
                                 
                                 match1.setInputMatch(endpoint1.interface)
                                 
@@ -611,8 +452,6 @@ class OpenDayLight_CA():
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
             self.linkEndpoints(nodes_path,endpoint1,endpoint2,flowrule)
-
-
 
 
 
@@ -715,38 +554,130 @@ class OpenDayLight_CA():
             self.pushFlow(switch_id, new_actions, match, flow_name, flow_priority, flow_id)
         
         return
-
-
-
     
-
-    def pushFlow(self, switch_id, actions, match, flowname, priority, flow_id):
-        flowname = flowname.replace(' ', '')
-        flowj = Flow("flowrule", flowname, 0, priority, True, 0, 0, actions, match)
-        
-        json_req = flowj.getJSON(self.odlversion, switch_id)
-        
-        print json_req
-        
-        #return
-        
-        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
-        
-        flow_rule = FlowRule(_id=flowname,node_id=Node().getNodeFromDomainID(switch_id).id,_type='external', status='complete',priority=priority, internal_id=flow_id)  
-        Graph().addFlowRule(self.graph_id, flow_rule, None)
-    
-
-
 
     
     def deleteFlowRule(self, flowrule, nf_fg):    
-        #flowname = flowrule.id.replace(' ' ,'')
-        flows = Graph().getFlowRules(self.graph_id)
+        flows = Graph2().getFlowRules(self.session_id)
         for flow in flows:
             if flow.type == "external" and flow.status == "complete" and flow.internal_id == flowrule.id:
-                switch_id = Node().getNodeDomainID(flow.node_id)
-                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, switch_id, flow.graph_flow_rule_id)
-                Graph().deleteFlowRule(flow.id)
-        Graph().deleteFlowRule(flowrule.db_id)
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
+                Graph2().deleteFlowRule(flow.id)
+        Graph2().deleteFlowRule(flowrule.db_id)
         nf_fg.flow_rules.remove(flowrule)
+        
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+
+    # Per ora usata solo in linkZones    
+    def pushVlanFlow(self, source_node, flow_id, vlan, in_port, out_port):
+        '''
+        Push a flow into a Jolnet switch with 
+            matching on VLAN id and input port
+            output through the specified port
+        Args:
+            source_node:
+                OpenDaylight identifier of the source switch (example: openflow:123456789 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
+            flow_id:
+                unique identifier of the flow on the whole OpenDaylight domain
+            vlan:
+                VLAN id of the traffic (for matching)
+            in_port:
+                ingoing port of the traffic (for matching)
+            out_port:
+                output port where to send out the traffic (action)
+        '''
+        action1 = Action()
+        action1.setOutputAction(out_port, 65535)
+        actions = [action1]
+        
+        match = Match()
+        match.setInputMatch(in_port)
+        match.setVlanMatch(vlan)
+        
+        flowj = Flow("jolnetflow", flow_id, 0, 65535, True, 0, 0, actions, match)        
+        json_req = flowj.getJSON(self.odlversion, source_node)
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, source_node, flow_id)
+
+
+    def linkZones(self, graph_id, switch_user, port_vms_user, switch_user_id, switch_isp, port_vms_isp, switch_isp_id, vlan_id, endpoint_db_id):
+        '''
+        Link two graphs (or two parts of a single graph) through the SDN network
+        Args:
+            graph_id:
+                id of the user's graph
+            switch_user:
+                OpenDaylight identifier of the first switch (example: openflow:123456789 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
+            port_vms_user:
+                port on the OpenFlow switch where virtual machines are linked
+            switch_user_id:
+                id of the node in the database
+            switch_isp:
+                OpenDaylight identifier of the second switch (example: openflow:987654321 or 00:00:64:e9:50:5a:90:90 in Hydrogen)
+            port_vms_isp:
+                port on the OpenFlow switch where virtual machines are linked
+            switch_isp_id:
+                id of the node in the database
+            vlan_id:
+                VLAN id of the OpenStack network which links the graphs
+        '''
+        edge = None
+        link = None
+        if self.odlversion == "Hydrogen":
+            edge = self.getLinkBetweenSwitches(switch_user, switch_isp)
+            if edge is not None:
+                port12 = edge["edge"]["headNodeConnector"]["id"]
+                port21 = edge["edge"]["tailNodeConnector"]["id"]    
+        else:
+            link = self.getLinkBetweenSwitches(switch_user, switch_isp)
+            if link is not None:        
+                tmp = link["source"]["source-tp"]
+                tmpList = tmp.split(":")
+                port12 = tmpList[2]
+                    
+                tmp = link["destination"]["dest-tp"]
+                tmpList = tmp.split(":")
+                port21 = tmpList[2]
+                
+        if link is not None or edge is not None:
+            fid = int(str(vlan_id) + str(1))              
+            self.pushVlanFlow(switch_user, fid, vlan_id, port_vms_user, port12)
+            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_user).id,_type='external', status='complete',priority=65535)  
+            #Graph().addFlowRule(self.session_id, flow_rule, None)
+            Graph2().addFlowRuleAsEndpointResource(self.session_id, flow_rule, None, endpoint_db_id)
+            
+            fid = int(str(vlan_id) + str(2))
+            self.pushVlanFlow(switch_isp, fid, vlan_id, port21, port_vms_isp)
+            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_isp).id,_type='external', status='complete',priority=65535)  
+            #Graph().addFlowRule(self.session_id, flow_rule, None)
+            Graph2().addFlowRuleAsEndpointResource(self.session_id, flow_rule, None, endpoint_db_id)
+            
+            fid = int(str(vlan_id) + str(3))               
+            self.pushVlanFlow(switch_isp, fid, vlan_id, port_vms_isp, port21)
+            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_isp).id,_type='external', status='complete',priority=65535)  
+            #Graph().addFlowRule(self.session_id, flow_rule, None)
+            Graph2().addFlowRuleAsEndpointResource(self.session_id, flow_rule, None, endpoint_db_id)
+
+            fid = int(str(vlan_id) + str(4))               
+            self.pushVlanFlow(switch_user, fid, vlan_id, port12, port_vms_user)
+            flow_rule = FlowRule(_id=fid,node_id=Node().getNodeFromDomainID(switch_user).id,_type='external', status='complete',priority=65535)  
+            #Graph().addFlowRule(self.session_id, flow_rule, None)
+            Graph2().addFlowRuleAsEndpointResource(self.session_id, flow_rule, None, endpoint_db_id)
+        else:
+            logging.debug("[linkZones] Cannot find a link between " + switch_user + " and " + switch_isp)
+            
+    
+    
+    
             

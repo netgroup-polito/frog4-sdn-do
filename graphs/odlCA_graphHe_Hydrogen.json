@@ -51,7 +51,7 @@
       "flow-rules": [
       
         {
-          "id": "1",
+          "id": "9771",
           "priority": 100,
           "match": {
             "port_in": "endpoint:End21"
@@ -67,7 +67,7 @@
         },
         
         {
-          "id": "2",
+          "id": "9772",
           "priority": 100,
           "match": {
             "port_in": "endpoint:End31"

@@ -38,9 +38,26 @@ class SessionModel(Base):
 
 
 class Session(object):
-
-
+    def __init__(self):
+        pass
     
+    def inizializeSession(self, session_id, user_id, graph_id, graph_name):
+        '''
+        inizialize the session in db
+        '''
+        session = get_session()  
+        with session.begin():
+            session_ref = SessionModel(session_id=session_id, user_id = user_id, graph_id = graph_id, 
+                                started_at = datetime.datetime.now(), graph_name=graph_name,
+                                last_update = datetime.datetime.now(), status='inizialization')
+            session.add(session_ref)
+        pass
+
+    def updateStatus(self, session_id, status):
+        session = get_session()  
+        with session.begin():
+            session.query(SessionModel).filter_by(session_id = session_id).filter_by(ended = None).filter_by(error = None).update({"last_update":datetime.datetime.now(), 'status':status})
+
     def updateUserID(self, session_id, user_id):
         session = get_session()  
         with session.begin():
@@ -80,6 +97,13 @@ class Session(object):
         return session_ref
     
     
+    def set_ended(self, session_id):
+        '''
+        Set the ended status for the session identified with session_id
+        '''
+        session = get_session() 
+        with session.begin():       
+            session.query(SessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
     
     def set_error_by_nffg_id(self, nffg_id):
         '''
@@ -123,6 +147,16 @@ class Session(object):
                 raise sessionNotFound("Session Not Found") 
         return user_session
     
+    def get_active_user_session_by_nf_fg_id(self, user_id, graph_id, error_aware=True):
+        session = get_session()
+        if error_aware:
+            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
+        else:
+            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(SessionModel.started_at)).first()
+        if session_ref is None:
+            raise sessionNotFound("Session Not Found, for servce graph id: "+str(graph_id))        
+        return session_ref
+    
     def get_profile_id_from_active_user_session(self, user_id):
         session = get_session()
         session_ref = session.query(SessionModel.graph_id).filter_by(user_id = user_id).filter_by(ended = None).filter_by(error = None).first()
@@ -135,3 +169,25 @@ class Session(object):
         session = get_session()
         return session.query(SessionModel.graph_id, SessionModel.graph_name).filter_by(session_id = session_id).one()
         
+        
+    def checkEgressNode(self, node, profile):
+        """
+        Return False if the only ingress point in the node
+        is that that we are deleting
+        """
+        session = get_session()
+        egs = session.query(SessionModel).filter_by(egress_node = node).filter(not_(Session.profile.contains(profile))).all()
+        if egs is not None and len(egs) == 0:
+            return False
+        return True 
+
+    def checkIngressNode(self, node, profile):
+        """
+        Return False if the only ingress point in the node
+        is that that we are deleting
+        """
+        session = get_session()
+        ings = session.query(SessionModel).filter_by(ingress_node = node).filter(not_(Session.profile.contains(profile))).all()
+        if ings is not None and len(ings) == 0:
+            return False
+        return True

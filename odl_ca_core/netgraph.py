@@ -10,7 +10,7 @@ import json
 import networkx as nx
 #from networkx.readwrite import json_graph
 
-from odl_ca_core.ODL_Rest import ODL_Rest
+from odl_ca_core.odl_rest import ODL_Rest
 
 
 class NetGraph():

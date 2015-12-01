@@ -459,10 +459,9 @@ class Endpoint(object):
 class ProfileGraph(object):
     def __init__(self):
         '''
-        Class that stores the profile graph of the user which will be used for Heat template generation
+        Stores the profile graph of the user
         '''
         self._id = None
-        self.functions = {}
         self.endpoints = {}
         self.flowrules = {}
     
@@ -475,12 +474,6 @@ class ProfileGraph(object):
         Set profile id
         '''
         self._id = profile_id
-    
-    def addVNF(self, vnf):
-        '''
-        Add a new vnf to the graph
-        '''
-        self.functions[vnf.id] = vnf
     
     def addEndpoint(self, endpoint):
         '''
