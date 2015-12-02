@@ -15,7 +15,7 @@ from odl_ca_core.config import Configuration
 
 # Orchestrator Core
 from odl_ca_core.user_authentication import UserAuthentication
-from odl_ca_core.odl_ca_upperlayer import UpperLayer_ODL_CA
+from odl_ca_core.opendaylight_ca import OpenDayLightCA
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -80,7 +80,7 @@ nffg.parseDict(nffg_file)
 
 # CONTROLLER
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
-controller = UpperLayer_ODL_CA(user)
+controller = OpenDayLightCA(user)
 controller.validate(nffg)
 controller.delete(977)
 controller.put(nffg)

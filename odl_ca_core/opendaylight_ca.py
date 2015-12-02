@@ -18,7 +18,7 @@ from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
 
-class OpenDayLightCA_UpperLayer(object):
+class OpenDayLightCA(object):
 
     def __init__(self, user_data):
         
