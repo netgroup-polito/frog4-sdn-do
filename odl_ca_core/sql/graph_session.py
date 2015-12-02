@@ -2,47 +2,37 @@
 Created on Jun 20, 2015
 
 @author: fabiomignini
+@author: giacomoratta
 '''
+
+import datetime, logging, uuid
+
 from exceptions import Exception 
-from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, not_, desc, func
+
+from nffg_library.nffg import NF_FG, Port, EndPoint, FlowRule, Match, Action
+
+from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, desc, func
 from sqlalchemy.ext.declarative import declarative_base
-from odl_ca_core.sql.sql_server import get_session
-from sqlalchemy.sql import func
 from sqlalchemy.orm.exc import NoResultFound
 
 from odl_ca_core.config import Configuration
-#from odl_ca_core.sql.session import Session, SessionModel
-import datetime
-import logging
-import uuid
-from nffg_library.nffg import NF_FG, Port, EndPoint, FlowRule, Match, Action
+from odl_ca_core.sql.sql_server import get_session
 from odl_ca_core.exception import EndpointNotFound, PortNotFound, GraphNotFound, sessionNotFound
+
+
 
 Base = declarative_base()
 sqlserver = Configuration().CONNECTION
 
 
-'''
-class old_GraphModel(Base):
-    ''
-    Maps the database table graph
-    ''
-    __tablename__ = 'graph'
-    attributes = ['id', 'session_id','node_id','partial']
-    id = Column(Integer, primary_key=True)
-    session_id = Column(VARCHAR(64))
-    node_id = Column(VARCHAR(64))
-    partial = Column(Boolean())
-'''
-
-class GraphModel2(Base):
+class SessionModel(Base):
     '''
     Maps the database table session
     '''
-    __tablename__ = 'graph'
-    attributes = ['session_id', 'user_id', 'graph_id', 'graph_name', 'status','started_at',
+    __tablename__ = 'session'
+    attributes = ['id', 'user_id', 'graph_id', 'graph_name', 'status','started_at',
                   'last_update','error','ended']
-    session_id = Column(VARCHAR(64), primary_key=True)
+    id = Column(VARCHAR(64), primary_key=True)
     user_id = Column(VARCHAR(64))
     graph_id = Column(Text)
     graph_name = Column(Text)
@@ -59,12 +49,12 @@ class PortModel(Base):
     Maps the database table node
     '''
     __tablename__ = 'port'
-    attributes = ['id', 'internal_id', 'graph_port_id', 'graph_id', 'name','vnf_id', 'location','type', 'virtual_switch', 'status', 'creation_date','last_update', 'os_network_id',
+    attributes = ['id', 'internal_id', 'graph_port_id', 'session_id', 'name','vnf_id', 'location','type', 'virtual_switch', 'status', 'creation_date','last_update', 'os_network_id',
                     'mac_address', 'ipv4_address', 'vlan_id','gre_key']
     id = Column(Integer, primary_key=True)
     internal_id = Column(VARCHAR(64)) # id in the infrastructure
     graph_port_id = Column(VARCHAR(64)) # id in the json
-    graph_id = Column(Integer)
+    session_id = Column(Integer)
     name = Column(VARCHAR(64))
     vnf_id = Column(VARCHAR(64)) # could be NULL, for example a port in an end-point
     location = Column(VARCHAR(64)) # node where the port is instantiated
@@ -84,11 +74,11 @@ class EndpointModel(Base):
     Maps the database table endpoint
     '''
     __tablename__ = 'endpoint'
-    attributes = ['id', 'internal_id', 'graph_endpoint_id','graph_id','name', 'type','location']
+    attributes = ['id', 'internal_id', 'graph_endpoint_id','session_id','name', 'type','location']
     id = Column(Integer, primary_key=True)
     internal_id = Column(VARCHAR(64)) # id of the infrastructure graph
     graph_endpoint_id = Column(VARCHAR(64)) # id in the json
-    graph_id = Column(VARCHAR(64))
+    session_id = Column(VARCHAR(64))
     name = Column(VARCHAR(64))
     type = Column(VARCHAR(64)) # internal, interface, interface-out, vlan, gre
     location = Column(VARCHAR(64)) # node where the end-point is instantiated
@@ -108,11 +98,11 @@ class FlowRuleModel(Base):
     Maps the database table node
     '''
     __tablename__ = 'flow_rule'
-    attributes = ['id', 'internal_id', 'graph_flow_rule_id', 'graph_id','node_id', 'type', 'priority','status', 'creation_date','last_update']
+    attributes = ['id', 'internal_id', 'graph_flow_rule_id', 'session_id','switch_id', 'type', 'priority','status', 'creation_date','last_update']
     id = Column(Integer, primary_key=True)
     internal_id = Column(VARCHAR(64)) # id of the infrastructure graph
     graph_flow_rule_id = Column(VARCHAR(64)) # id in the json
-    graph_id = Column(VARCHAR(64))
+    session_id = Column(VARCHAR(64))
     switch_id = Column(VARCHAR(64))
     type = Column(VARCHAR(64))
     priority = Column(VARCHAR(64)) # openflow priority    
@@ -179,21 +169,31 @@ class GraphConnectionModel(Base):
     attributes = ['endpoint_id_1', 'endpoint_id_2']
     endpoint_id_1 = Column(VARCHAR(64), primary_key=True)
     endpoint_id_2 = Column(VARCHAR(64), primary_key=True)
+    
+    
+    
+
+
+
+
 
     
-class Graph2(object):
+class GraphSession(object):
     def __init__(self):
         pass
-        #self.user_session = Session()
+        #self.user_session = SessionModel()
     
     
-    def id_generator(self, nffg, session_id, update=False, graph_id=None):
+    def id_generator(self, nffg, session_id, update=False):
         port_base_id = self._get_higher_port_id()
         endpoint_base_id = self._get_higher_endpoint_id()
         flow_rule_base_id = self._get_higher_flow_rule_id()
         action_base_id = self._get_higher_action_id()
         
-        nffg.db_id = session_id
+        if (session_id==None):
+            nffg.db_id = self._get_univocal_session_id()
+        else:
+            nffg.db_id = session_id
         
         if port_base_id is not None:
             self.port_id = int(port_base_id) + 1
@@ -239,19 +239,36 @@ class Graph2(object):
     def _get_higher_action_id(self):
         session = get_session()  
         return session.query(func.max(ActionModel.id).label("max_id")).one().max_id
+    
+    def _get_univocal_session_id(self):
+        session = get_session()
+        rows = session.query(SessionModel.id).all()
+        
+        while True:
+            session_id = uuid.uuid4().hex
+            found = False
+            for row in rows:
+                if(row.id == session_id):
+                    found = True
+                    break
+            if found==False:
+                return session_id
+                
+             
+        
 
 
 
-    def get_nffg(self, graph_id):
+    def get_nffg(self, session_id):
         nffg = NF_FG()
         session = get_session()
-        session_ref = session.query(GraphModel2).filter_by(session_id = graph_id).one()
+        session_ref = session.query(SessionModel).filter_by(id = session_id).one()
 
         nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
-        nffg.db_id = session_ref.session_id
+        nffg.db_id = session_ref.id
         
-        flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
+        flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id = session_id).all()
         for flow_rule_ref in flow_rules_ref:
             if flow_rule_ref.type == 'external':
                 continue
@@ -294,7 +311,7 @@ class Graph2(object):
                 logging.debug("Found flowrule without actions")
             
                             
-        end_points_ref = session.query(EndpointModel).filter_by(graph_id = graph_id).all()
+        end_points_ref = session.query(EndpointModel).filter_by(session_id = session_id).all()
         for end_point_ref in end_points_ref:
             end_point = EndPoint(_id=end_point_ref.graph_endpoint_id, name=end_point_ref.name, _type=end_point_ref.type,
                                  db_id=end_point_ref.id, internal_id=end_point_ref.internal_id)
@@ -333,11 +350,11 @@ class Graph2(object):
         session = get_session()
         with session.begin():
             
-            # TODO: check uniqueness of this generated session_id
-            session_id = uuid.uuid4().hex
-            self.id_generator(nffg, session_id)
+            self.id_generator(nffg, None)
             
-            session_ref = GraphModel2(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
+            session_id = nffg.db_id
+            
+            session_ref = SessionModel(id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
                                 last_update = datetime.datetime.now(), status='inizialization')
             session.add(session_ref)
@@ -347,13 +364,13 @@ class Graph2(object):
                                 
             for endpoint in nffg.end_points:
                 endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             graph_id=nffg.db_id, name = endpoint.name, type=endpoint.type)
+                                             session_id=nffg.db_id, name = endpoint.name, type=endpoint.type)
                 session.add(endpoint_ref)
                 
                 # Add end-point resources
                 # End-point attached to something that is not another graph
                 if "interface" in endpoint.type or endpoint.type == "vlan":
-                    port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, graph_id=nffg.db_id, 
+                    port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, session_id=nffg.db_id, 
                                          internal_id=endpoint.interface, name=endpoint.interface, location=endpoint.node,
                                          virtual_switch=endpoint.switch_id, vlan_id=endpoint.vlan_id, creation_date=datetime.datetime.now(), 
                                          last_update=datetime.datetime.now())
@@ -369,7 +386,7 @@ class Graph2(object):
                     # TODO: Add graph connection
                     remote_graph_db_id =  endpoint.remote_endpoint_id.split(':')[0]
                     remote_session = self.get_active_user_session_by_nf_fg_id(user_id,remote_graph_db_id,error_aware=True)
-                    endpoint2_db_id = self._getEndpointID(endpoint.remote_endpoint_id.split(':')[1], remote_session.session_id)
+                    endpoint2_db_id = self._getEndpointID(endpoint.remote_endpoint_id.split(':')[1], remote_session.id)
                     graph_connection_ref = GraphConnectionModel(endpoint_id_1=endpoint.db_id, endpoint_id_2=endpoint2_db_id)
                     session.add(graph_connection_ref)
 
@@ -380,24 +397,24 @@ class Graph2(object):
     def updateNFFG(self, nffg, graph_id):
         session = get_session()  
         with session.begin():
-            self.id_generator(nffg=nffg, session_id=graph_id, update=True, graph_id=graph_id)
-            #graph_ref = GraphModel(id=nffg.db_id, session_id=session_id, partial=partial)
+            self.id_generator(nffg=nffg, session_id=graph_id, update=True)
+            #graph_ref = GraphModel(id=nffg.db_id, id=session_id, partial=partial)
             #session.add(graph_ref)           
                             
             for flow_rule in nffg.flow_rules:
                 if flow_rule.status == 'new' or flow_rule.status is None:
-                    self.addFlowRule(nffg.db_id, flow_rule, nffg)            
+                    self.addFlowRule(nffg.db_id, None, flow_rule, nffg)            
 
             for endpoint in nffg.end_points:
                 if endpoint.status == 'new' or endpoint.status is None:        
                     endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             graph_id=nffg.db_id, name = endpoint.name, type=endpoint.type)
+                                             session_id=nffg.db_id, name = endpoint.name, type=endpoint.type)
                     session.add(endpoint_ref)
                     
                     # Add end-point resources
                     # End-point attached to something that is not another graph
                     if "interface" in endpoint.type or endpoint.type == "vlan":
-                        port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, graph_id=nffg.db_id, 
+                        port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, session_id=nffg.db_id, 
                                              internal_id=endpoint.interface, name=endpoint.interface, location=endpoint.node,
                                              virtual_switch=endpoint.switch_id, vlan_id=endpoint.vlan_id, creation_date=datetime.datetime.now(), 
                                              last_update=datetime.datetime.now())
@@ -418,7 +435,7 @@ class Graph2(object):
   
   
   
-    def addFlowRule(self, graph_id, switch_id, flow_rule, nffg):
+    def addFlowRule(self, session_id, switch_id, flow_rule, nffg):
         session = get_session()
         with session.begin():
              
@@ -428,7 +445,7 @@ class Graph2(object):
             else:
                 flow_rule_db_id = 0
             flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
-                                       graph_flow_rule_id=flow_rule.id, graph_id=graph_id, switch_id=switch_id,
+                                       graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
                                        priority=flow_rule.priority,  status=flow_rule.status,
                                        creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
             session.add(flow_rule_ref)
@@ -474,22 +491,22 @@ class Graph2(object):
                     session.add(action_ref)
                     action_db_id += 1
     
-    def getFlowRules(self, graph_id):
+    def getFlowRules(self, session_id):
         session = get_session()
-        return session.query(FlowRuleModel).filter_by(graph_id = graph_id).all()
+        return session.query(FlowRuleModel).filter_by(session_id = session_id).all()
     
-    def getPortFromInternalID(self, internal_id, graph_id):
+    def getPortFromInternalID(self, internal_id, session_id):
         session = get_session()  
         try:
-            return session.query(PortModel).filter_by(internal_id=internal_id).filter_by(graph_id=graph_id).one()
+            return session.query(PortModel).filter_by(internal_id=internal_id).filter_by(session_id=session_id).one()
         except Exception as ex:
             logging.error(ex)
             raise PortNotFound("Port Not Found for internal ID: "+str(internal_id))
     
-    def setEndpointLocation(self, graph_id, graph_endpoint_id, location):
+    def setEndpointLocation(self, session_id, graph_endpoint_id, location):
         session = get_session()
         with session.begin():
-            assert (session.query(EndpointModel).filter_by(graph_id = graph_id).filter_by(graph_endpoint_id = graph_endpoint_id).update({"location": location}) == 1)
+            assert (session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).update({"location": location}) == 1)
     
     def getEndpointResource(self, endpoint_id, resource_type=None):
         session = get_session()
@@ -513,10 +530,10 @@ class Graph2(object):
                 #TODO: actions and match not considered
             return resources
     
-    def deleteEndpoint(self, graph_endpoint_id, graph_id):
+    def deleteEndpoint(self, graph_endpoint_id, session_id):
         session = get_session()
         with session.begin():
-            session.query(EndpointModel).filter_by(graph_id = graph_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
+            session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
     
     def deleteEndpointResource(self, endpoint_id):
         session = get_session()
@@ -552,26 +569,24 @@ class Graph2(object):
     def delete_graph(self, session_id):
         session = get_session()
         with session.begin():
-            #session.query(GraphModel2).filter_by(session_id = session_id).delete()
-            session.query(GraphModel2).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
-            
-            session.query(PortModel).filter_by(graph_id = session_id).delete()
+            session.query(SessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(PortModel).filter_by(session_id = session_id).delete()
               
-            flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_id = session_id).all()
+            flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id = session_id).all()
             for flow_rule_ref in flow_rules_ref:
                 session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
                 session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-            session.query(FlowRuleModel).filter_by(graph_id = session_id).delete()
-            endpoints_ref = session.query(EndpointModel.id).filter_by(graph_id = session_id).all()
+            session.query(FlowRuleModel).filter_by(session_id = session_id).delete()
+            endpoints_ref = session.query(EndpointModel.id).filter_by(session_id = session_id).all()
             for endpoint_ref in endpoints_ref:
                 session.query(GraphConnectionModel).filter_by(endpoint_id_1 = endpoint_ref.id).delete()
                 session.query(GraphConnectionModel).filter_by(endpoint_id_2 = endpoint_ref.id).delete()
                 session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_ref.id).delete()
-            session.query(EndpointModel).filter_by(graph_id = session_id).delete()
+            session.query(EndpointModel).filter_by(session_id = session_id).delete()
                         
     def getGraphs(self, session_id):
         session = get_session()
-        return session.query(GraphModel2).filter_by(session_id=session_id).all()
+        return session.query(SessionModel).filter_by(id=session_id).all()
         
     def _getPort(self, port_db_id):
         session = get_session()  
@@ -584,7 +599,7 @@ class Graph2(object):
     def _getGraph(self, graph_id):
         session = get_session()  
         try:
-            return session.query(GraphModel2).filter_by(id=graph_id).one()
+            return session.query(SessionModel).filter_by(id=graph_id).one()
         except Exception as ex:
             logging.error(ex)
             raise GraphNotFound("Graph not found for db id: "+str(graph_id))
@@ -592,8 +607,8 @@ class Graph2(object):
     def _getGraphID(self, service_graph_id):
         session = get_session()  
         try:
-            session_id = self.get_active_user_session_by_nf_fg_id(service_graph_id).id #Session()
-            return session.query(GraphModel2).filter_by(session_id=session_id).one().id
+            session_id = self.get_active_user_session_by_nf_fg_id(service_graph_id).id #SessionModel()
+            return session.query(SessionModel).filter_by(id=session_id).one().id
         except Exception as ex:
             logging.error(ex)
             raise GraphNotFound("Graph not found for service graph id: "+str(service_graph_id))
@@ -606,13 +621,13 @@ class Graph2(object):
             logging.error(ex)
             raise EndpointNotFound("Endpoint not found - id: "+str(endpoint_id))
     
-    def _getEndpointID(self, graph_endpoint_id, graph_id):
+    def _getEndpointID(self, graph_endpoint_id, session_id):
         session = get_session()  
         try:
-            return session.query(EndpointModel).filter_by(graph_endpoint_id=graph_endpoint_id).filter_by(graph_id=graph_id).one().id
+            return session.query(EndpointModel).filter_by(graph_endpoint_id=graph_endpoint_id).filter_by(session_id=session_id).one().id
         except Exception as ex:
             logging.error(ex)
-            raise EndpointNotFound("Endpoint not found - graph_endpoint_id: "+str(graph_endpoint_id)+" - graph_id: "+str(graph_id))
+            raise EndpointNotFound("Endpoint not found - graph_endpoint_id: "+str(graph_endpoint_id)+" - session_id: "+str(session_id))
     
     
     
@@ -624,33 +639,26 @@ class Graph2(object):
         '''
         session = get_session()  
         with session.begin():
-            session_ref = GraphModel2(session_id=session_id, user_id = user_id, graph_id = graph_id, 
+            session_ref = SessionModel(id=session_id, user_id = user_id, graph_id = graph_id, 
                                 started_at = datetime.datetime.now(), graph_name=graph_name,
                                 last_update = datetime.datetime.now(), status='inizialization')
             session.add(session_ref)
         pass
     
     
-    def updateSessionNode(self, session_id):
-        '''
-        store the session in db
-        '''
-        session = get_session()  
-        with session.begin():
-            session.query(GraphModel2).filter_by(session_id = session_id).update({"last_update":datetime.datetime.now()})
     
     def updateStatus(self, session_id, status):
         session = get_session()  
         with session.begin():
-            session.query(GraphModel2).filter_by(session_id = session_id).update({"last_update":datetime.datetime.now(), 'status':status})
+            session.query(SessionModel).filter_by(id = session_id).update({"last_update":datetime.datetime.now(), 'status':status})
 
     
     def get_active_user_session_by_nf_fg_id(self, user_id, graph_id, error_aware=True):
         session = get_session()
         if error_aware:
-            session_ref = session.query(GraphModel2).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
+            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
         else:
-            session_ref = session.query(GraphModel2).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphModel2.started_at)).first()
+            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(SessionModel.started_at)).first()
         if session_ref is None:
             raise sessionNotFound("Session Not Found, for servce graph id: "+str(graph_id))        
         return session_ref
@@ -662,16 +670,16 @@ class Graph2(object):
         session = get_session()
         with session.begin():     
             logging.debug("Put session for nffg "+str(nffg_id)+" in error")
-            session.query(GraphModel2).filter_by(graph_id=nffg_id).update({"error":datetime.datetime.now()}, synchronize_session = False)
+            session.query(SessionModel).filter_by(graph_id=nffg_id).update({"error":datetime.datetime.now()}, synchronize_session = False)
         
-    def set_error(self, session_id):
+    def setErrorStatus(self, session_id):
         '''
         Set the error status for the active session associated to the user id passed
         '''
         session = get_session()
         with session.begin():
-            logging.debug("Put session for session "+str(session_id)+" in error")
-            session.query(GraphModel2).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+            logging.debug("Put session "+str(session_id)+" in error")
+            session.query(SessionModel).filter_by(id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
     
     def set_ended(self, session_id):
         '''
@@ -679,5 +687,5 @@ class Graph2(object):
         '''
         session = get_session() 
         with session.begin():       
-            session.query(GraphModel2).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(SessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
     

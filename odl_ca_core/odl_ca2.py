@@ -4,107 +4,11 @@ Created on 13/apr/2015
 @author: giacomoratta
 '''
 
-import logging, json
-from __builtin__ import str
-
-from nffg_library.nffg import FlowRule
-
-from odl_ca_core.sql.graph_session import GraphSession
-
-from odl_ca_core.config import Configuration
-from odl_ca_core.exception import GraphError
-from odl_ca_core.odl_rest import ODL_Rest
-from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
-from odl_ca_core.netgraph import NetGraph
-
-DEBUG_MODE = Configuration().DEBUG_MODE
-JOLNET_NETWORKS = Configuration().JOLNET_NETWORKS
 
 class OpenDayLightCA_old():
     
     def __init__(self, session_id, userdata):
-
-        self.session_id = session_id
-        self.user_data = userdata
-        
-        # Dati ODL
-        if(False):
-            self.odlendpoint = "http://127.0.0.1:8080"
-            self.odlversion = "Hydrogen"
-        else:
-            self.odlendpoint = "http://127.0.0.1:8181"
-            self.odlversion = "Lithium"
-        self.odlusername = "admin"
-        self.odlpassword = "admin"
-        self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
     
-    
-    
-    def buildProfileGraph(self, nffg):
-        '''
-        Create a ProfileGraph with the flowrules and endpoint specified in nffg.
-        Args:
-            nffg:
-                Object of the Class Common.NF_FG.nffg.NF_FG
-        Return:
-            Object of the Class odl_ca_core.resources.ProfileGraph
-        '''
-        profile_graph = ProfileGraph()
-        profile_graph.setId(nffg.db_id)
-
-        for endpoint in nffg.end_points:
-            
-            if endpoint.status is None:
-                status = "new"
-            else:
-                status = endpoint.status
-
-            '''
-            if endpoint.remote_endpoint_id is not None:
-                delimiter = endpoint.remote_endpoint_id.find(":")
-                remote_graph_id = endpoint.remote_endpoint_id[:delimiter]
-                remote_id = endpoint.remote_endpoint_id[delimiter+1:]
-                remote_session = GraphSession().get_active_user_session_by_nf_fg_id(self.user_data.getUserID(),remote_graph_id,error_aware=True)
-                ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, 
-                              endpoint.interface, status, remote_session.id, remote_id)
-            else:
-                ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
-            '''
-            
-            ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
-            profile_graph.addEndpoint(ep)
-        
-        for flowrule in nffg.flow_rules:
-            if flowrule.status is None:
-                flowrule.status = 'new'
-            profile_graph.addFlowrule(flowrule)
-                  
-        return profile_graph
-    
-    
-    
-    def instantiateProfile(self, nffg):
-        '''
-        Instantiate the User Profile Graph
-        Args:
-            nffg:
-                Object of the Class Common.NF_FG.nffg.NF_FG
-
-            Exceptions:
-                Raise some exception to be captured
-        '''
-        
-        logging.debug("Forwarding graph: " + nffg.getJSON(True))
-        try:            
-            #Read the nffg JSON structure and map it into the proper objects and db entries
-            profile_graph = self.buildProfileGraph(nffg)
-            self.opendaylightFlowsInstantiation(profile_graph, nffg)
-            logging.debug("Graph " + profile_graph.id + " correctly instantiated!")
-            
-        except Exception as err:
-            logging.error(err.message)
-            logging.exception(err) 
-            raise err
     
     
     
@@ -121,16 +25,7 @@ class OpenDayLightCA_old():
         '''
         
         try:
-            updated_nffg = old_nffg.diff(new_nffg)
-            updated_nffg.db_id = old_nffg.db_id
-            logging.debug("Diff: "+updated_nffg.getJSON(True))            
-                
-            self.opendaylightFlowsControlledDeletion(updated_nffg)
             
-            GraphSession().updateNFFG(updated_nffg, self.session_id)
-            profile_graph = self.buildProfileGraph(updated_nffg)
-            self.opendaylightFlowsInstantiation(profile_graph, updated_nffg)
-            logging.debug("Graph " + old_nffg.id + " correctly updated!")
             
         except Exception as err:
             logging.error(err.message)
@@ -174,36 +69,9 @@ class OpenDayLightCA_old():
         for endpoint in profile_graph.endpoints.values():
             if endpoint.status == "new":
                 
-                GraphSession().setEndpointLocation(self.session_id, endpoint.id, endpoint.interface)
+                # TODO: remove or integrate remote_graph and remote_endpoint
                 
-                '''
-                if endpoint.remote_id is not None:
-                    #Check if the remote graph exists and the requested endpoint is available
-                    graph = GraphSession().get_nffg(endpoint.remote_graph)
-                    remote_endpoint = None
-                    remote_endpoint = graph.getEndPoint(endpoint.remote_id)
-                    
-                    if remote_endpoint is not None:
-                        vlan = remote_endpoint.vlan_id
-                        switch1 = endpoint.switch_id
-                        port1 = endpoint.interface                                       
-                                                                  
-                        #switch1_id = Node().getNodeFromDomainID(switch1).id
-                        #switch2_id = GraphSession().getNodeID(endpoint.remote_graph)
-                        #switch2 = Node().getNodeDomainID(switch2_id)     
-                        port2 = remote_endpoint.interface
-                        
-                        #TODO: add the port on the endpoint switch
-                        self.linkZones(self.session_id, switch1, port1, switch1_id, switch2, port2, switch2_id, vlan, nf_fg.getEndPoint(endpoint.id).db_id)
-                    else:
-                        logging.error("Remote graph " + endpoint.remote_graph + " has not a " + endpoint.id + " endpoint available!")
-                
-                # Set the port of this endpoint (that is the "location").
-                # Cannot move this instruction in GraphSession().addNFFG because "addNFFG" is called once,
-                # whereas 'opendaylightFlowsInstantiation' is called by instantiateProfile and by updateProfile.
-                # We need to set endpoint location in both instantiate and update time.
                 GraphSession().setEndpointLocation(self.session_id, endpoint.id, endpoint.interface)
-                '''
 
         for flowrule in profile_graph.flowrules.values():
             if flowrule.status =='new':

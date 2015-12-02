@@ -5,7 +5,6 @@ Created on 18 set 2015
 '''
 
 from sqlalchemy import Column, VARCHAR
-import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 import logging
 

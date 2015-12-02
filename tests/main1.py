@@ -72,42 +72,42 @@ logging.info("Starting Orchestration Server application")
 in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/graphs/odlCA_rm2.json","r")
 
 # NF-FG File
-nf_fg_file = json.loads(in_file.read())
-ValidateNF_FG().validate(nf_fg_file)
-nf_fg = NF_FG()
-nf_fg.parseDict(nf_fg_file)
+nffg_file = json.loads(in_file.read())
+ValidateNF_FG().validate(nffg_file)
+nffg = NF_FG()
+nffg.parseDict(nffg_file)
 
 
 # CONTROLLER
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
 controller = UpperLayer_ODL_CA(user)
-controller.delete(988)
-controller.put(nf_fg)
+controller.validate(nffg)
+controller.delete(977)
+controller.put(nffg)
 
 print("\n\nUpdating...")
-#controller.put(nf_fg)
+#controller.put(nffg)
 print("\n\nEnd update")
 
 
 '''
  
 [ 1 ]
-- eliminare tabella node e openflow_controller (le info di quest ultima vanno nel config.json)
-- eliminare tutti i riferimenti a node_id nel DB, quindi eliminare tabella "node" e "openflow_controller"
-- chiamare la tabella Graph come Session
-- generare un session_id univoco
 - eliminare il nome "graph_id" da tutte le tabelle in favore di "session_id"
 
 [ 2 ]
 provare endpoint remoti e creazione di endpoint_resource con resource_type="flowrule"
-
-
-[ 3 ]
-ridefinire controlli json NF-FG per lanciare errori in caso di campi inutili
+SERVONO GLI ENDPOINT REMOTI in questo caso???
 
 
 [ 4 ]
 eliminare informazioni inutili da orchestrator.conf e classe Configuration()
+
+
+[ 5 ]
+passare a sqlite
+- sqlalchemy engine 'sqlite'
+- da phpmyadmin a phpliteadmin
 
 
 - definire interfaccia REST
