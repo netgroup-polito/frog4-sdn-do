@@ -27,7 +27,6 @@ class OpenDayLightCA(object):
     def __init__(self, user_data):
         
         # TODO: use configuration
-        # TODO: change names of odl functions and sub-functions
         
         self._session_id = None
         
@@ -52,9 +51,9 @@ class OpenDayLightCA(object):
         
         # NetGraph
         self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
-    
-    
-    
+
+
+
     def NFFG_Put(self, nffg):
         '''
         Manage the request of NF-FG instantiation
@@ -71,10 +70,10 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             
             # Profile graph for ODL functions
-            profile_graph = self.ProfileGraph_BuildFromNFFG(nffg)
+            profile_graph = self._ProfileGraph_BuildFromNFFG(nffg)
             
             # Write latest info in the database and send all the flow rules to ODL
-            self.odlFlowsInstantiation(profile_graph)
+            self._ODL_FlowsInstantiation(profile_graph)
             
             logging.debug("Put NF-FG: session " + self._session_id + " correctly instantiated!")
 
@@ -114,12 +113,12 @@ class OpenDayLightCA(object):
             logging.debug("Update NF-FG: coming updates: "+updated_nffg.getJSON(True))            
             
             # Delete useless endpoints and flowrules 
-            self.odlFlowsControlledDeletion(updated_nffg)
+            self._ODL_FlowsControlledDeletion(updated_nffg)
             
             # Update database and send flowrules to ODL
             GraphSession().updateNFFG(updated_nffg, self._session_id)
-            profile_graph = self.ProfileGraph_BuildFromNFFG(updated_nffg)
-            self.odlFlowsInstantiation(profile_graph)
+            profile_graph = self._ProfileGraph_BuildFromNFFG(updated_nffg)
+            self._ODL_FlowsInstantiation(profile_graph)
             
             logging.debug("Update NF-FG: session " + self._session_id + " correctly updated!")
             
@@ -150,7 +149,7 @@ class OpenDayLightCA(object):
         logging.debug("Delete NF-FG: we are going to delete: "+instantiated_nffg.getJSON())
     
         try:
-            self.odlFlowsDeletion(self._session_id)
+            self._ODL_FlowsDeletion(self._session_id)
             logging.debug("Delete NF-FG: session " + self._session_id + " correctly deleted!")
             
         except Exception as ex:
@@ -195,10 +194,10 @@ class OpenDayLightCA(object):
             #    logging.debug("NFFG: presence of 'end-points.remote-ip'. This CA does not process this information.")
             if(ep.type <> "interface"):
                 logging.debug("NFFG: 'end-points.type' must be 'interface'.")
-            
-            
-    
-    def ProfileGraph_BuildFromNFFG(self, nffg):
+
+
+
+    def _ProfileGraph_BuildFromNFFG(self, nffg):
         '''
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
         Args:
@@ -238,7 +237,7 @@ class OpenDayLightCA(object):
     ######################################################################################################
     '''
         
-    def odlFlowsInstantiation(self, profile_graph):
+    def _ODL_FlowsInstantiation(self, profile_graph):
         
         # Create the endpoints
         # for endpoint in profile_graph.endpoints.values():
@@ -261,11 +260,11 @@ class OpenDayLightCA(object):
                         if port1_type == 'endpoint':
                             endp1 = profile_graph.endpoints[port1_id]
                             if endp1.type == 'interface':        
-                                self.odlProcessFlowrule(endp1, flowrule, profile_graph)
+                                self._ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
 
 
 
-    def odlFlowsDeletion(self, session_id):       
+    def _ODL_FlowsDeletion(self, session_id):       
         #Delete every flow from ODL
         flows = GraphSession().getFlowrules(session_id)
         for flow in flows:
@@ -274,7 +273,7 @@ class OpenDayLightCA(object):
 
 
 
-    def odlFlowsControlledDeletion(self, updated_nffg):
+    def _ODL_FlowsControlledDeletion(self, updated_nffg):
         
         # Delete the endpoints 'to_be_deleted'
         for endpoint in updated_nffg.end_points[:]:
@@ -306,7 +305,7 @@ class OpenDayLightCA(object):
 
 
 
-    def odlProcessFlowrule(self, endpoint1, flowrule, profile_graph):
+    def _ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
         #Process a flow rule written in the section "big switch" of a nffg json.
         match1 = Match(flowrule.match)
         match2 = None
@@ -358,7 +357,7 @@ class OpenDayLightCA(object):
                             flowname1 = str(flowrule.id)
                             switch1 = endpoint1.switch_id              
                     else:
-                        port12,port21 = self.odlGetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
+                        port12,port21 = self._ODL_GetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
                         if port12 is not None and port21 is not None:
 
                             if endpoint1.interface != port12 and endpoint2.interface != port21:
@@ -425,17 +424,17 @@ class OpenDayLightCA(object):
                 actions1.append(action)
                     
         if switch1 is not None:     
-            self.odlPushFlow(self._session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
+            self._ODL_PushFlow(self._session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
             if switch2 is not None:
-                self.odlPushFlow(self._session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
+                self._ODL_PushFlow(self._session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
-            self.odlLinkEndpoints(self._session_id, nodes_path,endpoint1,endpoint2,flowrule)            
+            self._ODL_LinkEndpoints(self._session_id, nodes_path,endpoint1,endpoint2,flowrule)            
 
                 
 
-    def odlPushFlow(self, session_id, switch_id, actions, match, flowname, priority, flow_id):
+    def _ODL_PushFlow(self, session_id, switch_id, actions, match, flowname, priority, flow_id):
         flowname = flowname.replace(' ', '')
         flowtype = 'external'
         
@@ -450,7 +449,7 @@ class OpenDayLightCA(object):
         
     
     
-    def odlGetLinkBetweenSwitches(self, switch1, switch2):             
+    def _ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
         '''
         Retrieve the link between two switches, where you can find ports to use.
         switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
@@ -478,8 +477,8 @@ class OpenDayLightCA(object):
 
 
     
-    def odlGetLinkPortsBetweenSwitches(self, switch1, switch2):
-        link = self.odlGetLinkBetweenSwitches(switch1, switch2)
+    def _ODL_GetLinkPortsBetweenSwitches(self, switch1, switch2):
+        link = self._ODL_GetLinkBetweenSwitches(switch1, switch2)
         if link is None:
             return None,None
         
@@ -500,7 +499,7 @@ class OpenDayLightCA(object):
 
 
 
-    def odlLinkEndpoints(self,session_id, path,ep1,ep2,flowrule):
+    def _ODL_LinkEndpoints(self,session_id, path,ep1,ep2,flowrule):
 
         flow_id = flowrule.id
         flow_priority = flowrule.priority
@@ -596,7 +595,7 @@ class OpenDayLightCA(object):
             
             flow_name = str(flow_id)+"_"+str(i)
             
-            self.odlPushFlow(session_id, switch_id, new_actions, match, flow_name, flow_priority, flow_id)
+            self._ODL_PushFlow(session_id, switch_id, new_actions, match, flow_name, flow_priority, flow_id)
         
         return
 
