@@ -118,13 +118,7 @@ class Flow(object):
                 j_flow['etherType'] = "0x800"
                 logging.warning("Hydrogen requires ethertype set in order to perform ip match: ethertype has been set to 0x800")
             
-            for action in self.actions:
-                
-                # it seems to be useless for Hydrogen 
-                #if action.action_type == "vlan-match":
-                #    j_action = unicode("PUSH_VLAN")
-                #    j_list_action.append(j_action)
-                
+            for action in self.actions:                
                 j_action = action.getActionsHydrogen()    
                 j_list_action.append(j_action)
                 
@@ -150,15 +144,6 @@ class Flow(object):
             for action in self.actions:
                 
                 j_action = {}
-                
-                # required to tag a frame without vlan header 
-                #if action.action_type == "vlan-match":
-                #    j_action['order'] = i
-                #    j_action['push-vlan-action'] = {}
-                #    j_action['push-vlan-action']['ethernet-type'] = 33024
-                #    j_list_action.append(j_action)
-                #    i = i + 1
-                
                 j_action = action.getActions(i)
                 j_list_action.append(j_action)
                 i = i + 1
@@ -462,21 +447,19 @@ class ProfileGraph(object):
         '''
         Stores the profile graph of the user
         '''
-        self._id = None
+        self._session_id = None
         self.endpoints = {}
         self.flowrules = {}
-    
-    # TODO: rename id in session_id, for clarity
-    
+
     @property
-    def id(self):
-        return self._id
+    def session_id(self):
+        return self._session_id
     
-    def setId(self, profile_id):
+    def setSessionId(self, session_id):
         '''
-        Set profile id
+        Set session id
         '''
-        self._id = profile_id
+        self._session_id = session_id
     
     def addEndpoint(self, endpoint):
         '''

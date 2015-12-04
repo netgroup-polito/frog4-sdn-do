@@ -74,7 +74,7 @@ class OpenDayLightCA(object):
                 # Write latest info in the database and send all the flow rules to ODL
                 self.opendaylightFlowsInstantiation(profile_graph)
                 
-                logging.debug("Put NF-FG: session " + profile_graph.id + " correctly instantiated!")
+                logging.debug("Put NF-FG: session " + profile_graph.session_id + " correctly instantiated!")
 
             except Exception as ex:
                 logging.error(ex.message)
@@ -197,7 +197,7 @@ class OpenDayLightCA(object):
             Object of the Class odl_ca_core.resources.ProfileGraph
         '''
         profile_graph = ProfileGraph()
-        profile_graph.setId(nffg.db_id) #session_id
+        profile_graph.setSessionId(nffg.db_id) #session_id
 
         for endpoint in nffg.end_points:
             
@@ -223,7 +223,7 @@ class OpenDayLightCA(object):
     
     def opendaylightFlowsInstantiation(self, profile_graph):        
         
-        # profile_graph.id has the session_id
+        # profile_graph has the session_id
         
         # Create the endpoints
         for endpoint in profile_graph.endpoints.values():
@@ -233,7 +233,7 @@ class OpenDayLightCA(object):
                 
                 # TODO: move setEndpointLocation to addNFFG and updateNFFG;
                 #       ...this function regards GraphSession and should not be here.
-                GraphSession().setEndpointLocation(profile_graph.id, endpoint.id, endpoint.interface)
+                GraphSession().setEndpointLocation(profile_graph.session_id, endpoint.id, endpoint.interface)
 
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
@@ -312,7 +312,7 @@ class OpenDayLightCA(object):
         
         #Process a flow rule written in the section "big switch" of a nffg json.
         
-        # profile_graph.id has the session_id
+        # profile_graph has the session_id
         match1 = Match(flowrule.match)
         match2 = None
         actions1 = []
@@ -338,7 +338,7 @@ class OpenDayLightCA(object):
                 ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
                 
                 flow_rule = FlowRule(_id=flowname,node_id=endpoint1.switch_id,_type='external', status='complete',priority=flowrule.priority, internal_id=flowrule.id)  
-                GraphSession().addFlowRule(profile_graph.id, endpoint1.switch_id, flow_rule, None)
+                GraphSession().addFlowRule(profile_graph.session_id, endpoint1.switch_id, flow_rule, None)
                 return  
         
         for act in flowrule.actions:
@@ -430,13 +430,13 @@ class OpenDayLightCA(object):
                 actions1.append(action)
                     
         if switch1 is not None:     
-            self.pushFlow(profile_graph.id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
+            self.pushFlow(profile_graph.session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
             if switch2 is not None:
-                self.pushFlow(profile_graph.id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
+                self.pushFlow(profile_graph.session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
-            self.linkEndpoints(profile_graph.id, nodes_path,endpoint1,endpoint2,flowrule)            
+            self.linkEndpoints(profile_graph.session_id, nodes_path,endpoint1,endpoint2,flowrule)            
                 
                 
                 

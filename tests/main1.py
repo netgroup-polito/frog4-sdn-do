@@ -100,7 +100,7 @@ print("\n\nEnd update")
 [ 1 ]
 - eliminare il nome "graph_id" da tutte le tabelle in favore di "session_id"
 - eliminare tabella endpoint_resource (verificare a che serve)
-- cambiare nomi dei campi di tabelle nel db in nomi più esplicativi
+- cambiare nomi dei campi di tabelle nel db in nomi piu' esplicativi
 
 [ 2 ]
 provare endpoint remoti e creazione di endpoint_resource con resource_type="flowrule"
@@ -109,6 +109,11 @@ SERVONO GLI ENDPOINT REMOTI in questo caso???
 
 [ 4 ]
 eliminare informazioni inutili da orchestrator.conf e classe Configuration()
+
+[ 4.1 ]
+- eliminare user_authentication.py
+- unire in opendaylight_ca
+- self.userdata==None raise exception
 
 
 [ 5 ]

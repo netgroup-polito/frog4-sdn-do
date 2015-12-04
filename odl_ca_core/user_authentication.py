@@ -26,8 +26,7 @@ class UserData(object):
 
 class UserAuthentication(object):
     
-    '''
-    TODO: remove
+
     def authenticateUserFromRESTRequest(self, request):
         
         username = request.get_header("X-Auth-User")
@@ -35,7 +34,8 @@ class UserAuthentication(object):
         tenant = request.get_header("X-Auth-Tenant")  
         
         return self.authenticateUserFromCredentials(username, password, tenant)
-    '''
+    
+    
     
     def authenticateUserFromCredentials(self, username, password, tenant):
         if username is None or password is None or tenant is None:
