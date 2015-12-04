@@ -28,9 +28,9 @@ class Configuration(object):
         base_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])).rpartition('/')[0]
         try:
             if base_folder == "":
-                config.read(base_folder+'configuration/orchestrator.conf')
+                config.read(base_folder+'/frog4_odl_ca.conf')
             else:
-                config.read(base_folder+'/configuration/orchestrator.conf')
+                config.read(base_folder+'/frog4_odl_ca.conf')
             
             # [basic_config]
             self._BASIC_CONFIG_IP = config.get('basic_config','ip')
