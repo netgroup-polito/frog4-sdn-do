@@ -82,7 +82,7 @@ nffg.parseDict(nffg_file)
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
 controller = OpenDayLightCA(user)
 controller.NFFG_Validate(nffg)
-#controller.NFFG_Delete(977)
+controller.NFFG_Delete(977)
 controller.NFFG_Put(nffg)
 
 print("\n\nUpdating...")
@@ -101,6 +101,8 @@ print("\n\nEnd update")
 - eliminare il nome "graph_id" da tutte le tabelle in favore di "session_id"
 - eliminare tabella endpoint_resource (verificare a che serve)
 - cambiare nomi dei campi di tabelle nel db in nomi piu' esplicativi
+- sistemare i *Model in graph_session.py
+- creare un db.sql aggiornato
 
 [ 2 ]
 provare endpoint remoti e creazione di endpoint_resource con resource_type="flowrule"

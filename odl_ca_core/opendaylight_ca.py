@@ -12,11 +12,15 @@ from nffg_library.nffg import FlowRule
 
 from odl_ca_core.sql.graph_session import GraphSession
 
+
 #from odl_ca_core.config import Configuration
-from odl_ca_core.exception import sessionNotFound, GraphError
 from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
+from odl_ca_core.exception import sessionNotFound, GraphError
+
+
+
 
 class OpenDayLightCA(object):
 
@@ -25,8 +29,9 @@ class OpenDayLightCA(object):
         # TODO: use configuration
         # TODO: change names of odl functions and sub-functions
         
+        self._session_id = None
+        
         self.nffg = None
-        self.session_id = None
         self.user_data = user_data
         '''
         Fields:
@@ -56,120 +61,126 @@ class OpenDayLightCA(object):
         '''
         logging.debug("Put NF-FG: put from user "+self.user_data.username+" on tenant "+self.user_data.tenant)
         
-        # Check if the NF-FG is already instantiated
-        session_id = self.NFFG_Status(nffg.id)
-        if session_id is not None:
-            logging.debug("Put NF-FG: already instantiated, trying to update it")
-            session_id = self.NFFG_Update(nffg, session_id)
-        
+        # Check if the NF-FG is already instantiated, update it and exit
+        if self.NFFG_Update(nffg) is not None:
+            return self._session_id
+            
         # Instantiate a new NF-FG
-        else:
-            try:
-                session_id = GraphSession().addNFFG(nffg, self.user_data.getUserID())
-                logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
-                
-                # Profile graph for ODL functions
-                profile_graph = self.ProfileGraph_BuildFromNFFG(nffg)
-                
-                # Write latest info in the database and send all the flow rules to ODL
-                self.opendaylightFlowsInstantiation(profile_graph)
-                
-                logging.debug("Put NF-FG: session " + profile_graph.session_id + " correctly instantiated!")
+        try:
+            self._session_id = GraphSession().addNFFG(nffg, self.user_data.getUserID())
+            logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
+            
+            # Profile graph for ODL functions
+            profile_graph = self.ProfileGraph_BuildFromNFFG(nffg)
+            
+            # Write latest info in the database and send all the flow rules to ODL
+            self.odlFlowsInstantiation(profile_graph)
+            
+            logging.debug("Put NF-FG: session " + self._session_id + " correctly instantiated!")
 
-            except Exception as ex:
-                logging.error(ex.message)
-                logging.exception(ex)
-                GraphSession().delete_graph(session_id)
-                GraphSession().setErrorStatus(session_id)
-                raise ex
+        except Exception as ex:
+            logging.error(ex.message)
+            logging.exception(ex)
+            GraphSession().deleteGraph(self._session_id)
+            GraphSession().setErrorStatus(self._session_id)
+            raise ex
         
-        GraphSession().updateStatus(session_id, 'complete')                                
-        return session_id
+        GraphSession().updateStatus(self._session_id, 'complete')                                
+        return self._session_id
 
     
     
-    def NFFG_Update(self, new_nffg, session_id):
+    def NFFG_Update(self, new_nffg):
 
-        if session_id is None:
-            # Throws sessionNotFound exception
-            session = GraphSession().get_active_user_session_by_nf_fg_id(self.user_data.getUserID(), new_nffg.id, error_aware=True)
-            session_id = session.id
+        # Check and get the session id for this user-graph couple
+        logging.debug("Update NF-FG: check if the user "+self.user_data.getUserID()+" has already instantiated the graph "+new_nffg.id+".")
+        session = GraphSession().getActiveSession(self.user_data.getUserID(), new_nffg.id, error_aware=True)
+        if session is None:
+            return None
+        self._session_id = session.id
         
-        # Set session_id in the new NFFG
-        new_nffg.db_id = session_id
-        
-        logging.debug("Update NF-FG: updating session "+session_id+" from user "+self.user_data.username+" on tenant "+self.user_data.tenant)
-        GraphSession().updateStatus(session_id, 'updating')
+        logging.debug("Update NF-FG: already instantiated, trying to update it")
+        logging.debug("Update NF-FG: updating session "+self._session_id+" from user "+self.user_data.username+" on tenant "+self.user_data.tenant)
+        GraphSession().updateStatus(self._session_id, 'updating')
 
         # Get the old NFFG
-        old_nffg = GraphSession().get_nffg(session_id)
+        old_nffg = GraphSession().getNFFG(self._session_id)
         logging.debug("Update NF-FG: the old session: "+old_nffg.getJSON())
         
         # TODO: remove or integrate remote_graph and remote_endpoint
 
         try:
             updated_nffg = old_nffg.diff(new_nffg)
-            updated_nffg.db_id = session_id
             logging.debug("Update NF-FG: coming updates: "+updated_nffg.getJSON(True))            
             
             # Delete useless endpoints and flowrules 
-            self.opendaylightFlowsControlledDeletion(updated_nffg)
+            self.odlFlowsControlledDeletion(updated_nffg)
             
             # Update database and send flowrules to ODL
-            GraphSession().updateNFFG(updated_nffg, self.session_id)
+            GraphSession().updateNFFG(updated_nffg, self._session_id)
             profile_graph = self.ProfileGraph_BuildFromNFFG(updated_nffg)
-            self.opendaylightFlowsInstantiation(profile_graph)
+            self.odlFlowsInstantiation(profile_graph)
             
-            logging.debug("Update NF-FG: session " + session_id + " correctly updated!")
+            logging.debug("Update NF-FG: session " + self._session_id + " correctly updated!")
             
         except Exception as ex:
             logging.error("Update NF-FG: "+ex.message)
             logging.exception("Update NF-FG: "+ex)
             # TODO: discuss... delete the graph when an error occurs in this phase?
-            #GraphSession().delete_graph(session_id)
-            #GraphSession().setErrorStatus(session_id)
+            #GraphSession().deleteGraph(self._session_id)
+            #GraphSession().setErrorStatus(self._session_id)
             raise ex
         
-        GraphSession().updateStatus(session_id, 'complete')
-        return session_id
+        GraphSession().updateStatus(self._session_id, 'complete')
+        return self._session_id
     
     
     
     def NFFG_Delete(self, nffg_id):        
-        session = GraphSession().get_active_user_session_by_nf_fg_id(self.user_data.getUserID(), nffg_id, error_aware=False)
-        logging.debug("Delete NF-FG: deleting session "+str(session.id))
+        
+        session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
+        if session is None:
+            raise sessionNotFound("Session Not Found, for graph "+str(nffg_id))
+        
+        self._session_id = session.id
+        
+        logging.debug("Delete NF-FG: deleting session "+str(self._session_id))
 
-        instantiated_nffg = GraphSession().get_nffg(session.id)
+        instantiated_nffg = GraphSession().getNFFG(self._session_id)
         logging.debug("Delete NF-FG: we are going to delete: "+instantiated_nffg.getJSON())
     
         try:
-            self.opendaylightFlowsDeletion(session.id)
-            logging.debug("Delete NF-FG: session " + session.id + " correctly deleted!")
+            self.odlFlowsDeletion(self._session_id)
+            logging.debug("Delete NF-FG: session " + self._session_id + " correctly deleted!")
             
         except Exception as ex:
             logging.error("Delete NF-FG: "+ex.message)
             logging.exception("Delete NF-FG: "+ex)
             #raise ex - no raise because we need to delete the session in any case
-        GraphSession().delete_graph(session.id)
-        GraphSession().set_ended(session.id)
+        GraphSession().deleteGraph(self._session_id)
+        GraphSession().setEnded(self._session_id)
 
 
 
     def NFFG_Get(self, nffg_id):
-        # Throws sessionNotFound exception
-        session = GraphSession().get_active_user_session_by_nf_fg_id(self.user_data.getUserID(), nffg_id, error_aware=False)
-        logging.debug("Getting session: "+str(session.id))
-        return GraphSession().get_nffg(session.id).getJSON()
+        session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
+        if session is None:
+            raise sessionNotFound("Session Not Found, for graph "+str(nffg_id))
+        
+        self._session_id = session.id
+        logging.debug("Getting session: "+str(self._session_id))
+        return GraphSession().getNFFG(self._session_id).getJSON()
 
 
 
     def NFFG_Status(self, nffg_id):
-        try:
-            session_ref = GraphSession().get_active_user_session_by_nf_fg_id(self.user_data.getUserID(),nffg_id,error_aware=True)
-            logging.debug("Graph status: "+str(session_ref.status))
-            return session_ref.id
-        except sessionNotFound:
+        session = GraphSession().getActiveSession(self.user_data.getUserID(),nffg_id,error_aware=True)
+        if session is None:
             return None
+        
+        self._session_id = session.id
+        logging.debug("Status NF-FG: graph status: "+str(session.status))
+        return self._session_id
     
     
     
@@ -197,7 +208,6 @@ class OpenDayLightCA(object):
             Object of the Class odl_ca_core.resources.ProfileGraph
         '''
         profile_graph = ProfileGraph()
-        profile_graph.setSessionId(nffg.db_id) #session_id
 
         for endpoint in nffg.end_points:
             
@@ -217,23 +227,23 @@ class OpenDayLightCA(object):
             profile_graph.addFlowrule(flowrule)
                   
         return profile_graph
-    
-    
-    
-    
-    def opendaylightFlowsInstantiation(self, profile_graph):        
+
+
+
+
+     
+    '''
+    ######################################################################################################
+    #########################    Interactions with OpenDaylight              #############################
+    ######################################################################################################
+    '''
         
-        # profile_graph has the session_id
+    def odlFlowsInstantiation(self, profile_graph):
         
         # Create the endpoints
-        for endpoint in profile_graph.endpoints.values():
-            if endpoint.status == "new":
-                
+        # for endpoint in profile_graph.endpoints.values():
+        #    if endpoint.status == "new":
                 # TODO: remove or integrate remote_graph and remote_endpoint
-                
-                # TODO: move setEndpointLocation to addNFFG and updateNFFG;
-                #       ...this function regards GraphSession and should not be here.
-                GraphSession().setEndpointLocation(profile_graph.session_id, endpoint.id, endpoint.interface)
 
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
@@ -251,24 +261,20 @@ class OpenDayLightCA(object):
                         if port1_type == 'endpoint':
                             endp1 = profile_graph.endpoints[port1_id]
                             if endp1.type == 'interface':        
-                                self.processFlowrule(endp1, flowrule, profile_graph)
-                                
-    
-    
-    def opendaylightFlowsDeletion(self, session_id):       
-        
+                                self.odlProcessFlowrule(endp1, flowrule, profile_graph)
+
+
+
+    def odlFlowsDeletion(self, session_id):       
         #Delete every flow from ODL
-        
-        flows = GraphSession().getFlowRules(session_id)
+        flows = GraphSession().getFlowrules(session_id)
         for flow in flows:
             if flow.type == "external" and flow.status == "complete":
                 ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
-                
-         
-            
-    def opendaylightFlowsControlledDeletion(self, updated_nffg):
-        
-        # updated_nffg.db_id has the session_id
+
+
+
+    def odlFlowsControlledDeletion(self, updated_nffg):
         
         # Delete the endpoints 'to_be_deleted'
         for endpoint in updated_nffg.end_points[:]:
@@ -277,7 +283,7 @@ class OpenDayLightCA(object):
                 # TODO: remove or integrate remote_graph, remote_endpoint, endpoint_resource "flowrule", and graph_connection
                 
                 # Delete endpoints and all resourcess associated to it.
-                GraphSession().deleteEndpoint(endpoint.id, updated_nffg.db_id)
+                GraphSession().deleteEndpoint(endpoint.id, self._session_id)
                 GraphSession().deleteEndpointResourceAndResources(endpoint.db_id)
                 
                 updated_nffg.end_points.remove(endpoint)  
@@ -288,31 +294,20 @@ class OpenDayLightCA(object):
                 
                 # Get and delete the flow rules with the same flow.internal_id,
                 # which are the flow rules effectively pushed in ODL.
-                flows = GraphSession().getFlowRules(updated_nffg.db_id)
+                flows = GraphSession().getFlowrules(self._session_id)
                 for flow in flows:
                     if flow.type == "external" and flow.status == "complete" and flow.internal_id == flowrule.id:
                         ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
-                        GraphSession().deleteFlowRule(flow.id)
+                        GraphSession().deleteFlowrule(flow.id)
                 
                 # Finally, delete the main flow rule (that written in nffg.json)
-                GraphSession().deleteFlowRule(flowrule.db_id)
+                GraphSession().deleteFlowrule(flowrule.db_id)
                 updated_nffg.flow_rules.remove(flowrule)
-                
-        
-            
-            
-            
-    '''
-    ######################################################################################################
-    #########################    Interactions with OpenDaylight              #############################
-    ######################################################################################################
-    '''
-    
-    def processFlowrule(self, endpoint1, flowrule, profile_graph):
-        
+
+
+
+    def odlProcessFlowrule(self, endpoint1, flowrule, profile_graph):
         #Process a flow rule written in the section "big switch" of a nffg json.
-        
-        # profile_graph has the session_id
         match1 = Match(flowrule.match)
         match2 = None
         actions1 = []
@@ -324,7 +319,7 @@ class OpenDayLightCA(object):
         
         nodes_path = None
         nodes_path_flag = None
-        print "\n\n\nprocessFlowrule"
+        print "\n\n\nodlProcessFlowrule"
         
         # Add "Drop" flow rules only, and return
         for act in flowrule.actions:
@@ -338,7 +333,7 @@ class OpenDayLightCA(object):
                 ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
                 
                 flow_rule = FlowRule(_id=flowname,node_id=endpoint1.switch_id,_type='external', status='complete',priority=flowrule.priority, internal_id=flowrule.id)  
-                GraphSession().addFlowRule(profile_graph.session_id, endpoint1.switch_id, flow_rule, None)
+                GraphSession().addFlowrule(self._session_id, endpoint1.switch_id, flow_rule, None)
                 return  
         
         for act in flowrule.actions:
@@ -363,7 +358,7 @@ class OpenDayLightCA(object):
                             flowname1 = str(flowrule.id)
                             switch1 = endpoint1.switch_id              
                     else:
-                        port12,port21 = self.getLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
+                        port12,port21 = self.odlGetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
                         if port12 is not None and port21 is not None:
 
                             if endpoint1.interface != port12 and endpoint2.interface != port21:
@@ -421,29 +416,26 @@ class OpenDayLightCA(object):
                                 nodes_path_flag = 1
                             
                             if(nodes_path == None):
-                                logging.debug("[processFlowrule] Cannot find a link between " + endpoint1.switch_id + " and " + endpoint2.switch_id)
+                                logging.debug("[odlProcessFlowrule] Cannot find a link between " + endpoint1.switch_id + " and " + endpoint2.switch_id)
                             else:
-                                logging.debug("[processFlowrule] Creating a path bewteen " + endpoint1.switch_id + " and " + endpoint2.switch_id + ". Path Length = "+str(len(nodes_path)))
+                                logging.debug("[odlProcessFlowrule] Creating a path bewteen " + endpoint1.switch_id + " and " + endpoint2.switch_id + ". Path Length = "+str(len(nodes_path)))
 
             elif act.output is None:
                 action = Action(act)
                 actions1.append(action)
                     
         if switch1 is not None:     
-            self.pushFlow(profile_graph.session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
+            self.odlPushFlow(self._session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
             if switch2 is not None:
-                self.pushFlow(profile_graph.session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
+                self.odlPushFlow(self._session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
-            self.linkEndpoints(profile_graph.session_id, nodes_path,endpoint1,endpoint2,flowrule)            
+            self.odlLinkEndpoints(self._session_id, nodes_path,endpoint1,endpoint2,flowrule)            
+
                 
-                
-                
-                
-    
-    
-    def pushFlow(self, session_id, switch_id, actions, match, flowname, priority, flow_id):
+
+    def odlPushFlow(self, session_id, switch_id, actions, match, flowname, priority, flow_id):
         flowname = flowname.replace(' ', '')
         flowtype = 'external'
         
@@ -454,11 +446,11 @@ class OpenDayLightCA(object):
         
         # DATABASE: Add flow rule
         flow_rule = FlowRule(_id=flowname,node_id=switch_id, _type=flowtype, status='complete',priority=priority, internal_id=flow_id)  
-        GraphSession().addFlowRule(session_id, switch_id, flow_rule, None)
+        GraphSession().addFlowrule(session_id, switch_id, flow_rule, None)
         
     
     
-    def getLinkBetweenSwitches(self, switch1, switch2):             
+    def odlGetLinkBetweenSwitches(self, switch1, switch2):             
         '''
         Retrieve the link between two switches, where you can find ports to use.
         switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
@@ -486,8 +478,8 @@ class OpenDayLightCA(object):
 
 
     
-    def getLinkPortsBetweenSwitches(self, switch1, switch2):
-        link = self.getLinkBetweenSwitches(switch1, switch2)
+    def odlGetLinkPortsBetweenSwitches(self, switch1, switch2):
+        link = self.odlGetLinkBetweenSwitches(switch1, switch2)
         if link is None:
             return None,None
         
@@ -507,12 +499,8 @@ class OpenDayLightCA(object):
         return port12,port21
 
 
-            
-    
 
-
-
-    def linkEndpoints(self,session_id, path,ep1,ep2,flowrule):
+    def odlLinkEndpoints(self,session_id, path,ep1,ep2,flowrule):
 
         flow_id = flowrule.id
         flow_priority = flowrule.priority
@@ -608,12 +596,7 @@ class OpenDayLightCA(object):
             
             flow_name = str(flow_id)+"_"+str(i)
             
-            self.pushFlow(session_id, switch_id, new_actions, match, flow_name, flow_priority, flow_id)
+            self.odlPushFlow(session_id, switch_id, new_actions, match, flow_name, flow_priority, flow_id)
         
         return
 
-    
-        
-        
-        
-    
