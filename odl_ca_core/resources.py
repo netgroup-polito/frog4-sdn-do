@@ -466,6 +466,8 @@ class ProfileGraph(object):
         self.endpoints = {}
         self.flowrules = {}
     
+    # TODO: rename id in session_id, for clarity
+    
     @property
     def id(self):
         return self._id

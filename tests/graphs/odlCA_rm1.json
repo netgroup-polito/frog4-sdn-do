@@ -3,6 +3,32 @@
     "id": "977",
     "name": "GR Test1",
     
+    "VNFs": [
+      {
+        "vnf_template": "jolnet_switch.json",
+        "id": "endpoint_switch",
+        "name": "Endpoint_Switch",
+        "ports": [
+          {
+            "id": "L2Port:0"
+          },
+          {
+            "id": "L2Port:1"
+          }
+        ]
+      },
+      {
+        "vnf_template": "jolnet_dhcp.json",
+        "id": "dhcp_ISP",
+        "name": "dhcp_isp",
+        "ports": [
+          {
+            "id": "inout:0"
+          }
+        ]
+      }
+    ],
+    
     
     "end-points": [
       {
@@ -13,15 +39,14 @@
           "switch-id": "openflow:261693184597067",
           "interface": "1"
         }
-      },
-      
+      },      
       {
         "id": "End31",
         "name": "EGRESS",
         "type": "interface",
         "interface": {
           "switch-id": "openflow:192368849455687",
-          "interface": "1"
+          "interface": "2"
         }
       }
     ],
@@ -38,7 +63,7 @@
           },
           "actions": [
             {
-            	"set_vlan_id": "561"
+            	"set_vlan_id": "461"
           	},
           	{
             	"output": "endpoint:End31"
@@ -54,7 +79,7 @@
           },
           "actions": [
             {
-            	"set_vlan_id": "561"
+            	"set_vlan_id": "461"
           	},
           	{
             	"output": "endpoint:End21"

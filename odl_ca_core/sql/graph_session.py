@@ -161,21 +161,6 @@ class ActionModel(Base):
     output_to_queue = Column(VARCHAR(64))
 
 
-class GraphConnectionModel(Base):
-    '''
-    Maps the database table graph_connection
-    '''
-    __tablename__ = 'graph_connection'
-    attributes = ['endpoint_id_1', 'endpoint_id_2']
-    endpoint_id_1 = Column(VARCHAR(64), primary_key=True)
-    endpoint_id_2 = Column(VARCHAR(64), primary_key=True)
-    
-    
-    
-
-
-
-
 
     
 class GraphSession(object):
@@ -332,13 +317,8 @@ class GraphSession(object):
                     end_point.switch_id = port.virtual_switch
                     end_point.interface = port.graph_port_id
                     end_point.vlan_id = port.vlan_id
-                    
-            graph_connections_ref = session.query(GraphConnectionModel).filter_by(endpoint_id_1 = end_point_ref.id).all()
-            for graph_connection_ref in graph_connections_ref:
-                ext_endpoint = self._getEndpoint(graph_connection_ref.endpoint_id_2)
-                ext_nffg_id = ext_endpoint.graph_id
-                ext_end_point_id = ext_endpoint.graph_endpoint_id       
-                end_point.remote_endpoint_id = ext_nffg_id+':'+ext_end_point_id
+            
+            # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
         return nffg    
 
 
@@ -381,14 +361,7 @@ class GraphSession(object):
                     session.add(endpoint_resource_ref)
                     self.port_id = self.port_id + 1
                 
-                # End-point attached to another graph
-                if endpoint.remote_endpoint_id is not None:
-                    # TODO: Add graph connection
-                    remote_graph_db_id =  endpoint.remote_endpoint_id.split(':')[0]
-                    remote_session = self.get_active_user_session_by_nf_fg_id(user_id,remote_graph_db_id,error_aware=True)
-                    endpoint2_db_id = self._getEndpointID(endpoint.remote_endpoint_id.split(':')[1], remote_session.id)
-                    graph_connection_ref = GraphConnectionModel(endpoint_id_1=endpoint.db_id, endpoint_id_2=endpoint2_db_id)
-                    session.add(graph_connection_ref)
+                # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
 
             return session_id
     
@@ -425,13 +398,7 @@ class GraphSession(object):
                         session.add(endpoint_resource_ref)
                         self.port_id = self.port_id + 1
                         
-                    # End-point attached to another graph
-                    if endpoint.remote_endpoint_id is not None:
-                        # TODO: Add graph connection
-                        remote_graph_db_id =  endpoint.remote_endpoint_id.split(':')[0]
-                        endpoint2_db_id = self._getEndpointID(endpoint.remote_endpoint_id.split(':')[1], remote_graph_db_id)
-                        graph_connection_ref = GraphConnectionModel(endpoint_id_1=endpoint.db_id, endpoint_id_2=endpoint2_db_id)
-                        session.add(graph_connection_ref)
+                    # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
   
   
   
@@ -553,12 +520,6 @@ class GraphSession(object):
                     session.query(ActionModel).filter_by(flow_rule_id = end_point_resource_ref.resource_id).delete()    
             session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).delete()
     
-    def deleteGraphConnection(self, endpoint_id1):
-        #only unilateral 
-        session = get_session()
-        with session.begin():
-            session.query(GraphConnectionModel).filter_by(endpoint_id_1 = endpoint_id1).delete()
-    
     def deleteFlowRule(self, flow_rule_id):
         session = get_session()
         with session.begin():
@@ -579,8 +540,7 @@ class GraphSession(object):
             session.query(FlowRuleModel).filter_by(session_id = session_id).delete()
             endpoints_ref = session.query(EndpointModel.id).filter_by(session_id = session_id).all()
             for endpoint_ref in endpoints_ref:
-                session.query(GraphConnectionModel).filter_by(endpoint_id_1 = endpoint_ref.id).delete()
-                session.query(GraphConnectionModel).filter_by(endpoint_id_2 = endpoint_ref.id).delete()
+                # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
                 session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_ref.id).delete()
             session.query(EndpointModel).filter_by(session_id = session_id).delete()
                         

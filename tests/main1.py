@@ -69,7 +69,7 @@ logging.info("Starting Orchestration Server application")
 #in_file = open("/home/giacomo/eclipse_workspace/frog-orchestrator/graphs/odlCA_graphHe_Hydrogen.json","r")
 #in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/graphs/odlCA_graphHe_Lithium.json","r")
 #in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/graphs/odlCA_rm1.json","r")
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/graphs/odlCA_rm2.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_rm1.json","r")
 
 # NF-FG File
 nffg_file = json.loads(in_file.read())
@@ -81,12 +81,17 @@ nffg.parseDict(nffg_file)
 # CONTROLLER
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
 controller = OpenDayLightCA(user)
-controller.validate(nffg)
-controller.delete(977)
-controller.put(nffg)
+controller.NFFG_Validate(nffg)
+#controller.NFFG_Delete(977)
+controller.NFFG_Put(nffg)
 
 print("\n\nUpdating...")
-#controller.put(nffg)
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_rm2.json","r")
+nffg_file = json.loads(in_file.read())
+ValidateNF_FG().validate(nffg_file)
+nffg = NF_FG()
+nffg.parseDict(nffg_file)
+controller.NFFG_Put(nffg)
 print("\n\nEnd update")
 
 
@@ -94,6 +99,8 @@ print("\n\nEnd update")
  
 [ 1 ]
 - eliminare il nome "graph_id" da tutte le tabelle in favore di "session_id"
+- eliminare tabella endpoint_resource (verificare a che serve)
+- cambiare nomi dei campi di tabelle nel db in nomi più esplicativi
 
 [ 2 ]
 provare endpoint remoti e creazione di endpoint_resource con resource_type="flowrule"
