@@ -13,7 +13,7 @@ from nffg_library.nffg import FlowRule
 from odl_ca_core.sql.graph_session import GraphSession
 
 
-#from odl_ca_core.config import Configuration
+from odl_ca_core.config import Configuration
 from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
@@ -26,7 +26,7 @@ class OpenDayLightCA(object):
 
     def __init__(self, user_data):
         
-        # TODO: use configuration
+        conf = Configuration()
         
         self._session_id = None
         
@@ -40,14 +40,10 @@ class OpenDayLightCA(object):
         '''
         
         # Dati ODL
-        if(False):
-            self.odlendpoint = "http://127.0.0.1:8080"
-            self.odlversion = "Hydrogen"
-        else:
-            self.odlendpoint = "http://127.0.0.1:8181"
-            self.odlversion = "Lithium"
-        self.odlusername = "admin"
-        self.odlpassword = "admin"
+        self.odlendpoint = conf.ODL_ENDPOINT
+        self.odlversion = conf.ODL_VERSION
+        self.odlusername = conf.ODL_USERNAME
+        self.odlpassword = conf.ODL_PASSWORD
         
         # NetGraph
         self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)

@@ -27,7 +27,7 @@ class UserData(object):
         user = User().getUserFromID(user_id)
         self.username = user.name
         self.password =user.password
-        tenant = User().getTenantName(user.tenant)
+        tenant = User().getTenantName(user.tenant_id)
         self.tenant = tenant
 
 class UserAuthentication(object):
@@ -49,7 +49,7 @@ class UserAuthentication(object):
         
         user = User().getUser(username)
         if user.password == password:
-            tenantName = User().getTenantName(user.tenant)
+            tenantName = User().getTenantName(user.tenant_id)
             if tenantName == tenant:
                 userobj = UserData(username, password, tenant)
                 return userobj

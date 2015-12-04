@@ -22,7 +22,7 @@ from odl_ca_core.exception import PortNotFound
 
 
 Base = declarative_base()
-sqlserver = Configuration().CONNECTION
+sqlserver = Configuration().DATABASE_CONNECTION
 
 
 class SessionModel(Base):
@@ -49,21 +49,20 @@ class PortModel(Base):
     Maps the database table node
     '''
     __tablename__ = 'port'
-    attributes = ['id', 'internal_id', 'graph_port_id', 'session_id', 'name','vnf_id', 'location','type', 'virtual_switch', 'status', 'creation_date','last_update', 'os_network_id',
-                    'mac_address', 'ipv4_address', 'vlan_id','gre_key']
+    attributes = ['id', 'internal_id', 'graph_port_id', 'session_id', 'name','location','type', 
+                  'virtual_switch', 'status', 'creation_date','last_update',
+                  'mac_address', 'ipv4_address', 'vlan_id','gre_key']
     id = Column(Integer, primary_key=True)
     internal_id = Column(VARCHAR(64)) # id in the infrastructure
     graph_port_id = Column(VARCHAR(64)) # id in the json
     session_id = Column(Integer)
     name = Column(VARCHAR(64))
-    vnf_id = Column(VARCHAR(64)) # could be NULL, for example a port in an end-point
     location = Column(VARCHAR(64)) # node where the port is instantiated
     type = Column(VARCHAR(64)) # OpenStack port, etc.
     virtual_switch = Column(VARCHAR(64))
     status = Column(VARCHAR(64)) # initialization, complete, error
     creation_date = Column(VARCHAR(64))
     last_update = Column(VARCHAR(64))
-    os_network_id = Column(VARCHAR(64))
     mac_address = Column(VARCHAR(64))
     ipv4_address = Column(VARCHAR(64))
     vlan_id = Column(VARCHAR(64))

@@ -28,13 +28,13 @@ conf = Configuration()
 
 
 # LOG LEVEL
-if conf.DEBUG is True:
+if conf.LOG_DEBUG is True:
     log_level = logging.DEBUG
     requests_log = logging.getLogger("requests")
     requests_log.setLevel(logging.WARNING)
     sqlalchemy_log = logging.getLogger('sqlalchemy.engine')
     sqlalchemy_log.setLevel(logging.WARNING)
-elif conf.VERBOSE is True:
+elif conf.LOG_VERBOSE is True:
     log_level = logging.INFO
     requests_log = logging.getLogger("requests")
     requests_log.setLevel(logging.WARNING)
@@ -98,7 +98,6 @@ print("\n\nEnd update")
 '''
  
 [ 1 ]
-- eliminare il nome "graph_id" da tutte le tabelle in favore di "session_id"
 - eliminare tabella endpoint_resource (verificare a che serve)
 - cambiare nomi dei campi di tabelle nel db in nomi piu' esplicativi
 - sistemare i *Model in graph_session.py
@@ -111,11 +110,6 @@ SERVONO GLI ENDPOINT REMOTI in questo caso???
 
 [ 4 ]
 eliminare informazioni inutili da orchestrator.conf e classe Configuration()
-
-[ 4.1 ]
-- eliminare user_authentication.py
-- unire in opendaylight_ca
-- self.userdata==None raise exception
 
 
 [ 5 ]

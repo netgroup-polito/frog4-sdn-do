@@ -18,11 +18,11 @@ class UserModel(Base):
     Maps the database table user
     '''
     __tablename__ = 'user'
-    attributes = ['id', 'name', 'password', 'tenant', 'mail']
+    attributes = ['id', 'name', 'password', 'tenant_id', 'mail']
     id = Column(VARCHAR(64), primary_key=True)
     name = Column(VARCHAR(64))
     password = Column(VARCHAR(64))
-    tenant = Column(VARCHAR(64))
+    tenant_id = Column(VARCHAR(64))
     mail = Column(VARCHAR(64))
     
 class TenantModel(Base):
