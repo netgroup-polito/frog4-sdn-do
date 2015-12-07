@@ -80,10 +80,12 @@ nffg.parseDict(nffg_file)
 
 # CONTROLLER
 user = UserAuthentication().authenticateUserFromCredentials("demo_jolnet", "stack", "demo_jolnet")     
-controller = OpenDayLightCA(user)
-controller.NFFG_Validate(nffg)
-controller.NFFG_Delete(977)
-controller.NFFG_Put(nffg)
+odlCA = OpenDayLightCA(user)
+
+odlCA.NFFG_Delete(977)
+
+odlCA.NFFG_Validate(nffg)
+odlCA.NFFG_Put(nffg)
 
 print("\n\nUpdating...")
 in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_rm2.json","r")
@@ -91,7 +93,9 @@ nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
 nffg.parseDict(nffg_file)
-controller.NFFG_Put(nffg)
+
+odlCA.NFFG_Validate(nffg)
+odlCA.NFFG_Put(nffg)
 print("\n\nEnd update")
 
 
@@ -108,10 +112,6 @@ provare endpoint remoti e creazione di endpoint_resource con resource_type="flow
 SERVONO GLI ENDPOINT REMOTI in questo caso???
 
 
-[ 4 ]
-eliminare informazioni inutili da orchestrator.conf e classe Configuration()
-
-
 [ 5 ]
 passare a sqlite
 - sqlalchemy engine 'sqlite'
@@ -121,9 +121,7 @@ passare a sqlite
 - definire interfaccia REST
 - definire interfaccia DOUBLEDECKER
 - pulire ulteriormente il database
-- eliminare qualsiasi riferimento al vecchio "orchestrator", "jolnet", ecc.
 
-- check NOTUSED
 - check TODO: remove
 
 '''

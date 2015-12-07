@@ -25,7 +25,7 @@ Base = declarative_base()
 sqlserver = Configuration().DATABASE_CONNECTION
 
 
-class SessionModel(Base):
+class GraphSessionModel(Base):
     '''
     Maps the database table session
     '''
@@ -49,38 +49,31 @@ class PortModel(Base):
     Maps the database table node
     '''
     __tablename__ = 'port'
-    attributes = ['id', 'internal_id', 'graph_port_id', 'session_id', 'name','location','type', 
-                  'virtual_switch', 'status', 'creation_date','last_update',
-                  'mac_address', 'ipv4_address', 'vlan_id','gre_key']
+    attributes = ['id', 'graph_port_id', 'session_id', 'status', 'switch_id',
+                  'mac_address', 'ipv4_address', 'vlan_id','gre_key', 'creation_date','last_update' ]
     id = Column(Integer, primary_key=True)
-    internal_id = Column(VARCHAR(64)) # id in the infrastructure
     graph_port_id = Column(VARCHAR(64)) # id in the json
     session_id = Column(Integer)
-    name = Column(VARCHAR(64))
-    location = Column(VARCHAR(64)) # node where the port is instantiated
-    type = Column(VARCHAR(64)) # OpenStack port, etc.
-    virtual_switch = Column(VARCHAR(64))
     status = Column(VARCHAR(64)) # initialization, complete, error
-    creation_date = Column(VARCHAR(64))
-    last_update = Column(VARCHAR(64))
+    switch_id = Column(VARCHAR(64))
     mac_address = Column(VARCHAR(64))
     ipv4_address = Column(VARCHAR(64))
     vlan_id = Column(VARCHAR(64))
     gre_key = Column(VARCHAR(64))
+    creation_date = Column(VARCHAR(64))
+    last_update = Column(VARCHAR(64))
     
 class EndpointModel(Base):
     '''
     Maps the database table endpoint
     '''
     __tablename__ = 'endpoint'
-    attributes = ['id', 'internal_id', 'graph_endpoint_id','session_id','name', 'type','location']
+    attributes = ['id', 'graph_endpoint_id','name','type','session_id']
     id = Column(Integer, primary_key=True)
-    internal_id = Column(VARCHAR(64)) # id of the infrastructure graph
     graph_endpoint_id = Column(VARCHAR(64)) # id in the json
-    session_id = Column(VARCHAR(64))
     name = Column(VARCHAR(64))
     type = Column(VARCHAR(64)) # internal, interface, interface-out, vlan, gre
-    location = Column(VARCHAR(64)) # node where the end-point is instantiated
+    session_id = Column(VARCHAR(64))
     
 class EndpointResourceModel(Base):
     '''
@@ -171,9 +164,9 @@ class GraphSession(object):
     def getActiveSession(self, user_id, graph_id, error_aware=True):
         session = get_session()
         if error_aware:
-            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
         else:
-            session_ref = session.query(SessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(SessionModel.started_at)).first()
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphSessionModel.started_at)).first()
         #if session_ref is None:
         #    raise sessionNotFound("Session Not Found, for servce graph id: "+str(graph_id))        
         return session_ref
@@ -189,7 +182,7 @@ class GraphSession(object):
     def updateStatus(self, session_id, status):
         session = get_session()  
         with session.begin():
-            session.query(SessionModel).filter_by(id = session_id).update({"last_update":datetime.datetime.now(), 'status':status})
+            session.query(GraphSessionModel).filter_by(id = session_id).update({"last_update":datetime.datetime.now(), 'status':status})
 
     
 
@@ -200,7 +193,7 @@ class GraphSession(object):
         session = get_session()
         with session.begin():
             logging.debug("Put session "+str(session_id)+" in error")
-            session.query(SessionModel).filter_by(id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
 
 
 
@@ -210,14 +203,14 @@ class GraphSession(object):
         '''
         session = get_session() 
         with session.begin():       
-            session.query(SessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
     
     
     
     def deleteGraph(self, session_id):
         session = get_session()
         with session.begin():
-            session.query(SessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
             session.query(PortModel).filter_by(session_id = session_id).delete()
               
             flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id = session_id).all()
@@ -268,7 +261,7 @@ class GraphSession(object):
     def getNFFG(self, session_id):
         nffg = NF_FG()
         session = get_session()
-        session_ref = session.query(SessionModel).filter_by(id = session_id).one()
+        session_ref = session.query(GraphSessionModel).filter_by(id = session_id).one()
 
         nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
@@ -319,7 +312,7 @@ class GraphSession(object):
         end_points_ref = session.query(EndpointModel).filter_by(session_id = session_id).all()
         for end_point_ref in end_points_ref:
             end_point = EndPoint(_id=end_point_ref.graph_endpoint_id, name=end_point_ref.name, _type=end_point_ref.type,
-                                 db_id=end_point_ref.id, internal_id=end_point_ref.internal_id)
+                                 db_id=end_point_ref.id)
             nffg.addEndPoint(end_point)
             
             # End_point resource
@@ -332,8 +325,8 @@ class GraphSession(object):
                         raise Exception("I dont'know when I'm here. There was a continue here, why?")
                         #continue
                         
-                    end_point.node = port.location
-                    end_point.switch_id = port.virtual_switch
+                    #end_point.node = port.location
+                    end_point.switch_id = port.switch_id
                     end_point.interface = port.graph_port_id
                     end_point.vlan_id = port.vlan_id
             # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
@@ -353,22 +346,18 @@ class GraphSession(object):
             for endpoint in nffg.end_points:
                 if endpoint.status == 'new' or endpoint.status is None:
                     
-                    # Set endpoint location
-                    endpoint_location = None
-                    if "interface" in endpoint.type:
-                        endpoint_location = endpoint.interface
-                           
                     endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             session_id=session_id, name = endpoint.name, type=endpoint.type,
-                                             location=endpoint_location)
+                                             session_id=session_id, name = endpoint.name, type=endpoint.type)
                     session.add(endpoint_ref)
                     
                     # Add end-point resources
                     # End-point attached to something that is not another graph
+                    # TODO: set status
                     if "interface" in endpoint.type or endpoint.type == "vlan":
-                        port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, session_id=session_id, 
-                                             internal_id=endpoint.interface, name=endpoint.interface, location=endpoint.node,
-                                             virtual_switch=endpoint.switch_id, vlan_id=endpoint.vlan_id, creation_date=datetime.datetime.now(), 
+                        port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
+                                             session_id=session_id, status=None, switch_id=endpoint.switch_id,
+                                             vlan_id=endpoint.vlan_id,
+                                             creation_date=datetime.datetime.now(), 
                                              last_update=datetime.datetime.now())
                         session.add(port_ref)
                         endpoint_resource_ref = EndpointResourceModel(endpoint_id=endpoint.db_id,
@@ -388,7 +377,7 @@ class GraphSession(object):
             # session_id by ref
             session_id = self._ids_generator(nffg, session_id)
             
-            session_ref = SessionModel(id=session_id, user_id=user_id, graph_id=nffg.id, 
+            session_ref = GraphSessionModel(id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
                                 last_update = datetime.datetime.now(), status='inizialization')
             session.add(session_ref)
@@ -398,23 +387,19 @@ class GraphSession(object):
                                 
             for endpoint in nffg.end_points:
                 
-                # Set endpoint location
-                endpoint_location = None
-                if "interface" in endpoint.type:
-                    endpoint_location = endpoint.interface
-                
                 endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             session_id=session_id, name = endpoint.name, type=endpoint.type,
-                                             location=endpoint_location)
+                                             session_id=session_id, name = endpoint.name, type=endpoint.type)
                 session.add(endpoint_ref)
                 
                 # Add end-point resources
                 # End-point attached to something that is not another graph
-                if "interface" in endpoint.type or endpoint.type == "vlan":
-                    port_ref = PortModel(id=self.port_id, graph_port_id = endpoint.interface, session_id=session_id, 
-                                         internal_id=endpoint.interface, name=endpoint.interface, location=endpoint.node,
-                                         virtual_switch=endpoint.switch_id, vlan_id=endpoint.vlan_id, creation_date=datetime.datetime.now(), 
+                if "interface" in endpoint.type or endpoint.type == "vlan":                    
+                    port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
+                                         session_id=session_id, status=None, switch_id=endpoint.switch_id,
+                                         vlan_id=endpoint.vlan_id,
+                                         creation_date=datetime.datetime.now(), 
                                          last_update=datetime.datetime.now())
+                    
                     session.add(port_ref)
                     endpoint_resource_ref = EndpointResourceModel(endpoint_id=endpoint.db_id,
                                           resource_type='port',
@@ -566,7 +551,7 @@ class GraphSession(object):
     
     def _get_univocal_session_id(self):
         session = get_session()
-        rows = session.query(SessionModel.id).all()
+        rows = session.query(GraphSessionModel.id).all()
         
         while True:
             session_id = uuid.uuid4().hex
