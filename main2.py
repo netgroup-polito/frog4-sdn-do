@@ -3,6 +3,13 @@ Created on Dic 7, 2015
 
 @author: fabiomignini
 @author: giacomoratta
+
+This script test has to be called via gunicorn.
+$ gunicorn -b 0.0.0.0:9000 -t 500 main2:app
+
+   1) Load configuration;
+   2) start falcon web framework;
+   3) add api paths.
 '''
 
 import logging, falcon
@@ -39,6 +46,8 @@ logging.info("Falcon Successfully started")
 
 
 '''
+
+TODO
  
 [ 1 ]
 - eliminare tabella endpoint_resource (verificare a che serve)
