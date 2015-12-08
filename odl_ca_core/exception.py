@@ -1,3 +1,13 @@
+class NffgUselessInformations(Exception):
+    def __init__(self, message):
+        self.message = message
+        # Call the base class constructor with the parameters it needs
+        super(NffgUselessInformations, self).__init__(message)
+        
+    def get_mess(self):
+        return self.message
+
+
 class UserNotFound(Exception):
     def __init__(self, message):
         self.message = message
@@ -190,7 +200,7 @@ class wrongConnectionBetweenEndpoints(Exception):
     def get_mess(self):
         return self.message
     
-class   ManifestValidationError(Exception):
+class ManifestValidationError(Exception):
     def __init__(self, message):
         self.message = message
         # Call the base class constructor with the parameters it needs
@@ -199,7 +209,7 @@ class   ManifestValidationError(Exception):
     def get_mess(self):
         return self.message
     
-class    NF_FGValidationError(Exception):
+class NF_FGValidationError(Exception):
     def __init__(self, message):
         self.message = message
         # Call the base class constructor with the parameters it needs

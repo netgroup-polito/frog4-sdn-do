@@ -17,8 +17,7 @@ from odl_ca_core.config import Configuration
 from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
-from odl_ca_core.exception import sessionNotFound, GraphError
-
+from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 
 
 
@@ -180,16 +179,30 @@ class OpenDayLightCA(object):
     
     
     def NFFG_Validate(self, nffg):
+        '''
+        A validator for this specific component adapter.
+        The original json, as specified in the extern NFFG library,
+        could contain useless objects and fields for this CA.
+        If this happens, we have to raise exceptions to stop the request processing.  
+        '''        
         if len(nffg.vnfs)>0:
-            logging.debug("NFFG: presence of 'VNFs'. This CA does not process this information.")
+            msg = "NFFG: presence of 'VNFs'. This CA does not process this information."
+            logging.debug(msg)
+            raise NffgUselessInformations(msg)
         
         for ep in nffg.end_points:
             if(ep.remote_endpoint_id is not None):
-                logging.debug("NFFG: presence of 'end-points.remote_endpoint_id'. This CA does not process this information.")
-            #if(ep.remote_ip is not None):
-            #    logging.debug("NFFG: presence of 'end-points.remote-ip'. This CA does not process this information.")
+                msg = "NFFG: presence of 'end-points.remote_endpoint_id'. This CA does not process this information."
+                logging.debug(msg)
+                raise NffgUselessInformations(msg)
+            if(ep.remote_ip is not None):
+                msg = "NFFG: presence of 'end-points.remote-ip'. This CA does not process this information."
+                logging.debug(msg)
+                raise NffgUselessInformations(msg)
             if(ep.type <> "interface"):
-                logging.debug("NFFG: 'end-points.type' must be 'interface'.")
+                msg = "NFFG: 'end-points.type' must be 'interface'."
+                logging.debug(msg)
+                raise NffgUselessInformations(msg)
 
 
 

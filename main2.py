@@ -1,5 +1,5 @@
 '''
-Created on Oct 1, 2014
+Created on Dic 7, 2015
 
 @author: fabiomignini
 @author: giacomoratta
@@ -53,7 +53,6 @@ passare a sqlite
 - da phpmyadmin a phpliteadmin
 
 
-- definire interfaccia REST
 - definire interfaccia DOUBLEDECKER
 - pulire ulteriormente il database
 
@@ -63,6 +62,7 @@ passare a sqlite
 [ DOMANDE ]
 - campi tabelle db
 - eccezioni manifest, validator, ecc.
+- quali eccezioni gestire in rest_interface.py ?
 
 '''
 

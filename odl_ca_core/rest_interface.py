@@ -18,7 +18,7 @@ from nffg_library.validator import ValidateNF_FG
 from nffg_library.nffg import NF_FG
 
 # Exceptions
-from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound
+from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations
 
 
 
@@ -75,11 +75,17 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             odlCA.NFFG_Validate(nffg)
             odlCA.NFFG_Put(nffg)
     
+            # TODO: write a json response
             response.body = "Graph "+nffg.id+" succesfully processed."
             response.status = falcon.HTTP_202
             
         # JSON format error
         except jsonschema.ValidationError as err:
+            logging.exception(err.message)
+            raise falcon.HTTPBadRequest('Bad Request',err.message)
+        
+        # NFFG useless informations
+        except NffgUselessInformations as err:
             logging.exception(err.message)
             raise falcon.HTTPBadRequest('Bad Request',err.message)
         
@@ -116,6 +122,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             
             odlCA.NFFG_Delete(nffg_id)
             
+            # TODO: write a json response
             response.body = "Graph "+nffg_id+" succesfully deleted."
             
         # JSON format error
@@ -148,6 +155,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
             
+            # TODO: write a json response
             response.body = odlCA.NFFG_Get(nffg_id)
             response.status = falcon.HTTP_200
         
@@ -184,6 +192,7 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
             
+            # TODO: write a json response
             response.body = odlCA.NFFG_Status(nffg_id)
             response.status = falcon.HTTP_200
         
