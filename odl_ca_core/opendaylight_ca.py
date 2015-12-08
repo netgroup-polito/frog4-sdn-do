@@ -75,7 +75,7 @@ class OpenDayLightCA(object):
 
         except Exception as ex:
             logging.error(ex.message)
-            logging.exception(ex)
+            logging.exception(ex.message)
             GraphSession().deleteGraph(self._session_id)
             GraphSession().setErrorStatus(self._session_id)
             raise ex
@@ -120,7 +120,7 @@ class OpenDayLightCA(object):
             
         except Exception as ex:
             logging.error("Update NF-FG: "+ex.message)
-            logging.exception("Update NF-FG: "+ex)
+            logging.exception("Update NF-FG: "+ex.message)
             # TODO: discuss... delete the graph when an error occurs in this phase?
             #GraphSession().deleteGraph(self._session_id)
             #GraphSession().setErrorStatus(self._session_id)
@@ -135,7 +135,7 @@ class OpenDayLightCA(object):
         
         session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
         if session is None:
-            raise sessionNotFound("Session Not Found, for graph "+str(nffg_id))
+            raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         
         self._session_id = session.id
         
@@ -150,7 +150,7 @@ class OpenDayLightCA(object):
             
         except Exception as ex:
             logging.error("Delete NF-FG: "+ex.message)
-            logging.exception("Delete NF-FG: "+ex)
+            logging.exception("Delete NF-FG: "+ex.message)
             #raise ex - no raise because we need to delete the session in any case
         GraphSession().deleteGraph(self._session_id)
         GraphSession().setEnded(self._session_id)
@@ -160,7 +160,7 @@ class OpenDayLightCA(object):
     def NFFG_Get(self, nffg_id):
         session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
         if session is None:
-            raise sessionNotFound("Session Not Found, for graph "+str(nffg_id))
+            raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
         self._session_id = session.id
         logging.debug("Getting session: "+str(self._session_id))
@@ -171,11 +171,11 @@ class OpenDayLightCA(object):
     def NFFG_Status(self, nffg_id):
         session = GraphSession().getActiveSession(self.user_data.getUserID(),nffg_id,error_aware=True)
         if session is None:
-            return None
+            raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
         self._session_id = session.id
         logging.debug("Status NF-FG: graph status: "+str(session.status))
-        return self._session_id
+        return session.status
     
     
     

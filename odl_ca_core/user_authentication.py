@@ -1,7 +1,8 @@
 '''
 Created on 18 set 2015
 
-@author: Andrea
+@author: vida
+@author: giacomoratta
 '''
 
 from odl_ca_core.sql.user import User
@@ -32,17 +33,12 @@ class UserData(object):
 
 class UserAuthentication(object):
     
-
     def authenticateUserFromRESTRequest(self, request):
-        
         username = request.get_header("X-Auth-User")
         password = request.get_header("X-Auth-Pass")
-        tenant = request.get_header("X-Auth-Tenant")  
-        
-        return self.authenticateUserFromCredentials(username, password, tenant)
-    
-    
-    
+        tenant = request.get_header("X-Auth-Tenant")
+        return UserAuthentication().authenticateUserFromCredentials(username, password, tenant)
+
     def authenticateUserFromCredentials(self, username, password, tenant):
         if username is None or password is None or tenant is None:
                 raise unauthorizedRequest('Authentication credentials required')

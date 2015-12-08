@@ -4,7 +4,7 @@ Created on Oct 1, 2014
 @author: fabiomignini
 @author: giacomoratta
 '''
-import ConfigParser, os, inspect
+import ConfigParser, os, inspect, logging
 from odl_ca_core.exception import WrongConfigurationFile 
 
 
@@ -27,10 +27,7 @@ class Configuration(object):
         config = ConfigParser.RawConfigParser()
         base_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])).rpartition('/')[0]
         try:
-            if base_folder == "":
-                config.read(base_folder+'/frog4_odl_ca.conf')
-            else:
-                config.read(base_folder+'/frog4_odl_ca.conf')
+            config.read(base_folder+'/configuration.conf')
             
             # [basic_config]
             self._BASIC_CONFIG_IP = config.get('basic_config','ip')
@@ -51,9 +48,27 @@ class Configuration(object):
             self._ODL_ENDPOINT = config.get('opendaylight','odl_endpoint')
             self._ODL_VERSION = config.get('opendaylight','odl_version')
 
-                
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
+        
+        
+        
+    def log_configuration(self):
+        log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s'
+        if self.LOG_DEBUG is True:
+            log_level = logging.DEBUG
+            requests_log = logging.getLogger("requests")
+            requests_log.setLevel(logging.WARNING)
+            sqlalchemy_log = logging.getLogger('sqlalchemy.engine')
+            sqlalchemy_log.setLevel(logging.WARNING)
+        elif self.LOG_VERBOSE is True:
+            log_level = logging.INFO
+            requests_log = logging.getLogger("requests")
+            requests_log.setLevel(logging.WARNING)
+        else:
+            log_level = logging.WARNING
+        logging.basicConfig( filename=self.LOG_FILE, level=log_level, 
+                             format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
     
     
     

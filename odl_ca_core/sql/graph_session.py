@@ -323,6 +323,7 @@ class GraphSession(object):
                         port = self._getPort(end_point_resorce_ref.resource_id)
                     except PortNotFound:
                         raise Exception("I dont'know when I'm here. There was a continue here, why?")
+                        # TODO: manage this exception
                         #continue
                         
                     #end_point.node = port.location
