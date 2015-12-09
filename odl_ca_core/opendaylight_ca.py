@@ -91,7 +91,7 @@ class OpenDayLightCA(object):
         session = GraphSession().getActiveSession(self.user_data.getUserID(), new_nffg.id, error_aware=True)
         if session is None:
             return None
-        self._session_id = session.id
+        self._session_id = session.session_id
         
         logging.debug("Update NF-FG: already instantiated, trying to update it")
         logging.debug("Update NF-FG: updating session "+self._session_id+" from user "+self.user_data.username+" on tenant "+self.user_data.tenant)
@@ -136,7 +136,7 @@ class OpenDayLightCA(object):
         if session is None:
             raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         
-        self._session_id = session.id
+        self._session_id = session.session_id
         
         logging.debug("Delete NF-FG: deleting session "+str(self._session_id))
 
@@ -161,7 +161,7 @@ class OpenDayLightCA(object):
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
-        self._session_id = session.id
+        self._session_id = session.session_id
         logging.debug("Getting session: "+str(self._session_id))
         return GraphSession().getNFFG(self._session_id).getJSON()
 
@@ -172,7 +172,7 @@ class OpenDayLightCA(object):
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
-        self._session_id = session.id
+        self._session_id = session.session_id
         logging.debug("Status NF-FG: graph status: "+str(session.status))
         return session.status
     

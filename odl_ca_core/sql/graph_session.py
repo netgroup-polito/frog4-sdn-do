@@ -27,9 +27,9 @@ sqlserver = Configuration().DATABASE_CONNECTION
 
 class GraphSessionModel(Base):
     __tablename__ = 'graph_session'
-    attributes = ['id', 'user_id', 'graph_id', 'graph_name', 'status',
+    attributes = ['session_id', 'user_id', 'graph_id', 'graph_name', 'status',
                   'started_at', 'last_update', 'error', 'ended']
-    id = Column(VARCHAR(64), primary_key=True)
+    session_id = Column(VARCHAR(64), primary_key=True)
     user_id = Column(VARCHAR(64))
     graph_id = Column(Text)     # id in the json [see "forwarding-graph" section]
     graph_name = Column(Text)   # name in the json [see "forwarding-graph" section]
@@ -181,7 +181,7 @@ class GraphSession(object):
     def updateStatus(self, session_id, status):
         session = get_session()  
         with session.begin():
-            session.query(GraphSessionModel).filter_by(id = session_id).update({"last_update":datetime.datetime.now(), 'status':status})
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"last_update":datetime.datetime.now(), 'status':status})
 
     
 
@@ -192,7 +192,7 @@ class GraphSession(object):
         session = get_session()
         with session.begin():
             logging.debug("Put session "+str(session_id)+" in error")
-            session.query(GraphSessionModel).filter_by(id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
 
 
 
@@ -202,15 +202,15 @@ class GraphSession(object):
         '''
         session = get_session() 
         with session.begin():       
-            session.query(GraphSessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
     
     
     
     def deleteGraph(self, session_id):
         session = get_session()
         with session.begin():
-            session.query(GraphSessionModel).filter_by(id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
-            session.query(PortModel).filter_by(session_id = session_id).delete()
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(PortModel).filter_by(session_id=session_id).delete()
               
             flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id = session_id).all()
             for flow_rule_ref in flow_rules_ref:
@@ -260,7 +260,7 @@ class GraphSession(object):
     def getNFFG(self, session_id):
         nffg = NF_FG()
         session = get_session()
-        session_ref = session.query(GraphSessionModel).filter_by(id = session_id).one()
+        session_ref = session.query(GraphSessionModel).filter_by(session_id=session_id).one()
 
         nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
@@ -377,7 +377,7 @@ class GraphSession(object):
             # session_id by ref
             session_id = self._ids_generator(nffg, session_id)
             
-            session_ref = GraphSessionModel(id=session_id, user_id=user_id, graph_id=nffg.id, 
+            session_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
                                 last_update = datetime.datetime.now(), status='inizialization')
             session.add(session_ref)
@@ -551,13 +551,13 @@ class GraphSession(object):
     
     def _get_univocal_session_id(self):
         session = get_session()
-        rows = session.query(GraphSessionModel.id).all()
+        rows = session.query(GraphSessionModel.session_id).all()
         
         while True:
             session_id = uuid.uuid4().hex
             found = False
             for row in rows:
-                if(row.id == session_id):
+                if(row.session_id == session_id):
                     found = True
                     break
             if found==False:
