@@ -10,7 +10,7 @@
         "type": "interface",
         "interface": {
           "switch-id": "openflow:261693184597067",
-          "interface": "1"
+          "interface": "141"
         }
       },      
       {
@@ -19,7 +19,7 @@
         "type": "interface",
         "interface": {
           "switch-id": "openflow:192368849455687",
-          "interface": "2"
+          "interface": "242"
         }
       }
     ],

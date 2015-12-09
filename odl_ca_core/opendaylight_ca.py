@@ -180,7 +180,7 @@ class OpenDayLightCA(object):
     
     def NFFG_Validate(self, nffg):
         '''
-        A validator for this specific component adapter.
+        A validator for this specific control adapter.
         The original json, as specified in the extern NFFG library,
         could contain useless objects and fields for this CA.
         If this happens, we have to raise exceptions to stop the request processing.  
@@ -335,13 +335,9 @@ class OpenDayLightCA(object):
                 action = Action(act)
                 actions = [action]
                 match1.setInputMatch(endpoint1.interface)
-                flowname = str(flowrule.id)
-                flowj = Flow("flowrule", flowname, 0, flowrule.priority, True, 0, 0, actions, match1)        
-                json_req = flowj.getJSON(self.odlversion, endpoint1.switch_id)
-                ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, endpoint1.switch_id, flowname)
+                flowname = str(flowrule.id)                
                 
-                flow_rule = FlowRule(_id=flowname,node_id=endpoint1.switch_id,_type='external', status='complete',priority=flowrule.priority, internal_id=flowrule.id)  
-                GraphSession().addFlowrule(self._session_id, endpoint1.switch_id, flow_rule, None)
+                self._ODL_PushFlow(endpoint1.switch_id, actions, match1, flowname, flowrule.priority, flowrule.id)
                 return  
         
         for act in flowrule.actions:
@@ -377,7 +373,7 @@ class OpenDayLightCA(object):
                                 
                                 match1.setInputMatch(endpoint1.interface)
                                 
-                                flowname1 = str(flowrule.id) + str(1) 
+                                flowname1 = str(flowrule.id) + "_" + str(1) 
                                 switch1 = endpoint1.switch_id
 
                                 # second flow
@@ -388,7 +384,7 @@ class OpenDayLightCA(object):
                                 match2.setInputMatch(port21) 
                                 
                                 #second_flow = True
-                                flowname2 = str(flowrule.id) + str(2)
+                                flowname2 = str(flowrule.id) + "_" + str(2)
                                 switch2 = endpoint2.switch_id
                                 
                             elif endpoint1.interface != port12 and endpoint2.interface == port21:
@@ -433,9 +429,9 @@ class OpenDayLightCA(object):
                 actions1.append(action)
                     
         if switch1 is not None:     
-            self._ODL_PushFlow(self._session_id, switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
+            self._ODL_PushFlow(switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
             if switch2 is not None:
-                self._ODL_PushFlow(self._session_id, switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
+                self._ODL_PushFlow(switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
@@ -443,9 +439,8 @@ class OpenDayLightCA(object):
 
                 
 
-    def _ODL_PushFlow(self, session_id, switch_id, actions, match, flowname, priority, flow_id):
+    def _ODL_PushFlow(self, switch_id, actions, match, flowname, priority, flow_id):
         flowname = flowname.replace(' ', '')
-        flowtype = 'external'
         
         # ODL/Switch: Add flow rule
         flowj = Flow("flowrule", flowname, 0, priority, True, 0, 0, actions, match)
@@ -453,8 +448,8 @@ class OpenDayLightCA(object):
         ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
         
         # DATABASE: Add flow rule
-        flow_rule = FlowRule(_id=flowname,node_id=switch_id, _type=flowtype, status='complete',priority=priority, internal_id=flow_id)  
-        GraphSession().addFlowrule(session_id, switch_id, flow_rule, None)
+        flow_rule = FlowRule(_id=flow_id,node_id=switch_id, _type='external', status='complete',priority=priority, internal_id=flowname)  
+        GraphSession().addFlowrule(self._session_id, switch_id, flow_rule, None)
         
     
     
@@ -604,7 +599,7 @@ class OpenDayLightCA(object):
             
             flow_name = str(flow_id)+"_"+str(i)
             
-            self._ODL_PushFlow(session_id, switch_id, new_actions, match, flow_name, flow_priority, flow_id)
+            self._ODL_PushFlow(switch_id, new_actions, match, flow_name, flow_priority, flow_id)
         
         return
 

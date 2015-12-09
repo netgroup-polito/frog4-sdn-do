@@ -4,7 +4,7 @@ Created on Dic 7, 2015
 @author: fabiomignini
 @author: giacomoratta
 
-This script test the main functions of the OpenDayLight Component Adapter.
+This script test the main functions of the OpenDayLight Control Adapter.
    1) Load configuration;
    2) load a json file with the NFFG to load;
    3) validate the NFFG;
@@ -33,25 +33,28 @@ conf.log_configuration()
 
 
 
-# START OPENDAYLIGHT COMPONENT ADAPTER
-logging.debug("OpenDayLight Component Adapter Starting...")
-print "Welcome to 'OpenDayLight Component Adapter'"
+# START OPENDAYLIGHT CONTROL ADAPTER
+logging.debug("OpenDayLight Control Adapter Starting...")
+print "Welcome to 'OpenDayLight Control Adapter'"
     
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_rm1.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put1.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
 nffg.parseDict(nffg_file)
 
 
-# INSTANTIATE the Component Adapter
+# Instantiate the control adapter
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlCA = OpenDayLightCA(user)
 
 # Delete
-odlCA.NFFG_Delete(977)
+try:
+    odlCA.NFFG_Delete(977)
+except Exception as ex:
+    print ex.message
 
 # Validate and Put
 odlCA.NFFG_Validate(nffg)
@@ -59,7 +62,7 @@ odlCA.NFFG_Put(nffg)
 
 
 # NF-FG File (with updates) 
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_rm2.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put1.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

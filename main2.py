@@ -27,9 +27,9 @@ conf.log_configuration()
 
 
 
-# START OPENDAYLIGHT COMPONENT ADAPTER
-logging.debug("OpenDayLight Component Adapter Starting...")
-print "Welcome to 'OpenDayLight Component Adapter'"
+# START OPENDAYLIGHT CONTROL ADAPTER
+logging.debug("OpenDayLight Control Adapter Starting...")
+print "Welcome to 'OpenDayLight Control Adapter'"
     
 # Falcon
 logging.info("Starting server application")

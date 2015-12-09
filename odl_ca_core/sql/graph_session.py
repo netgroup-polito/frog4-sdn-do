@@ -26,93 +26,91 @@ sqlserver = Configuration().DATABASE_CONNECTION
 
 
 class GraphSessionModel(Base):
-    '''
-    Maps the database table session
-    '''
-    __tablename__ = 'session'
-    attributes = ['id', 'user_id', 'graph_id', 'graph_name', 'status','started_at',
-                  'last_update','error','ended']
+    __tablename__ = 'graph_session'
+    attributes = ['id', 'user_id', 'graph_id', 'graph_name', 'status',
+                  'started_at', 'last_update', 'error', 'ended']
     id = Column(VARCHAR(64), primary_key=True)
     user_id = Column(VARCHAR(64))
-    graph_id = Column(Text)
-    graph_name = Column(Text)
-    status = Column(Text)
-    started_at = Column(Text)
+    graph_id = Column(Text)     # id in the json [see "forwarding-graph" section]
+    graph_name = Column(Text)   # name in the json [see "forwarding-graph" section]
+    status = Column(Text)       # = ( initialization | complete | updating | deleted | error )
+    started_at = Column(DateTime)
     last_update = Column(DateTime, default=func.now())
-    error = Column(Text)
+    error = Column(DateTime)
     ended = Column(DateTime)
-    
 
 
 class PortModel(Base):
-    '''
-    Maps the database table node
-    '''
     __tablename__ = 'port'
-    attributes = ['id', 'graph_port_id', 'session_id', 'status', 'switch_id',
+    attributes = ['id', 'graph_port_id', 'status', 'switch_id', 'session_id'
                   'mac_address', 'ipv4_address', 'vlan_id','gre_key', 'creation_date','last_update' ]
     id = Column(Integer, primary_key=True)
-    graph_port_id = Column(VARCHAR(64)) # id in the json
-    session_id = Column(Integer)
-    status = Column(VARCHAR(64)) # initialization, complete, error
+    graph_port_id = Column(VARCHAR(64)) # endpoint interface in the json [see "interface" section]
+    status = Column(VARCHAR(64))        # = ( initialization | complete | error )
     switch_id = Column(VARCHAR(64))
+    session_id = Column(VARCHAR(64))
+    
+    # port characteristics
     mac_address = Column(VARCHAR(64))
     ipv4_address = Column(VARCHAR(64))
     vlan_id = Column(VARCHAR(64))
     gre_key = Column(VARCHAR(64))
-    creation_date = Column(VARCHAR(64))
-    last_update = Column(VARCHAR(64))
+    creation_date = Column(DateTime)
+    last_update = Column(DateTime, default=func.now())
+    
+    
     
 class EndpointModel(Base):
-    '''
-    Maps the database table endpoint
-    '''
     __tablename__ = 'endpoint'
     attributes = ['id', 'graph_endpoint_id','name','type','session_id']
-    id = Column(Integer, primary_key=True)
-    graph_endpoint_id = Column(VARCHAR(64)) # id in the json
-    name = Column(VARCHAR(64))
-    type = Column(VARCHAR(64)) # internal, interface, interface-out, vlan, gre
+    id = Column(Integer, primary_key=True) 
+    graph_endpoint_id = Column(VARCHAR(64)) # id in the json [see "end-points" section]
+    name = Column(VARCHAR(64))  # name in the json [see "end-points" section]
+    type = Column(VARCHAR(64))  # = ( internal | interface | interface-out | vlan | gre ) [see "end-points" section]
     session_id = Column(VARCHAR(64))
+    
+    
     
 class EndpointResourceModel(Base):
     '''
-    Maps the database table endpoint_resource
+        resource_type: flow-rule type must have the resource_id equal to the flow-rules
+                       that connect the end-point to an external end-point.
     '''
     __tablename__ = 'endpoint_resource'
     attributes = ['endpoint_id', 'resource_type', 'resource_id']
     endpoint_id = Column(Integer, primary_key=True)
-    resource_type = Column(VARCHAR(64), primary_key=True) # port or flow-rule (flow-rule will be the flow-rules that connect the end-point to an external end-point)
+    resource_type = Column(VARCHAR(64), primary_key=True) # = ( port | flow-rule )
     resource_id = Column(Integer, primary_key=True)
+    
+    
 
 class FlowRuleModel(Base):
-    '''
-    Maps the database table node
-    '''
     __tablename__ = 'flow_rule'
-    attributes = ['id', 'internal_id', 'graph_flow_rule_id', 'session_id','switch_id', 'type', 'priority','status', 'creation_date','last_update']
+    attributes = ['id', 'graph_flow_rule_id', 'internal_id', 'session_id', 
+                  'switch_id', 'type', 'priority','status', 'creation_date','last_update']
     id = Column(Integer, primary_key=True)
-    internal_id = Column(VARCHAR(64)) # id of the infrastructure graph
-    graph_flow_rule_id = Column(VARCHAR(64)) # id in the json
+    graph_flow_rule_id = Column(VARCHAR(64)) # id in the json [see "flow-rules" section]
+    internal_id = Column(VARCHAR(64)) # auto-generated id, for the same graph_flow_rule_id
     session_id = Column(VARCHAR(64))
+    
     switch_id = Column(VARCHAR(64))
-    type = Column(VARCHAR(64))
-    priority = Column(VARCHAR(64)) # openflow priority    
-    status = Column(VARCHAR(64)) # initialization, complete, error
-    creation_date = Column(VARCHAR(64))
-    last_update = Column(VARCHAR(64))
+    type = Column(VARCHAR(64))      # = ( NULL | external )
+    priority = Column(VARCHAR(64))  # priority in the json [see "flow-rules" section] 
+    status = Column(VARCHAR(64))    # = ( initialization | complete | error )
+    creation_date = Column(DateTime)
+    last_update = Column(DateTime, default=func.now())
+    
+    
     
 class MatchModel(Base):
-    '''
-    Maps the database table match
-    '''
     __tablename__ = 'match'
-
     attributes = ['id', 'flow_rule_id', 'port_in_type', 'port_in', 'ether_type','vlan_id','vlan_priority', 'source_mac','dest_mac','source_ip',
                  'dest_ip','tos_bits','source_port', 'dest_port', 'protocol']
     id = Column(Integer, primary_key=True)
-    flow_rule_id = Column(Integer)
-    port_in_type = Column(VARCHAR(64)) # port or endpoint
+    flow_rule_id = Column(Integer)      # = FlowRuleModel.id
+    port_in_type = Column(VARCHAR(64))  # = ( port | endpoint )
+    
+    # match characteristics
     port_in = Column(VARCHAR(64))
     ether_type = Column(VARCHAR(64))
     vlan_id = Column(VARCHAR(64))
@@ -125,20 +123,20 @@ class MatchModel(Base):
     source_port = Column(VARCHAR(64))
     dest_port = Column(VARCHAR(64))
     protocol = Column(VARCHAR(64))
+    
+    
 
 class ActionModel(Base):
-    '''
-    Maps the database table action
-    '''
     __tablename__ = 'action'
-
     attributes = ['id', 'flow_rule_id', 'output_type', 'output', 'controller', '_drop', 'set_vlan_id','set_vlan_priority','pop_vlan', 'set_ethernet_src_address',
                   'set_ethernet_dst_address','set_ip_src_address','set_ip_dst_address', 'set_ip_tos','set_l4_src_port','set_l4_dst_port', 'output_to_queue']    
     id = Column(Integer, primary_key=True)
-    flow_rule_id = Column(Integer)
-    output_type = Column(VARCHAR(64)) # port or endpoint
-    output = Column(VARCHAR(64))
-    controller = Column(Boolean)
+    flow_rule_id = Column(Integer)      # = FlowRuleModel.id
+    output_type = Column(VARCHAR(64))   # = ( port | endpoint )
+    
+    # action characteristics
+    output = Column(VARCHAR(64))        # es. output port, endpoint interface
+    controller = Column(Boolean)        # if 'true' it sends packets to controller (es. CONTROLLER:65535) 
     _drop = Column(Boolean)
     set_vlan_id = Column(VARCHAR(64))
     set_vlan_priority = Column(VARCHAR(64))
@@ -151,6 +149,7 @@ class ActionModel(Base):
     set_l4_src_port = Column(VARCHAR(64))
     set_l4_dst_port = Column(VARCHAR(64))
     output_to_queue = Column(VARCHAR(64))
+
 
 
 
@@ -356,7 +355,7 @@ class GraphSession(object):
                     # TODO: set status
                     if "interface" in endpoint.type or endpoint.type == "vlan":
                         port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
-                                             session_id=session_id, status=None, switch_id=endpoint.switch_id,
+                                             session_id=session_id, status='complete', switch_id=endpoint.switch_id,
                                              vlan_id=endpoint.vlan_id,
                                              creation_date=datetime.datetime.now(), 
                                              last_update=datetime.datetime.now())
@@ -396,7 +395,7 @@ class GraphSession(object):
                 # End-point attached to something that is not another graph
                 if "interface" in endpoint.type or endpoint.type == "vlan":                    
                     port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
-                                         session_id=session_id, status=None, switch_id=endpoint.switch_id,
+                                         session_id=session_id, status='complete', switch_id=endpoint.switch_id,
                                          vlan_id=endpoint.vlan_id,
                                          creation_date=datetime.datetime.now(), 
                                          last_update=datetime.datetime.now())
