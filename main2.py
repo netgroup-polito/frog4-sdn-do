@@ -56,12 +56,6 @@ TODO
 - creare un db.sql aggiornato
 
 
-[ 5 ]
-passare a sqlite
-- sqlalchemy engine 'sqlite'
-- da phpmyadmin a phpliteadmin
-
-
 - definire interfaccia DOUBLEDECKER
 - pulire ulteriormente il database
 
