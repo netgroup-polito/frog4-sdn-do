@@ -152,13 +152,20 @@ class ActionModel(Base):
 
 
 
+class VlanModel(Base):
+    __tablename__ = 'vlan'
+    attributes = ['switch_id', 'vlan_id']
+    switch_id = Column(VARCHAR(64), primary_key=True)
+    vlan_id = Column(VARCHAR(64), primary_key=True)
 
-    
+
+
+
+
+
 class GraphSession(object):
     def __init__(self):
-        pass
-    
-        
+        pass        
     
     def getActiveSession(self, user_id, graph_id, error_aware=True):
         session = get_session()

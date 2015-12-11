@@ -10,16 +10,16 @@
         "type": "interface",
         "interface": {
           "switch-id": "openflow:261693184597067",
-          "interface": "321"
+          "interface": "141"
         }
       },      
       {
-        "id": "End41",
+        "id": "End31",
         "name": "EGRESS",
         "type": "interface",
         "interface": {
-          "switch-id": "openflow:16240894443595",
-          "interface": "341"
+          "switch-id": "openflow:192368849455687",
+          "interface": "242"
         }
       }
     ],
@@ -32,12 +32,14 @@
           "id": "9771",
           "priority": 100,
           "match": {
-            "port_in": "endpoint:End21",
-            "vlan_id": "333"
+            "port_in": "endpoint:End21"
           },
           "actions": [
+            {
+            	"set_vlan_id": "461"
+          	},
           	{
-            	"output": "endpoint:End41"
+            	"output": "endpoint:End31"
           	}
           ]
         },
@@ -46,10 +48,12 @@
           "id": "9772",
           "priority": 100,
           "match": {
-            "port_in": "endpoint:End41",
-            "vlan_id": "333"
+            "port_in": "endpoint:End31"
           },
           "actions": [
+            {
+            	"set_vlan_id": "461"
+          	},
           	{
             	"output": "endpoint:End21"
           	}

@@ -39,7 +39,7 @@ print "Welcome to 'OpenDayLight Control Adapter'"
     
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put1.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put2.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
@@ -55,6 +55,8 @@ try:
     odlCA.NFFG_Delete(977)
 except Exception as ex:
     print ex.message
+#quit()
+
 
 # Validate and Put
 odlCA.NFFG_Validate(nffg)
@@ -62,7 +64,7 @@ odlCA.NFFG_Put(nffg)
 
 
 # NF-FG File (with updates) 
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put1.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put2.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

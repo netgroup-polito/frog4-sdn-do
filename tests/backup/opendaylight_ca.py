@@ -21,9 +21,6 @@ from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInform
 
 
 
-
-
-
 class OpenDayLightCA(object):
 
     def __init__(self, user_data):
@@ -133,7 +130,7 @@ class OpenDayLightCA(object):
     
     
     
-    def NFFG_Delete(self, nffg_id):
+    def NFFG_Delete(self, nffg_id):        
         
         session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
         if session is None:
@@ -281,7 +278,7 @@ class OpenDayLightCA(object):
         flows = GraphSession().getFlowrules(session_id)
         for flow in flows:
             if flow.type == "external" and flow.status == "complete":
-                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.internal_id)
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
 
 
 
@@ -314,57 +311,26 @@ class OpenDayLightCA(object):
                 # Finally, delete the main flow rule (that written in nffg.json)
                 GraphSession().deleteFlowrule(flowrule.db_id)
                 updated_nffg.flow_rules.remove(flowrule)
-    
-
-
-
-
-    class ___processedFLowrule(object):
-            
-        def __init__(self,switch_id=None,match=None,actions=None,flow_id=None,priority=None,flowname_suffix=None):
-            self.switch_id = switch_id
-            self.match = match
-            if actions is None:
-                self.actions = []
-            else:
-                self.actions = actions
-            self.flow_id = flow_id
-            self.flow_name = str(flow_id)+"_"
-            if flowname_suffix is not None:
-                self.flow_name = self.flow_name + flowname_suffix
-            self.priority = priority
-        
-        def setFr1(self, switch_id, action, port_in, port_out, flowname_suffix):
-            if(self.match is None):
-                self.match = Match()
-            new_act = Action(action)
-            if(port_out is not None):
-                new_act.setOutputAction(port_out, 65535)
-            
-            self.actions.append(new_act)
-            self.match.setInputMatch(port_in)
-            self.switch_id = switch_id
-            self.flow_name = self.flow_name+flowname_suffix
-        
-        def isReady(self):
-            return ( self.switch_id is not None and self.flow_id is not None )
-
 
 
 
     def _ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
         #Process a flow rule written in the section "big switch" of a nffg json.
         
-        fr1 = OpenDayLightCA.___processedFLowrule(match=Match(flowrule.match),
-                                                  priority=flowrule.priority,
-                                                  flow_id=flowrule.id)
+        match1 = Match(flowrule.match)
+        match2 = None
         
-        fr2 = OpenDayLightCA.___processedFLowrule(priority=flowrule.priority,
-                                                  flow_id=flowrule.id)
-
-           
+        actions1 = []
+        actions2 = []
+        
+        switch1 = None
+        switch2 = None
+        
+        flowname1 = None
+        flowname2 = None        
+        
         nodes_path = None
-        nodes_path_flag = None
+        nodes_path_flag = None    
         
         print "\n\n\nodlProcessFlowrule"
         
@@ -372,8 +338,13 @@ class OpenDayLightCA(object):
         # If a flow rule has a drop action, we don't care other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , None, "1")
-                self._ODL_PushFlow(fr1)
+                action = Action(a)
+                actions = [action]
+                match1.setInputMatch(endpoint1.interface)
+                flowname = str(flowrule.id)                
+                
+                self._ODL_PushFlow(endpoint1.switch_id, actions, match1,
+                                   flowname, flowrule.priority, flowrule.id)
                 return  
         
         # Split the action handling in output and non-output.
@@ -382,15 +353,14 @@ class OpenDayLightCA(object):
             # If this action is not an output action,
             # we just append it to the final actions list 'actions1'.
             if a.output is None:
-                #new_act = Action(a)
-                #actions1.append(new_act)
-                fr1.actions.append(Action(a))
+                action = Action(a)
+                actions1.append(action)
             
             # If this action is an output action (a.output is not None),
             # we check that the output is an endpoint and manage the main cases.
             else:
                 
-                # Is the 'output' destination an endpoint?
+                # Is an endpoint?
                 tmp2 = a.output.split(':')
                 port2_type = tmp2[0]
                 port2_id = tmp2[1]
@@ -399,14 +369,17 @@ class OpenDayLightCA(object):
                     
                     # Endpoints are on the same switch
                     if endpoint1.switch_id == endpoint2.switch_id:
-                        
-                        # Error: endpoints are equal!
                         if endpoint1.interface == endpoint2.interface:
                             raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
-                        
-                        # Install a flow between two ports of the switch
                         else:
-                            fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , endpoint2.interface, "1")
+                            action1 = Action(a)
+                            action1.setOutputAction(endpoint2.interface, 65535)
+                            actions1.append(action1)
+
+                            match1.setInputMatch(endpoint1.interface)
+                            
+                            flowname1 = str(flowrule.id)
+                            switch1 = endpoint1.switch_id
                     
                     # Endpoints are on different switches              
                     else:
@@ -415,28 +388,9 @@ class OpenDayLightCA(object):
                         # Return: port12 (on endpoint1 switch) and port21 (on endpoint2 switch).
                         port12,port21 = self._ODL_GetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
                         
-                        # A link between endpoint switches exists!
-                        if port12 is not None and port21 is not None:
+                        # If one port is None it means that a link between endpoint switches does not exist.
+                        if port12 is None or port21 is None:
                             
-                            # Endpoints are not on the link: 2 flows 
-                            if endpoint1.interface != port12 and endpoint2.interface != port21:
-                                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , port12, "1")
-                                fr2.setFr1(endpoint2.switch_id, None, port21 , endpoint2.interface, "2")
-                            
-                            # Flow installed on first switch
-                            elif endpoint1.interface != port12 and endpoint2.interface == port21:
-                                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , port12, "1")
-                                                                
-                            # Flow installed on second switch                                
-                            elif endpoint1.interface == port12 and endpoint2.interface != port21:
-                                fr1.setFr1(endpoint2.switch_id, a, endpoint2.interface , port21, "2")
-                            
-                            # Endpoints are on the link: cannot install flow
-                            elif endpoint1.interface == port12 and endpoint2.interface == port21:
-                                logging.warning("Flow not installed for flowrule id "+flowrule.id+ ": both endpoints are on the same link")
-                        
-                        # No link between endpoint switches...search for a path!
-                        else:
                             if(nodes_path_flag == None):
                                 self.netgraph.getTopologyGraph()
                                 nodes_path = self.netgraph.getShortestPath(endpoint1.switch_id, endpoint2.switch_id)
@@ -448,39 +402,85 @@ class OpenDayLightCA(object):
                                 logging.debug("Creating a path bewteen "+endpoint1.switch_id+" and "+endpoint2.switch_id+". "+
                                               "Path Length = "+str(len(nodes_path)))
                         
-        
-        # Push the fr1, if it is ready                
-        if fr1.isReady():
-            self._ODL_PushFlow(fr1)
-        
-            # Push the fr2, if it is ready     
-            if fr2.isReady():
-                self._ODL_PushFlow(fr2)
+                        # A link between endpoint switches exists!
+                        else:
+                            if endpoint1.interface != port12 and endpoint2.interface != port21:
+                                print "did"
+                                # endpoints are not on the link: 2 flows 
+                                action1 = Action(a)
+                                action1.setOutputAction(port12, 65535)
+                                actions1.append(action1)
+                                
+                                match1.setInputMatch(endpoint1.interface)
+                                
+                                flowname1 = str(flowrule.id) + "_" + str(1) 
+                                switch1 = endpoint1.switch_id
+
+                                # second flow
+                                action2 = Action()
+                                action2.setOutputAction(endpoint2.interface, 65535)
+                                actions2 = [action2]
+                                match2 = Match()
+                                match2.setInputMatch(port21) 
+                                
+                                #second_flow = True
+                                flowname2 = str(flowrule.id) + "_" + str(2)
+                                switch2 = endpoint2.switch_id
+                                
+                            elif endpoint1.interface != port12 and endpoint2.interface == port21:
+                                #flow installed on first switch
+                                action1 = Action(a)
+                                action1.setOutputAction(port12, 65535)
+                                actions1.append(action1)
+                                
+                                match1.setInputMatch(endpoint1.interface)
+                                
+                                flowname1 = str(flowrule.id)
+                                switch1 = endpoint1.switch_id                                
+                                
+                            elif endpoint1.interface == port12 and endpoint2.interface != port21:
+                                #flow installed on second switch
+                                action1 = Action(a)
+                                action1.setOutputAction(endpoint2.interface, 65535)
+                                actions1.append(action1)
+                                
+                                match1.setInputMatch(port21)
+                                
+                                flowname1 = str(flowrule.id)
+                                switch1 = endpoint2.switch_id
+                                
+                            elif endpoint1.interface == port12 and endpoint2.interface == port21:
+                                #endpoints are on the link: cannot install flow
+                                logging.warning("Flow not installed for flowrule id "+flowrule.id+ ": both endpoints are on the same link")
+                        
+                    
+        if switch1 is not None:     
+            self._ODL_PushFlow(switch1, actions1, match1, flowname1, flowrule.priority, flowrule.id)
+            if switch2 is not None:
+                self._ODL_PushFlow(switch2, actions2, match2, flowname2, flowrule.priority, flowrule.id)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
-            self._ODL_LinkEndpoints(nodes_path, endpoint1, endpoint2, flowrule)
+            self._ODL_LinkEndpoints(self._session_id, nodes_path,endpoint1,endpoint2,flowrule)
+    
+    
+    
+    def ___f1(self):
+        
 
                 
-    
-    # TODO: eliminate this function
-    def _ODL_PushFlow2(self, switch_id, actions, match, flowname, priority, flow_id, suffix):
-        pfr = OpenDayLightCA.___processedFLowrule(switch_id=switch_id, match=match, actions=actions, flow_id=flow_id, priority=priority, flowname_suffix=suffix)
-        self._ODL_PushFlow(pfr)
-    
-    
-    
-    def _ODL_PushFlow(self, pfr):
-        # pfr = ___processedFLowrule
 
+    def _ODL_PushFlow(self, switch_id, actions, match, flowname, priority, flow_id):
+        flowname = flowname.replace(' ', '')
+        
         # ODL/Switch: Add flow rule
-        flowj = Flow("flowrule", pfr.flow_name, 0, pfr.priority, True, 0, 0, pfr.actions, pfr.match)
-        json_req = flowj.getJSON(self.odlversion, pfr.switch_id)
-        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, pfr.switch_id, pfr.flow_name)
+        flowj = Flow("flowrule", flowname, 0, priority, True, 0, 0, actions, match)
+        json_req = flowj.getJSON(self.odlversion, switch_id)
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, switch_id, flowname)
         
         # DATABASE: Add flow rule
-        flow_rule = FlowRule(_id=pfr.flow_id,node_id=pfr.switch_id, _type='external', status='complete',priority=pfr.priority, internal_id=pfr.flow_name)  
-        GraphSession().addFlowrule(self._session_id, pfr.switch_id, flow_rule, None)
+        flow_rule = FlowRule(_id=flow_id,node_id=switch_id, _type='external', status='complete',priority=priority, internal_id=flowname)  
+        GraphSession().addFlowrule(self._session_id, switch_id, flow_rule, None)
         
     
     
@@ -534,7 +534,7 @@ class OpenDayLightCA(object):
 
 
 
-    def _ODL_LinkEndpoints(self,path,ep1,ep2,flowrule):
+    def _ODL_LinkEndpoints(self,session_id, path,ep1,ep2,flowrule):
 
         flow_id = flowrule.id
         flow_priority = flowrule.priority
@@ -630,8 +630,7 @@ class OpenDayLightCA(object):
             
             flow_name = str(flow_id)+"_"+str(i)
             
-            # TODO: use _ODL_PushFlow and create the object ___processedFlowRule
-            self._ODL_PushFlow2(switch_id, new_actions, match, flow_name, flow_priority, flow_id, str(i))
+            self._ODL_PushFlow(switch_id, new_actions, match, flow_name, flow_priority, flow_id)
         
         return
 
