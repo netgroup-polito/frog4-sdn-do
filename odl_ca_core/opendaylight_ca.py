@@ -382,8 +382,6 @@ class OpenDayLightCA(object):
             # If this action is not an output action,
             # we just append it to the final actions list 'actions1'.
             if a.output is None:
-                #new_act = Action(a)
-                #actions1.append(new_act)
                 fr1.actions.append(Action(a))
             
             # If this action is an output action (a.output is not None),
