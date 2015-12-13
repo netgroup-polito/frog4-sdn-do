@@ -12,7 +12,6 @@ from nffg_library.nffg import FlowRule
 
 from odl_ca_core.sql.graph_session import GraphSession
 
-
 from odl_ca_core.config import Configuration
 from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
@@ -68,10 +67,10 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             
             # Profile graph for ODL functions
-            profile_graph = self._ProfileGraph_BuildFromNFFG(nffg)
+            profile_graph = self.__ProfileGraph_BuildFromNFFG(nffg)
             
             # Write latest info in the database and send all the flow rules to ODL
-            self._ODL_FlowsInstantiation(profile_graph)
+            self.__ODL_FlowsInstantiation(profile_graph)
             
             logging.debug("Put NF-FG: session " + self._session_id + " correctly instantiated!")
 
@@ -111,12 +110,12 @@ class OpenDayLightCA(object):
             logging.debug("Update NF-FG: coming updates: "+updated_nffg.getJSON(True))            
             
             # Delete useless endpoints and flowrules 
-            self._ODL_FlowsControlledDeletion(updated_nffg)
+            self.__ODL_FlowsControlledDeletion(updated_nffg)
             
             # Update database and send flowrules to ODL
             GraphSession().updateNFFG(updated_nffg, self._session_id)
-            profile_graph = self._ProfileGraph_BuildFromNFFG(updated_nffg)
-            self._ODL_FlowsInstantiation(profile_graph)
+            profile_graph = self.__ProfileGraph_BuildFromNFFG(updated_nffg)
+            self.__ODL_FlowsInstantiation(profile_graph)
             
             logging.debug("Update NF-FG: session " + self._session_id + " correctly updated!")
             
@@ -147,7 +146,7 @@ class OpenDayLightCA(object):
         logging.debug("Delete NF-FG: we are going to delete: "+instantiated_nffg.getJSON())
     
         try:
-            self._ODL_FlowsDeletion(self._session_id)
+            self.__ODL_FlowsDeletion(self._session_id)
             logging.debug("Delete NF-FG: session " + self._session_id + " correctly deleted!")
             
         except Exception as ex:
@@ -209,7 +208,7 @@ class OpenDayLightCA(object):
 
 
 
-    def _ProfileGraph_BuildFromNFFG(self, nffg):
+    def __ProfileGraph_BuildFromNFFG(self, nffg):
         '''
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
         Args:
@@ -249,7 +248,7 @@ class OpenDayLightCA(object):
     ######################################################################################################
     '''
         
-    def _ODL_FlowsInstantiation(self, profile_graph):
+    def __ODL_FlowsInstantiation(self, profile_graph):
         
         # Create the endpoints
         # for endpoint in profile_graph.endpoints.values():
@@ -276,7 +275,7 @@ class OpenDayLightCA(object):
 
 
 
-    def _ODL_FlowsDeletion(self, session_id):       
+    def __ODL_FlowsDeletion(self, session_id):       
         #Delete every flow from ODL
         flows = GraphSession().getFlowrules(session_id)
         for flow in flows:
@@ -285,7 +284,7 @@ class OpenDayLightCA(object):
 
 
 
-    def _ODL_FlowsControlledDeletion(self, updated_nffg):
+    def __ODL_FlowsControlledDeletion(self, updated_nffg):
         
         # Delete the endpoints 'to_be_deleted'
         for endpoint in updated_nffg.end_points[:]:
@@ -319,35 +318,95 @@ class OpenDayLightCA(object):
 
 
 
-    class ___processedFLowrule(object):
+    class __processedFLowrule(object):
             
         def __init__(self,switch_id=None,match=None,actions=None,flow_id=None,priority=None,flowname_suffix=None):
-            self.switch_id = switch_id
-            self.match = match
-            if actions is None:
-                self.actions = []
-            else:
-                self.actions = actions
-            self.flow_id = flow_id
-            self.flow_name = str(flow_id)+"_"
-            if flowname_suffix is not None:
-                self.flow_name = self.flow_name + flowname_suffix
-            self.priority = priority
+            self.__switch_id = switch_id
+            self.__match = match
+            self.set_actions(actions)
+            self.set_flow_id(flow_id)
+            self.set_flow_name(flowname_suffix)
+            self.__priority = priority
+            self.__vlan_id = None
+            
+
+        def get_switch_id(self):
+            return self.__switch_id
+
+        def get_match(self):
+            return self.__match
+
+        def get_actions(self):
+            return self.__actions
+
+        def get_flow_id(self):
+            return self.__flow_id
+
+        def get_flow_name(self):
+            return self.__flow_name
+
+        def get_priority(self):
+            return self.__priority
         
+        def get_vlan_id(self):
+            return self.__vlan_id
+
+
+        def set_switch_id(self, value):
+            self.__switch_id = value
+
+        def set_match(self, value):
+            self.__match = value
+
+        def set_actions(self, value):
+            if value is None:
+                self.__actions = []
+            else:
+                self.__actions = value
+        
+        def append_action(self, value):
+            if value is None:
+                return
+            self.__actions.append(value)
+            
+        def __reset_flow_name(self):
+            self.__flow_name = str(self.__flow_id)+"_"
+            
+        def set_flow_id(self, value):
+            self.__flow_id = value
+            self.__reset_flow_name()
+
+        def set_flow_name(self, suffix):
+            self.__reset_flow_name()
+            if(suffix is not None):
+                self.__flow_name = self.__flow_name + str(suffix)
+
+        def set_priority(self, value):
+            self.__priority = value
+        
+        def set_vlan_id(self, value):
+            self.__vlan_id = value
+            
+            
+
+
         def setFr1(self, switch_id, action, port_in, port_out, flowname_suffix):
-            if(self.match is None):
-                self.match = Match()
+            if(self.__match is None):
+                self.__match = Match()
             new_act = Action(action)
             if(port_out is not None):
                 new_act.setOutputAction(port_out, 65535)
             
-            self.actions.append(new_act)
-            self.match.setInputMatch(port_in)
-            self.switch_id = switch_id
-            self.flow_name = self.flow_name+flowname_suffix
+            self.__actions.append(new_act)
+            self.__match.setInputMatch(port_in)
+            self.__switch_id = switch_id
+            self.__flow_name = self.__flow_name+flowname_suffix
+
         
         def isReady(self):
-            return ( self.switch_id is not None and self.flow_id is not None )
+            return ( self.__switch_id is not None and self.__flow_id is not None )
+
+
 
 
 
@@ -355,11 +414,11 @@ class OpenDayLightCA(object):
     def _ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
         #Process a flow rule written in the section "big switch" of a nffg json.
         
-        fr1 = OpenDayLightCA.___processedFLowrule(match=Match(flowrule.match),
+        fr1 = OpenDayLightCA.__processedFLowrule(match=Match(flowrule.match),
                                                   priority=flowrule.priority,
                                                   flow_id=flowrule.id)
         
-        fr2 = OpenDayLightCA.___processedFLowrule(priority=flowrule.priority,
+        fr2 = OpenDayLightCA.__processedFLowrule(priority=flowrule.priority,
                                                   flow_id=flowrule.id)
 
            
@@ -373,7 +432,7 @@ class OpenDayLightCA(object):
         for a in flowrule.actions:
             if a.drop is True:
                 fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , None, "1")
-                self._ODL_PushFlow(fr1)
+                self.__ODL_PushFlow(fr1)
                 return  
         
         # Split the action handling in output and non-output.
@@ -382,7 +441,7 @@ class OpenDayLightCA(object):
             # If this action is not an output action,
             # we just append it to the final actions list 'actions1'.
             if a.output is None:
-                fr1.actions.append(Action(a))
+                fr1.append_action(Action(a))
             
             # If this action is an output action (a.output is not None),
             # we check that the output is an endpoint and manage the main cases.
@@ -416,7 +475,7 @@ class OpenDayLightCA(object):
                         # A link between endpoint switches exists!
                         if port12 is not None and port21 is not None:
                             
-                            # Endpoints are not on the link: 2 flows 
+                            # Endpoints are not on the link: 2 flows (most probable setup) 
                             if endpoint1.interface != port12 and endpoint2.interface != port21:
                                 fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , port12, "1")
                                 fr2.setFr1(endpoint2.switch_id, None, port21 , endpoint2.interface, "2")
@@ -445,40 +504,38 @@ class OpenDayLightCA(object):
                             else:
                                 logging.debug("Creating a path bewteen "+endpoint1.switch_id+" and "+endpoint2.switch_id+". "+
                                               "Path Length = "+str(len(nodes_path)))
-                        
-        
         # Push the fr1, if it is ready                
         if fr1.isReady():
-            self._ODL_PushFlow(fr1)
+            self.__ODL_PushFlow(fr1)
         
             # Push the fr2, if it is ready     
             if fr2.isReady():
-                self._ODL_PushFlow(fr2)
+                self.__ODL_PushFlow(fr2)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
-            self._ODL_LinkEndpoints(nodes_path, endpoint1, endpoint2, flowrule)
+            self.__ODL_LinkEndpoints(nodes_path, endpoint1, endpoint2, flowrule)
 
-                
+
+
+
     
-    # TODO: eliminate this function
-    def _ODL_PushFlow2(self, switch_id, actions, match, flowname, priority, flow_id, suffix):
-        pfr = OpenDayLightCA.___processedFLowrule(switch_id=switch_id, match=match, actions=actions, flow_id=flow_id, priority=priority, flowname_suffix=suffix)
-        self._ODL_PushFlow(pfr)
-    
-    
-    
-    def _ODL_PushFlow(self, pfr):
-        # pfr = ___processedFLowrule
+    def __ODL_PushFlow(self, pfr):
+        # pfr = __processedFLowrule
 
         # ODL/Switch: Add flow rule
-        flowj = Flow("flowrule", pfr.flow_name, 0, pfr.priority, True, 0, 0, pfr.actions, pfr.match)
-        json_req = flowj.getJSON(self.odlversion, pfr.switch_id)
-        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, pfr.switch_id, pfr.flow_name)
+        flowj = Flow("flowrule", pfr.get_flow_name(), 0, pfr.get_priority(), True, 0, 0, pfr.get_actions(), pfr.get_match())
+        json_req = flowj.getJSON(self.odlversion, pfr.get_switch_id())
+        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, pfr.get_switch_id(), pfr.get_flow_name())
         
         # DATABASE: Add flow rule
-        flow_rule = FlowRule(_id=pfr.flow_id,node_id=pfr.switch_id, _type='external', status='complete',priority=pfr.priority, internal_id=pfr.flow_name)  
-        GraphSession().addFlowrule(self._session_id, pfr.switch_id, flow_rule, None)
+        flow_rule = FlowRule(_id=pfr.get_flow_id(),node_id=pfr.get_switch_id(), _type='external', status='complete',priority=pfr.get_priority(), internal_id=pfr.get_flow_name())  
+        GraphSession().addFlowrule(self._session_id, pfr.get_switch_id(), flow_rule, None)
+        
+        # DATABASE: Add vlan tracking
+        if pfr.get_switch_id() is not None and pfr.get_vlan_id() is not None:
+            GraphSession().vlanTracking_add(pfr.get_switch_id(),pfr.get_vlan_id())
+        
         
     
     
@@ -532,16 +589,15 @@ class OpenDayLightCA(object):
 
 
 
-    def _ODL_LinkEndpoints(self,path,ep1,ep2,flowrule):
+    def __ODL_LinkEndpoints(self,path,ep1,ep2,flowrule):
 
-        flow_id = flowrule.id
-        flow_priority = flowrule.priority
-        actions = []
+        pfr = OpenDayLightCA.__processedFLowrule(flow_id=flowrule.id, priority=flowrule.priority)
+        base_actions = []
         vlan_id = None
         
         print ""
-        print "Flow id: "+str(flow_id)
-        print "Flow priority: "+str(flow_priority)        
+        print "Flow id: "+str(pfr.get_flow_id())
+        print "Flow priority: "+str(pfr.get_priority())        
         
         
         # Clean actions
@@ -554,8 +610,7 @@ class OpenDayLightCA(object):
             
             # Filter non OUTPUT actions 
             if a.output is None:
-                action = Action(a)
-                actions.append(action)
+                base_actions.append(Action(a))
                 
         
         #TODO: Keep track of all vlan ID
@@ -573,63 +628,66 @@ class OpenDayLightCA(object):
                 
             '''
             print ""
+            pfr.set_vlan_id(vlan_id)
         
         
         # Traverse the path and create the flow for each switch
         for i in range(0, len(path)):
             hop = path[i]
             
-            match = Match(flowrule.match)
-            new_actions = list(actions)
+            pfr.set_flow_name(i)
+            base_match = Match(flowrule.match)
+            pfr.set_actions(base_actions)
             
             if i==0:
                 #first switch
-                switch_id = ep1.switch_id
+                pfr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
                 
                 if vlan_id is not None:
                     action_pushvlan = Action()
                     action_pushvlan.setPushVlanAction()
-                    new_actions.append(action_pushvlan)
+                    pfr.append_action(action_pushvlan)
                     
                     action_setvlan = Action()
                     action_setvlan.setSwapVlanAction(vlan_id)
-                    new_actions.append(action_setvlan)
+                    pfr.append_action(action_setvlan)
                 
             elif i==len(path)-1:
                 #last switch
-                switch_id = ep2.switch_id
+                pfr.set_switch_id(ep2.switch_id)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = ep2.interface
                 
                 if vlan_id is not None:
-                    match.setVlanMatch(vlan_id)
+                    base_match.setVlanMatch(vlan_id)
                     action_stripvlan = Action()
                     action_stripvlan.setPopVlanAction()
-                    new_actions.append(action_stripvlan)
+                    pfr.append_action(action_stripvlan)
 
             else:
                 #middle way switch
-                switch_id = hop
+                pfr.set_switch_id(hop)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
                 
                 if vlan_id is not None:
-                    match.setVlanMatch(vlan_id)
+                    base_match.setVlanMatch(vlan_id)
                 
-            print switch_id+" from "+str(port_in)+" to "+str(port_out)
+            print pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
             
-            match.setInputMatch(port_in)
+            base_match.setInputMatch(port_in)
+            pfr.set_match(base_match)
             
             action_output = Action()
             action_output.setOutputAction(port_out, 65535)
-            new_actions.append(action_output)
+            pfr.append_action(action_output)
             
-            flow_name = str(flow_id)+"_"+str(i)
-            
-            # TODO: use _ODL_PushFlow and create the object ___processedFlowRule
-            self._ODL_PushFlow2(switch_id, new_actions, match, flow_name, flow_priority, flow_id, str(i))
+            self.__ODL_PushFlow(pfr)
+        
+        # end-for
         
         return
+
 

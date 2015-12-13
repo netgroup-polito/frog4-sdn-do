@@ -255,6 +255,9 @@ class GraphSession(object):
     
     
     def deleteFlowrule(self, flowrule_id):
+        
+        # TODO: delete a flow rule by session id!!!
+        
         session = get_session()
         with session.begin():
             session.query(FlowRuleModel).filter_by(id = flowrule_id).delete()
@@ -569,3 +572,32 @@ class GraphSession(object):
                     break
             if found==False:
                 return session_id
+    
+    
+    
+    
+    
+    
+    
+    '''
+    Work in progress...
+    '''
+            
+    def vlanTracking_add(self, switch_id, vlan_id):
+        session = get_session()
+        vlan_query = session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).one()  
+        if(vlan_query is not None):
+            return
+        with session.begin():    
+            vlan_ref = VlanModel(switch_id=switch_id, vlan_id=vlan_id)
+            session.add(vlan_ref)
+
+
+    def vlanTracking_delete(self, switch_id, vlan_id):
+        session = get_session()
+        with session.begin():
+            session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).delete()
+    
+    
+    
+    

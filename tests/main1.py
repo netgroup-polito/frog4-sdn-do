@@ -77,6 +77,12 @@ odlCA.NFFG_Put(nffg)
 print("End update")
 
 
+'''
 
+- gestire aggiunta/eliminazione vlan_id (forse serve session_id)
+
+- controllare funzioni di eliminazione (devono essere by session_id!!!)
+
+'''
     
     
