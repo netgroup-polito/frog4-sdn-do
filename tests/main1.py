@@ -64,7 +64,7 @@ odlCA.NFFG_Put(nffg)
 
 
 # NF-FG File (with updates) 
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put2.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

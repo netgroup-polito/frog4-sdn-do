@@ -596,11 +596,6 @@ class GraphSession(object):
             
     def vlanTracking_add(self, flow_rule_id, switch_id, vlan_in, port_in, vlan_out, port_out):
         session = get_session()
-        
-        query_result = session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_in=vlan_in).filter_by(port_in=port_in).all()
-        if len(query_result)>0:
-            session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_in=vlan_in).filter_by(port_in=port_in).delete()
-        
         max_id = self._get_higher_vlan_tracking_id()
         if max_id  is None:
             max_id = 0
@@ -610,20 +605,6 @@ class GraphSession(object):
         with session.begin():    
             vlan_ref = VlanModel(id=max_id, flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_in=vlan_in, port_in=port_in, vlan_out=vlan_out, port_out=port_out)
             session.add(vlan_ref) 
-        
-        #query_result = session.query(VlanModel).filter_by(flow_rule_id=flow_rule_id).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).all()
-        #if len(query_result)==0:
-        #    with session.begin():    
-        #        vlan_ref = VlanModel(flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_id=vlan_id)
-        #        session.add(vlan_ref)
-            
-        
-
-
-    def vlanTracking_delete(self, switch_id, vlan_id):
-        session = get_session()
-        with session.begin():
-            session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).delete()
 
 
     

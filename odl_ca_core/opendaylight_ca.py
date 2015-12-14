@@ -328,7 +328,6 @@ class OpenDayLightCA(object):
             self.set_flow_id(flow_id)
             self.set_flow_name(flowname_suffix)
             self.__priority = priority
-            self.__vlan_id = None
             
 
         def get_switch_id(self):
@@ -348,9 +347,6 @@ class OpenDayLightCA(object):
 
         def get_priority(self):
             return self.__priority
-        
-        def get_vlan_id(self):
-            return self.__vlan_id
 
 
         def set_switch_id(self, value):
@@ -384,9 +380,6 @@ class OpenDayLightCA(object):
 
         def set_priority(self, value):
             self.__priority = value
-        
-        def set_vlan_id(self, value):
-            self.__vlan_id = value
             
             
 
@@ -540,6 +533,7 @@ class OpenDayLightCA(object):
     
     
     def __ODL_VlanTraking_add(self, pfr, flow_rule_db_id):
+        # pfr = __processedFLowrule
         vlan_in = None
         vlan_out = None
         port_in = None
@@ -563,11 +557,11 @@ class OpenDayLightCA(object):
         
         # DATABASE: Add vlan tracking
         GraphSession().vlanTracking_add(flow_rule_db_id, switch_id,vlan_in,port_in,vlan_out,port_out)
+    
+    
 
-    
-    
-    
-    
+
+
     def __ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
         '''
         Retrieve the link between two switches, where you can find ports to use.
@@ -617,53 +611,57 @@ class OpenDayLightCA(object):
         
         # Return port12@switch1 and port21@switch2
         return port12,port21
+    
+    
+    
+    
+    
+    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None):
+        
+        return 123    
 
 
 
 
 
     def __ODL_LinkEndpoints(self,path,ep1,ep2,flowrule):
+        
+        ''' 
+        This function links two endpoints with a set of flow rules pushed in
+        all the intermediate switches (and in first and last switches, of course).
+        
+        The link between this endpoints is based on vlan id.
+        If no ingress (or egress) vlan id is specified, a suitable vlan id will be chosen.
+        In any case, all the vlan ids will be checked in order to avoid possible 
+        conflicts in the traversed switches.
+        '''
 
         pfr = OpenDayLightCA.__processedFLowrule(flow_id=flowrule.id, priority=flowrule.priority)
+        
         base_actions = []
-        vlan_id = None
+        vlan_out = None
+        vlan_in = flowrule.match.vlan_id
         
         print ""
         print "Flow id: "+str(pfr.get_flow_id())
-        print "Flow priority: "+str(pfr.get_priority())        
+        print "Flow priority: "+str(pfr.get_priority())
         
+        # Initialize vlan_out with ingress vlan id   
+        if vlan_in is not None:
+            vlan_out = vlan_in   
         
-        # Clean actions
+        # Clean actions and search for an egress vlan id
         for a in flowrule.actions:
             
             # Store the VLAN ID and remove the action
             if a.set_vlan_id is not None:
-                vlan_id = a.set_vlan_id
+                vlan_out = a.set_vlan_id
                 continue
             
             # Filter non OUTPUT actions 
             if a.output is None:
                 no_output = Action(a)
                 base_actions.append(no_output)
-                
-        
-        #TODO: Keep track of all vlan ID
-        if vlan_id is not None:
-            '''
-                - controlla se l'id e' gia' usato nella rete
-                - eventualmente ne recupera un'altro
-                - vlan_id = <nuovo vlan id>
-                
-                quando viene richiesto di collegare due endpoint lontani
-                la prima soluzione e' lavorare con le vlan; ma l'id della vlan
-                sarebbe meglio che non venisse specificato nel grafo, ma che 
-                fosse deciso automaticamente comunicandolo infine a chi ha fatto
-                la richiesta originale del collegamento dei due endpoint.
-                
-            '''
-            print ""
-            pfr.set_vlan_id(vlan_id)
-        
         
         # Traverse the path and create the flow for each switch
         for i in range(0, len(path)):
@@ -674,40 +672,42 @@ class OpenDayLightCA(object):
             pfr.set_actions(list(base_actions))
             
             if i==0:
-                #first switch
+                # First switch
                 pfr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
                 
-                if vlan_id is not None:
+                #self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_id)
+                
+                # If vlan_in == vlan_out we do not need to push vlan header!                
+                if vlan_in <> vlan_out:
                     action_pushvlan = Action()
                     action_pushvlan.setPushVlanAction()
                     pfr.append_action(action_pushvlan)
-                    
                     action_setvlan = Action()
-                    action_setvlan.setSwapVlanAction(vlan_id)
+                    action_setvlan.setSwapVlanAction(vlan_out)
                     pfr.append_action(action_setvlan)
                 
             elif i==len(path)-1:
-                #last switch
+                # Last switch
                 pfr.set_switch_id(ep2.switch_id)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = ep2.interface
                 
-                if vlan_id is not None:
-                    base_match.setVlanMatch(vlan_id)
+                if vlan_out is not None:
+                    base_match.setVlanMatch(vlan_out)
                     action_stripvlan = Action()
                     action_stripvlan.setPopVlanAction()
                     pfr.append_action(action_stripvlan)
 
             else:
-                #middle way switch
+                # Middle way switch
                 pfr.set_switch_id(hop)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
                 
-                if vlan_id is not None:
-                    base_match.setVlanMatch(vlan_id)
+                if vlan_out is not None:
+                    base_match.setVlanMatch(vlan_out)
                 
             print pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
             
