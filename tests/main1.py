@@ -39,7 +39,7 @@ print "Welcome to 'OpenDayLight Control Adapter'"
     
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put2.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
@@ -52,7 +52,7 @@ odlCA = OpenDayLightCA(user)
 
 # Delete
 try:
-    odlCA.NFFG_Delete(977)
+    odlCA.NFFG_Delete(978)
 except Exception as ex:
     print ex.message
 #quit()
@@ -77,12 +77,4 @@ odlCA.NFFG_Put(nffg)
 print("End update")
 
 
-'''
-
-- gestire aggiunta/eliminazione vlan_id (forse serve session_id)
-
-- controllare funzioni di eliminazione (devono essere by session_id!!!)
-
-'''
-    
     

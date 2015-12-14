@@ -271,7 +271,7 @@ class OpenDayLightCA(object):
                         if port1_type == 'endpoint':
                             endp1 = profile_graph.endpoints[port1_id]
                             if endp1.type == 'interface':        
-                                self._ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
+                                self.__ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
 
 
 
@@ -304,10 +304,11 @@ class OpenDayLightCA(object):
                 
                 # Get and delete the flow rules with the same flow.internal_id,
                 # which are the flow rules effectively pushed in ODL.
+                # TODO: improve query
                 flows = GraphSession().getFlowrules(self._session_id)
                 for flow in flows:
-                    if flow.type == "external" and flow.status == "complete" and flow.internal_id == flowrule.id:
-                        ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.graph_flow_rule_id)
+                    if flow.type == "external" and flow.status == "complete" and flow.graph_flow_rule_id == flowrule.id:
+                        ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow.switch_id, flow.internal_id)
                         GraphSession().deleteFlowrule(flow.id)
                 
                 # Finally, delete the main flow rule (that written in nffg.json)
@@ -411,7 +412,7 @@ class OpenDayLightCA(object):
 
 
 
-    def _ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
+    def __ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
         #Process a flow rule written in the section "big switch" of a nffg json.
         
         fr1 = OpenDayLightCA.__processedFLowrule(match=Match(flowrule.match),
@@ -441,7 +442,8 @@ class OpenDayLightCA(object):
             # If this action is not an output action,
             # we just append it to the final actions list 'actions1'.
             if a.output is None:
-                fr1.append_action(Action(a))
+                no_output = Action(a)
+                fr1.append_action(no_output)
             
             # If this action is an output action (a.output is not None),
             # we check that the output is an endpoint and manage the main cases.
@@ -470,7 +472,7 @@ class OpenDayLightCA(object):
                         
                         # Check if a link between endpoint switches exists.
                         # Return: port12 (on endpoint1 switch) and port21 (on endpoint2 switch).
-                        port12,port21 = self._ODL_GetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
+                        port12,port21 = self.__ODL_GetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
                         
                         # A link between endpoint switches exists!
                         if port12 is not None and port21 is not None:
@@ -519,7 +521,7 @@ class OpenDayLightCA(object):
 
 
 
-    
+
     def __ODL_PushFlow(self, pfr):
         # pfr = __processedFLowrule
 
@@ -528,18 +530,45 @@ class OpenDayLightCA(object):
         json_req = flowj.getJSON(self.odlversion, pfr.get_switch_id())
         ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, pfr.get_switch_id(), pfr.get_flow_name())
         
-        # DATABASE: Add flow rule
+        # DATABASE: Add flow rule and vlan tracking
         flow_rule = FlowRule(_id=pfr.get_flow_id(),node_id=pfr.get_switch_id(), _type='external', status='complete',priority=pfr.get_priority(), internal_id=pfr.get_flow_name())  
-        GraphSession().addFlowrule(self._session_id, pfr.get_switch_id(), flow_rule, None)
+        flow_rule_db_id = GraphSession().addFlowrule(self._session_id, pfr.get_switch_id(), flow_rule, None)
+        self.__ODL_VlanTraking_add(pfr, flow_rule_db_id)
+    
+    
+    
+    
+    
+    def __ODL_VlanTraking_add(self, pfr, flow_rule_db_id):
+        vlan_in = None
+        vlan_out = None
+        port_in = None
+        port_out = None
+        switch_id = pfr.get_switch_id()
+        
+        if(pfr.get_match().input_port is not None):
+            port_in = pfr.get_match().input_port
+        
+        if(pfr.get_match().vlan_id is not None):
+            vlan_in = pfr.get_match().vlan_id
+            vlan_out = vlan_in
+        
+        for a in pfr.get_actions():
+            if(a.action_type=="output-action"):
+                port_out = a.output_port
+            if(a.action_type=="vlan-match"):
+                vlan_out = a.vlan_id
+            elif(a.action_type=="pop-vlan-action"):
+                vlan_out = None
         
         # DATABASE: Add vlan tracking
-        if pfr.get_switch_id() is not None and pfr.get_vlan_id() is not None:
-            GraphSession().vlanTracking_add(pfr.get_switch_id(),pfr.get_vlan_id())
-        
-        
+        GraphSession().vlanTracking_add(flow_rule_db_id, switch_id,vlan_in,port_in,vlan_out,port_out)
+
     
     
-    def _ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
+    
+    
+    def __ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
         '''
         Retrieve the link between two switches, where you can find ports to use.
         switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
@@ -567,8 +596,10 @@ class OpenDayLightCA(object):
 
 
     
-    def _ODL_GetLinkPortsBetweenSwitches(self, switch1, switch2):
-        link = self._ODL_GetLinkBetweenSwitches(switch1, switch2)
+    
+    
+    def __ODL_GetLinkPortsBetweenSwitches(self, switch1, switch2):
+        link = self.__ODL_GetLinkBetweenSwitches(switch1, switch2)
         if link is None:
             return None,None
         
@@ -586,6 +617,8 @@ class OpenDayLightCA(object):
         
         # Return port12@switch1 and port21@switch2
         return port12,port21
+
+
 
 
 
@@ -610,7 +643,8 @@ class OpenDayLightCA(object):
             
             # Filter non OUTPUT actions 
             if a.output is None:
-                base_actions.append(Action(a))
+                no_output = Action(a)
+                base_actions.append(no_output)
                 
         
         #TODO: Keep track of all vlan ID
@@ -637,7 +671,7 @@ class OpenDayLightCA(object):
             
             pfr.set_flow_name(i)
             base_match = Match(flowrule.match)
-            pfr.set_actions(base_actions)
+            pfr.set_actions(list(base_actions))
             
             if i==0:
                 #first switch

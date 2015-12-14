@@ -154,9 +154,14 @@ class ActionModel(Base):
 
 class VlanModel(Base):
     __tablename__ = 'vlan'
-    attributes = ['switch_id', 'vlan_id']
-    switch_id = Column(VARCHAR(64), primary_key=True)
-    vlan_id = Column(VARCHAR(64), primary_key=True)
+    attributes = ['id', 'flow_rule_id', 'switch_id', 'port_in', 'vlan_in', 'port_out', 'vlan_out']
+    id = Column(Integer, primary_key=True)
+    flow_rule_id = Column(VARCHAR(64))
+    switch_id = Column(VARCHAR(64))
+    port_in = Column(Integer)
+    vlan_in = Column(VARCHAR(64))
+    port_out = Column(Integer)
+    vlan_out = Column(VARCHAR(64))
 
 
 
@@ -223,6 +228,7 @@ class GraphSession(object):
             for flow_rule_ref in flow_rules_ref:
                 session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
                 session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
+                session.query(VlanModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
             session.query(FlowRuleModel).filter_by(session_id = session_id).delete()
             endpoints_ref = session.query(EndpointModel.id).filter_by(session_id = session_id).all()
             for endpoint_ref in endpoints_ref:
@@ -254,15 +260,13 @@ class GraphSession(object):
     
     
     
-    def deleteFlowrule(self, flowrule_id):
-        
-        # TODO: delete a flow rule by session id!!!
-        
+    def deleteFlowrule(self,  flowrule_id):       
         session = get_session()
         with session.begin():
             session.query(FlowRuleModel).filter_by(id = flowrule_id).delete()
             session.query(MatchModel).filter_by(flow_rule_id = flowrule_id).delete()
             session.query(ActionModel).filter_by(flow_rule_id = flowrule_id).delete()
+            session.query(VlanModel).filter_by(flow_rule_id = flowrule_id).delete()
     
     
     
@@ -425,6 +429,7 @@ class GraphSession(object):
       
     def addFlowrule(self, session_id, switch_id, flow_rule, nffg):
         session = get_session()
+        flow_rule_db_id = None
         with session.begin():
              
             # FlowRule
@@ -478,6 +483,7 @@ class GraphSession(object):
                                              set_l4_dst_port=action.set_l4_dst_port, output_to_queue=action.output_to_queue)
                     session.add(action_ref)
                     action_db_id += 1
+        return flow_rule_db_id
 
 
 
@@ -557,6 +563,11 @@ class GraphSession(object):
     def _get_higher_action_id(self):
         session = get_session()  
         return session.query(func.max(ActionModel.id).label("max_id")).one().max_id
+    
+    
+    def _get_higher_vlan_tracking_id(self):
+        session = get_session()  
+        return session.query(func.max(VlanModel.id).label("max_id")).one().max_id
 
     
     def _get_univocal_session_id(self):
@@ -583,21 +594,37 @@ class GraphSession(object):
     Work in progress...
     '''
             
-    def vlanTracking_add(self, switch_id, vlan_id):
+    def vlanTracking_add(self, flow_rule_id, switch_id, vlan_in, port_in, vlan_out, port_out):
         session = get_session()
-        vlan_query = session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).one()  
-        if(vlan_query is not None):
-            return
+        
+        query_result = session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_in=vlan_in).filter_by(port_in=port_in).all()
+        if len(query_result)>0:
+            session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_in=vlan_in).filter_by(port_in=port_in).delete()
+        
+        max_id = self._get_higher_vlan_tracking_id()
+        if max_id  is None:
+            max_id = 0
+        else:
+            max_id = max_id+1
+        
         with session.begin():    
-            vlan_ref = VlanModel(switch_id=switch_id, vlan_id=vlan_id)
-            session.add(vlan_ref)
+            vlan_ref = VlanModel(id=max_id, flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_in=vlan_in, port_in=port_in, vlan_out=vlan_out, port_out=port_out)
+            session.add(vlan_ref) 
+        
+        #query_result = session.query(VlanModel).filter_by(flow_rule_id=flow_rule_id).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).all()
+        #if len(query_result)==0:
+        #    with session.begin():    
+        #        vlan_ref = VlanModel(flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_id=vlan_id)
+        #        session.add(vlan_ref)
+            
+        
 
 
     def vlanTracking_delete(self, switch_id, vlan_id):
         session = get_session()
         with session.begin():
             session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(vlan_id=vlan_id).delete()
-    
-    
+
+
     
     

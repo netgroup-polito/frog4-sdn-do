@@ -52,7 +52,7 @@
           },
           "actions": [
             {
-            	"set_vlan_id": "861"
+            	"set_vlan_id": "461"
           	},
           	{
             	"output": "endpoint:End21"
