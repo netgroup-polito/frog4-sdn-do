@@ -38,12 +38,7 @@ logging.debug("OpenDayLight Control Adapter Starting...")
 print "Welcome to 'OpenDayLight Control Adapter'"
     
 
-# NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3.json","r")
-nffg_file = json.loads(in_file.read())
-ValidateNF_FG().validate(nffg_file)
-nffg = NF_FG()
-nffg.parseDict(nffg_file)
+
 
 
 # Instantiate the control adapter
@@ -51,25 +46,43 @@ user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "a
 odlCA = OpenDayLightCA(user)
 
 # Delete
-try:
-    odlCA.NFFG_Delete(978)
-except Exception as ex:
-    print ex.message
-#quit()
-
-
-# Validate and Put
-odlCA.NFFG_Validate(nffg)
-odlCA.NFFG_Put(nffg)
-quit()
-
-
-# NF-FG File (with updates) 
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3.json","r")
+deldel=False
+deldel=True
+if deldel: 
+    try:
+        odlCA.NFFG_Delete(977)
+    except Exception as ex:
+        print ex.message
+    try:
+        odlCA.NFFG_Delete(988)
+    except Exception as ex:
+        print ex.message
+    #quit()
+    
+# NF-FG File
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
 nffg.parseDict(nffg_file)
+
+# Validate and Put
+odlCA.NFFG_Validate(nffg)
+odlCA.NFFG_Put(nffg)
+
+
+# NF-FG File
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3b.json","r")
+nffg_file = json.loads(in_file.read())
+ValidateNF_FG().validate(nffg_file)
+nffg = NF_FG()
+nffg.parseDict(nffg_file)
+
+# Validate and Put
+odlCA.NFFG_Validate(nffg)
+odlCA.NFFG_Put(nffg)
+
+quit()
 
 # Validate and Put (update expected)
 print("Updating...")

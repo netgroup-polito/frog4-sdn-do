@@ -633,7 +633,8 @@ class GraphSession(object):
         
         # TODO: Search an egress vlan id suitable for the current switch
         
-        # TODO: Search an ingress vlan id suitable for the next switch
+        # Search an ingress vlan id suitable for the next switch
+        # TODO: improve the search algorithm
         if next_switch_id is not None:
             try:
                 query_ref = session.query(VlanModel).filter_by(switch_id=next_switch_id).filter_by(port_in=next_port_in).order_by(asc(VlanModel.vlan_in)).all()

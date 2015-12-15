@@ -640,7 +640,6 @@ class OpenDayLightCA(object):
         vlan_out = None
         original_vlan_out = None
         vlan_in = None
-        strip_vlan_out = False
         
         if flowrule.match.vlan_id is not None:
             vlan_in = flowrule.match.vlan_id
@@ -663,6 +662,12 @@ class OpenDayLightCA(object):
             if a.output is None:
                 no_output = Action(a)
                 base_actions.append(no_output)
+        
+        # Detect if it is a mod/strip flow
+        if vlan_in is not None:
+            is_mod_strip_flow=False
+        else:
+            is_mod_strip_flow=True
         
         # Traverse the path and create the flow for each switch
         i = 0
@@ -696,7 +701,7 @@ class OpenDayLightCA(object):
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = ep2.interface
                 # Force the vlan out to be equal to the original
-                if original_vlan_out is not None:
+                if is_mod_strip_flow == False and original_vlan_out is not None:
                     vlan_out = original_vlan_out 
             
             # Middle way switch
@@ -717,7 +722,6 @@ class OpenDayLightCA(object):
 
             # Add/mod VLAN header
             if set_vlan_out is not None:
-                strip_vlan_out = True
                 action_pushvlan = Action()
                 action_pushvlan.setPushVlanAction()
                 pfr.append_action(action_pushvlan)
@@ -726,8 +730,7 @@ class OpenDayLightCA(object):
                 pfr.append_action(action_setvlan)
             
             # Remove VLAN header
-            elif strip_vlan_out is True and pos==1:
-                base_match.setVlanMatch(vlan_out)
+            elif is_mod_strip_flow and pos==1:
                 action_stripvlan = Action()
                 action_stripvlan.setPopVlanAction()
                 pfr.append_action(action_stripvlan)
