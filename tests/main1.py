@@ -61,6 +61,7 @@ except Exception as ex:
 # Validate and Put
 odlCA.NFFG_Validate(nffg)
 odlCA.NFFG_Put(nffg)
+quit()
 
 
 # NF-FG File (with updates) 

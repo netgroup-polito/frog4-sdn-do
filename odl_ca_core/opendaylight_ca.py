@@ -616,9 +616,7 @@ class OpenDayLightCA(object):
     
     
     
-    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None):
-        
-        return 123    
+    
 
 
 
@@ -640,15 +638,17 @@ class OpenDayLightCA(object):
         
         base_actions = []
         vlan_out = None
-        vlan_in = flowrule.match.vlan_id
+        original_vlan_out = None
+        vlan_in = None
+        strip_vlan_out = False
+        
+        if flowrule.match.vlan_id is not None:
+            vlan_in = flowrule.match.vlan_id
+            original_vlan_out = vlan_in
         
         print ""
         print "Flow id: "+str(pfr.get_flow_id())
         print "Flow priority: "+str(pfr.get_priority())
-        
-        # Initialize vlan_out with ingress vlan id   
-        if vlan_in is not None:
-            vlan_out = vlan_in   
         
         # Clean actions and search for an egress vlan id
         for a in flowrule.actions:
@@ -656,6 +656,7 @@ class OpenDayLightCA(object):
             # Store the VLAN ID and remove the action
             if a.set_vlan_id is not None:
                 vlan_out = a.set_vlan_id
+                original_vlan_out = a.set_vlan_id
                 continue
             
             # Filter non OUTPUT actions 
@@ -664,50 +665,72 @@ class OpenDayLightCA(object):
                 base_actions.append(no_output)
         
         # Traverse the path and create the flow for each switch
+        i = 0
         for i in range(0, len(path)):
             hop = path[i]
-            
             pfr.set_flow_name(i)
             base_match = Match(flowrule.match)
             pfr.set_actions(list(base_actions))
             
+            # Switch position
+            pos = 0 # (-1:first, 0:middle, 1:last)
+            
+            # Next switch and next ingress port
+            next_switch_id = None
+            next_port_in = None
+            if i < (len(path)-1):
+                next_switch_id = path[i+1]
+                next_port_in = self.netgraph.topology[hop][next_switch_id]['to_port']
+            
+            # First switch
             if i==0:
-                # First switch
+                pos = -1
                 pfr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
-                
-                #self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_id)
-                
-                # If vlan_in == vlan_out we do not need to push vlan header!                
-                if vlan_in <> vlan_out:
-                    action_pushvlan = Action()
-                    action_pushvlan.setPushVlanAction()
-                    pfr.append_action(action_pushvlan)
-                    action_setvlan = Action()
-                    action_setvlan.setSwapVlanAction(vlan_out)
-                    pfr.append_action(action_setvlan)
-                
+            
+            # Last switch
             elif i==len(path)-1:
-                # Last switch
+                pos = 1
                 pfr.set_switch_id(ep2.switch_id)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = ep2.interface
-                
-                if vlan_out is not None:
-                    base_match.setVlanMatch(vlan_out)
-                    action_stripvlan = Action()
-                    action_stripvlan.setPopVlanAction()
-                    pfr.append_action(action_stripvlan)
-
+                # Force the vlan out to be equal to the original
+                if original_vlan_out is not None:
+                    vlan_out = original_vlan_out 
+            
+            # Middle way switch
             else:
-                # Middle way switch
                 pfr.set_switch_id(hop)
                 port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
                 port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
-                
-                if vlan_out is not None:
-                    base_match.setVlanMatch(vlan_out)
+            
+            # Check, generate and set vlan ids
+            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_id, next_port_in)
+            
+            # Match
+            if vlan_in is not None:
+                base_match.setVlanMatch(vlan_in)
+            
+            # Set next ingress vlan
+            vlan_in = vlan_out
+
+            # Add/mod VLAN header
+            if set_vlan_out is not None:
+                strip_vlan_out = True
+                action_pushvlan = Action()
+                action_pushvlan.setPushVlanAction()
+                pfr.append_action(action_pushvlan)
+                action_setvlan = Action()
+                action_setvlan.setSwapVlanAction(set_vlan_out)
+                pfr.append_action(action_setvlan)
+            
+            # Remove VLAN header
+            elif strip_vlan_out is True and pos==1:
+                base_match.setVlanMatch(vlan_out)
+                action_stripvlan = Action()
+                action_stripvlan.setPopVlanAction()
+                pfr.append_action(action_stripvlan)
                 
             print pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
             
@@ -719,9 +742,50 @@ class OpenDayLightCA(object):
             pfr.append_action(action_output)
             
             self.__ODL_PushFlow(pfr)
-        
+            i = i+1
         # end-for
-        
+        '''
+        Original vlan id
+            vlan id = flowrule.match.vlan_id
+            vlan out = original_vlan_out
+        '''
         return
+
+
+
+    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
+        
+        # Rectify vlan ids
+        if vlan_in is not None:
+            vlan_in = int(vlan_in)
+        if vlan_out is not None:
+            vlan_out = int(vlan_out)
+        if vlan_out is not None and ( vlan_out<=0 or vlan_out>=4095 ):
+            vlan_out = None
+        if vlan_in is not None and ( vlan_out<=0 or vlan_out>=4095 ):
+            vlan_in = None
+            
+        # Detect if a mod_vlan action is needed
+        set_vlan_out = None
+        if vlan_out is not None and vlan_out<>vlan_in:
+            set_vlan_out = vlan_out
+        
+        # Set the output vlan that we have to check in the next switch
+        if vlan_in is not None and vlan_out is None:
+            vlan_out = vlan_in
+        
+        # Verify this output vlan id
+        if vlan_out is not None and next_switch_id is not None:
+            #check vlan output in next switch-port / return None if non suitable
+            vlan_out = GraphSession().vlanTracking_check(port_in,port_out,vlan_in,vlan_out,next_switch_id,next_port_in)
+
+        # Check if an output vlan id is needed
+        if vlan_out is None and next_switch_id is not None:
+            #generate for the next switch-port
+            # TODO: manage the '0' value (error) and '-1' value (all vlan ids are busy)
+            vlan_out = GraphSession().vlanTracking_new_vlan_out(port_in,port_out,vlan_in,vlan_out,next_switch_id,next_port_in) 
+            set_vlan_out = vlan_out
+        
+        return vlan_in, vlan_out, set_vlan_out    
 
 

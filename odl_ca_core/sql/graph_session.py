@@ -11,7 +11,7 @@ from exceptions import Exception
 
 from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action
 
-from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, desc, func
+from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -607,5 +607,73 @@ class GraphSession(object):
             session.add(vlan_ref) 
 
 
+
+    def vlanTracking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
+        # return vlan_out (None or in [1,4094])
+        session = get_session()
+        
+        # TODO: Search for vlan out collisions on current switch
+        #query_ref = session.query(VlanModel.id).filter_by().all()
+        
+        # TODO: Search for vlan in collisions on next switch
+        if next_switch_id is not None:
+            query_ref = session.query(VlanModel.id).filter_by(vlan_in=vlan_out).filter_by(switch_id=next_switch_id).filter_by(port_in=next_port_in).all()
+            if len(query_ref)>0:
+                return None
+        
+        # Vlan out is compliant with actual and next switches
+        return vlan_out
+
+
+
+    def vlanTracking_new_vlan_out(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
+        # return vlan_out (None or in [1,4094])
+        session = get_session()
+        new_vlan_out = 0
+        
+        # TODO: Search an egress vlan id suitable for the current switch
+        
+        # TODO: Search an ingress vlan id suitable for the next switch
+        if next_switch_id is not None:
+            try:
+                query_ref = session.query(VlanModel).filter_by(switch_id=next_switch_id).filter_by(port_in=next_port_in).order_by(asc(VlanModel.vlan_in)).all()
+                new_vlan_out=2
+                if len(query_ref)>0:
+                    prev_vlan_out = 1
+                    for q in query_ref:
+                        
+                        # protect from the exception int() argument must be a string or a number, not 'NoneType'
+                        if(q.vlan_out is not None):
+                            this_vlan_out = int(q.vlan_out)
+                        
+                        if prev_vlan_out==this_vlan_out or this_vlan_out<=1:
+                            continue
+                        
+                        if (this_vlan_out-prev_vlan_out)<=1 :
+                            prev_vlan_out = this_vlan_out
+                            continue
+                        
+                        new_vlan_out = prev_vlan_out+1
+                        if new_vlan_out<=0 and prev_vlan_out>=4095:
+                            new_vlan_out=-1
+                        break                   
+            except:
+                new_vlan_out=0
+        return new_vlan_out
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
     
     
