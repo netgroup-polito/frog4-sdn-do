@@ -84,9 +84,11 @@ class ODL_Rest(object):
         '''
         headers = {'Accept': 'application/json', 'Content-type':'application/json'}
         url = odl_endpoint+self.odl_flows_path+self.odl_node+"/"+str(switch_id)+self.odl_flow+str(flow_id)
-        logging.debug(url+"\n"+jsonFlow)
+        #logging.debug(url+"\n"+jsonFlow)
         resp = requests.put(url,jsonFlow,headers=headers, auth=(odl_user, odl_pass))
         resp.raise_for_status()
+        txt = "response: "+str(resp.status_code)+", "+resp.reason
+        logging.debug(url+"\n"+jsonFlow+" - "+txt)
         return resp.text
     
     def deleteFlow(self, odl_endpoint, odl_user, odl_pass, switch_id, flow_id):

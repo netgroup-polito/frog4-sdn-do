@@ -779,7 +779,7 @@ class OpenDayLightCA(object):
             vlan_out = int(vlan_out)
         if vlan_out is not None and ( vlan_out<=0 or vlan_out>=4095 ):
             vlan_out = None
-        if vlan_in is not None and ( vlan_out<=0 or vlan_out>=4095 ):
+        if vlan_in is not None and ( vlan_in<=0 or vlan_in>=4095 ):
             vlan_in = None
             
         # Detect if a mod_vlan action is needed

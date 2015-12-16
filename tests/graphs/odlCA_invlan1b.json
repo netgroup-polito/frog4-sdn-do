@@ -1,7 +1,7 @@
 {
   "forwarding-graph": {
-    "id": "977",
-    "name": "GR Test1",
+    "id": "988",
+    "name": "GR Test2",
     
     "end-points": [
       {
@@ -14,12 +14,12 @@
         }
       },      
       {
-        "id": "End31",
+        "id": "End51",
         "name": "EGRESS",
         "type": "interface",
         "interface": {
-          "switch-id": "openflow:192368849455687",
-          "interface": "317"
+          "switch-id": "openflow:6698117434692",
+          "interface": "517"
         }
       }
     ],
@@ -29,31 +29,27 @@
       "flow-rules": [
       
         {
-          "id": "9771",
-          "priority": 101,
+          "id": "9881",
+          "priority": 103,
           "match": {
-            "port_in": "endpoint:End21"
+            "port_in": "endpoint:End21",
+            "vlan_id": "977"
           },
           "actions": [
-            {
-            	"set_vlan_id": "977"
-          	},
           	{
-            	"output": "endpoint:End31"
+            	"output": "endpoint:End51"
           	}
           ]
         },
         
         {
-          "id": "9772",
-          "priority": 101,
+          "id": "9882",
+          "priority": 103,
           "match": {
-            "port_in": "endpoint:End31"
+            "port_in": "endpoint:End51",
+            "vlan_id": "977"
           },
           "actions": [
-            {
-            	"set_vlan_id": "977"
-          	},
           	{
             	"output": "endpoint:End21"
           	}

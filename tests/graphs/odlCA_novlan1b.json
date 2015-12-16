@@ -30,7 +30,7 @@
       
         {
           "id": "9881",
-          "priority": 103,
+          "priority": 108,
           "match": {
             "port_in": "endpoint:End21"
           },
@@ -46,7 +46,7 @@
         
         {
           "id": "9882",
-          "priority": 103,
+          "priority": 108,
           "match": {
             "port_in": "endpoint:End51"
           },

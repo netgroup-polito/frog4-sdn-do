@@ -629,7 +629,7 @@ class GraphSession(object):
     def vlanTracking_new_vlan_out(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
         # return vlan_out (None or in [1,4094])
         session = get_session()
-        new_vlan_out = 0
+        new_vlan_in = 0
         
         # TODO: Search an egress vlan id suitable for the current switch
         
@@ -638,29 +638,30 @@ class GraphSession(object):
         if next_switch_id is not None:
             try:
                 query_ref = session.query(VlanModel).filter_by(switch_id=next_switch_id).filter_by(port_in=next_port_in).order_by(asc(VlanModel.vlan_in)).all()
-                new_vlan_out=2
+                new_vlan_in=2
                 if len(query_ref)>0:
-                    prev_vlan_out = 1
+                    prev_vlan_in = 1
                     for q in query_ref:
                         
-                        # protect from the exception int() argument must be a string or a number, not 'NoneType'
-                        if(q.vlan_out is not None):
-                            this_vlan_out = int(q.vlan_out)
-                        
-                        if prev_vlan_out==this_vlan_out or this_vlan_out<=1:
+                        if(q.vlan_in is None):
                             continue
                         
-                        if (this_vlan_out-prev_vlan_out)<=1 :
-                            prev_vlan_out = this_vlan_out
+                        this_vlan_in = int(q.vlan_in)
+                        
+                        if prev_vlan_in==this_vlan_in or this_vlan_in<=1:
                             continue
                         
-                        new_vlan_out = prev_vlan_out+1
-                        if new_vlan_out<=0 and prev_vlan_out>=4095:
-                            new_vlan_out=-1
+                        if (this_vlan_in-prev_vlan_in)<=1 :
+                            prev_vlan_in = this_vlan_in
+                            continue
+                        
+                        new_vlan_in = prev_vlan_in+1
+                        if new_vlan_in<=0 and prev_vlan_in>=4095:
+                            new_vlan_in=-1
                         break                   
             except:
-                new_vlan_out=0
-        return new_vlan_out
+                new_vlan_in=0
+        return new_vlan_in
         
         
         

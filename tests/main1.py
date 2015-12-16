@@ -57,10 +57,10 @@ if deldel:
         odlCA.NFFG_Delete(988)
     except Exception as ex:
         print ex.message
-    quit()
+    #quit()
     
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3b.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
@@ -71,8 +71,10 @@ odlCA.NFFG_Validate(nffg)
 odlCA.NFFG_Put(nffg)
 
 
+quit()
+
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_put3a.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
@@ -99,7 +101,7 @@ dove la fase di autenticazione e' seguita dallo scambio di un token che viene ut
 per confermare l'identita' dell'utente nelle chiamate successive."
 
 Attualmente, dato che l'orchestratore comunica via REST ho sfruttato l'interfaccia
-precedente che aveva gia' (usa i campi X-Auth-* nella richiesta http).
+precedente che gestiva gia' l'autenticazione (usa i campi X-Auth-* nella richiesta http).
 
 
 

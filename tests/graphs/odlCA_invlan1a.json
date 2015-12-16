@@ -1,0 +1,76 @@
+{
+  "forwarding-graph": {
+    "id": "977",
+    "name": "GR Test1",
+    
+    "end-points": [
+      {
+        "id": "End21",
+        "name": "INGRESS",
+        "type": "interface",
+        "interface": {
+          "switch-id": "openflow:261693184597067",
+          "interface": "1"
+        }
+      },      
+      {
+        "id": "End31",
+        "name": "EGRESS",
+        "type": "interface",
+        "interface": {
+          "switch-id": "openflow:192368849455687",
+          "interface": "4"
+        }
+      }
+    ],
+    
+    
+    "big-switch": {
+      "flow-rules": [
+      
+        {
+          "id": "9771",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End21",
+            "vlan_id": "15"
+          },
+          "actions": [
+          	{
+          		"output": "endpoint:End31"
+          	}
+          ]
+        },
+        
+        {
+          "id": "9773",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End21",
+            "vlan_id": "132"
+          },
+          "actions": [
+          	{
+          		"output": "endpoint:End31"
+          	}
+          ]
+        },
+        
+        {
+          "id": "9772",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End31",
+            "vlan_id": "977"
+          },
+          "actions": [
+          	{
+            	"output": "endpoint:End21"
+          	}
+          ]
+        }
+        
+      ]
+    }
+  }
+}
