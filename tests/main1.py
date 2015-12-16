@@ -96,26 +96,19 @@ print("End update")
 '''
 
 AUTENTICAZIONE
-"...possiamo tranquillamente pensare di utilizzare lo stesso meccanismo di Keystone, 
-dove la fase di autenticazione e' seguita dallo scambio di un token che viene utilizzato 
-per confermare l'identita' dell'utente nelle chiamate successive."
+    1a) richiesta di auth separata con user/pass/tenant per generare un token;
+    1b) richieste simili successive alla prima non restituiranno risposta, se il token e' gia' stato generato;
+    2a) in tutte le richieste ci deve essere X-Auth-Token.
 
-Attualmente, dato che l'orchestratore comunica via REST ho sfruttato l'interfaccia
-precedente che gestiva gia' l'autenticazione (usa i campi X-Auth-* nella richiesta http).
+DOUBLE DECKER
+    1) clonare DD da gitlab;
+    2) introdurre fix di Stefano;
+    3) specificare la directory DD in gitignore 
+    3) usare dd_server.py
 
+FLOW RULES "simili"
+    Gestire flow rules con match uguale!
 
-
-PROBLEMA con flow rule e ovs
-
- cookie=0x0, ..., priority=103,in_port=1,dl_vlan=977 actions=output:2
- cookie=0x0, ..., priority=103,in_port=2,dl_vlan=977 actions=output:1
- cookie=0x0, ..., priority=101,in_port=2,dl_vlan=2 actions=output:4
-
- cookie=0x0, ..., priority=103,in_port=1,dl_vlan=977 actions=output:2
- cookie=0x0, ..., priority=103,in_port=2,dl_vlan=977 actions=output:1
-
- cookie=0x0, ..., priority=101,in_port=2,dl_vlan=977 actions=output:4
- cookie=0x0, ..., priority=101,in_port=4,dl_vlan=977 actions=output:2   <---
 
 '''
 
