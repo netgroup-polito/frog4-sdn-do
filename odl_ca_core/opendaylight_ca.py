@@ -517,6 +517,24 @@ class OpenDayLightCA(object):
 
     def __ODL_PushFlow(self, pfr):
         # pfr = __processedFLowrule
+        '''
+        This is the only function that should be used to push an external flow
+        ("custom", in other words) in database and in opendaylight controller.
+        GraphSession().addFlowrule(...) is also used in GraphSession().updateNFFG 
+        and in GraphSession().addNFFG to store the flow rules written in nffg.json.
+        '''
+        
+        '''
+        TODO: check if a "similar" flow rule already exists in the specified switch.
+        Similar flow rules are replaced by ovs switch, so one of them disappear!
+        
+        If exists, we should:
+            1) change the priority and push flow rule, or
+            2) replace with new flow rule, or
+            3) extend the old flow rule with the new flow rule charateristics (action/match)
+        
+        In the third case ("joined flow rules"), ...
+        '''
 
         # ODL/Switch: Add flow rule
         flowj = Flow("flowrule", pfr.get_flow_name(), 0, pfr.get_priority(), True, 0, 0, pfr.get_actions(), pfr.get_match())
@@ -611,12 +629,6 @@ class OpenDayLightCA(object):
         
         # Return port12@switch1 and port21@switch2
         return port12,port21
-    
-    
-    
-    
-    
-    
 
 
 
@@ -735,7 +747,7 @@ class OpenDayLightCA(object):
                 action_stripvlan.setPopVlanAction()
                 pfr.append_action(action_stripvlan)
                 
-            print pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
+            print "["+pfr.get_flow_name()+"] "+pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
             
             base_match.setInputMatch(port_in)
             pfr.set_match(base_match)
@@ -753,6 +765,8 @@ class OpenDayLightCA(object):
             vlan out = original_vlan_out
         '''
         return
+
+
 
 
 
@@ -789,6 +803,8 @@ class OpenDayLightCA(object):
             vlan_out = GraphSession().vlanTracking_new_vlan_out(port_in,port_out,vlan_in,vlan_out,next_switch_id,next_port_in) 
             set_vlan_out = vlan_out
         
-        return vlan_in, vlan_out, set_vlan_out    
+        return vlan_in, vlan_out, set_vlan_out
+    
+        
 
 

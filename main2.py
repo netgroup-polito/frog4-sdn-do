@@ -5,8 +5,14 @@ Created on Dic 7, 2015
 @author: giacomoratta
 
 This script test has to be called via gunicorn.
-$ gunicorn -b 0.0.0.0:9000 -t 500 main2:app
+Write in the shell:
+    $ gunicorn -b 0.0.0.0:9000 -t 500 main2:app
 
+Otherwise, make a python script with this two rows:
+    from subprocess import call
+    call("gunicorn -b 0.0.0.0:9000 -t 500 main2:app", shell=True)
+
+Script phases:
    1) Load configuration;
    2) start falcon web framework;
    3) add api paths.
