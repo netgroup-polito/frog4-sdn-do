@@ -728,15 +728,17 @@ class OpenDayLightCA(object):
             # Match
             if vlan_in is not None:
                 base_match.setVlanMatch(vlan_in)
-            
-            # Set next ingress vlan
-            vlan_in = vlan_out
 
             # Add/mod VLAN header
             if set_vlan_out is not None:
-                action_pushvlan = Action()
-                action_pushvlan.setPushVlanAction()
-                pfr.append_action(action_pushvlan)
+                
+                # If there is a match rule on vlan id, it means a vlan header 
+                # it is already present and we do not need to push a vlan.
+                if vlan_in is None:
+                    action_pushvlan = Action()
+                    action_pushvlan.setPushVlanAction()
+                    pfr.append_action(action_pushvlan)
+                    
                 action_setvlan = Action()
                 action_setvlan.setSwapVlanAction(set_vlan_out)
                 pfr.append_action(action_setvlan)
@@ -746,6 +748,9 @@ class OpenDayLightCA(object):
                 action_stripvlan = Action()
                 action_stripvlan.setPopVlanAction()
                 pfr.append_action(action_stripvlan)
+            
+            # Set next ingress vlan
+            vlan_in = vlan_out
                 
             print "["+pfr.get_flow_name()+"] "+pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
             
