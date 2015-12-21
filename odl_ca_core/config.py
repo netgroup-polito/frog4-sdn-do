@@ -30,23 +30,23 @@ class Configuration(object):
             config.read(base_folder+'/configuration.conf')
             
             # [basic_config]
-            self._BASIC_CONFIG_IP = config.get('basic_config','ip')
-            self._BASIC_CONFIG_PORT = config.get('basic_config','port')
-            self._BASIC_CONFIG_TIMEOUT = config.get('basic_config','timeout')
+            self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
+            self.__BASIC_CONFIG_PORT = config.get('basic_config','port')
+            self.__BASIC_CONFIG_TIMEOUT = config.get('basic_config','timeout')
             
             # [log]
-            self._LOG_FILE = config.get('log', 'file')
-            self._LOG_VERBOSE = config.getboolean('log', 'verbose')
-            self._LOG_DEBUG = config.getboolean('log', 'debug')
+            self.__LOG_FILE = config.get('log', 'file')
+            self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
+            self.__LOG_DEBUG = config.getboolean('log', 'debug')
             
             # [database]
-            self._DATABASE_CONNECTION = config.get('database','connection')
+            self.__DATABASE_CONNECTION = config.get('database','connection')
             
             # [opendaylight]
-            self._ODL_USERNAME = config.get('opendaylight','odl_username')
-            self._ODL_PASSWORD = config.get('opendaylight','odl_password')
-            self._ODL_ENDPOINT = config.get('opendaylight','odl_endpoint')
-            self._ODL_VERSION = config.get('opendaylight','odl_version')
+            self.__ODL_USERNAME = config.get('opendaylight','odl_username')
+            self.__ODL_PASSWORD = config.get('opendaylight','odl_password')
+            self.__ODL_ENDPOINT = config.get('opendaylight','odl_endpoint')
+            self.__ODL_VERSION = config.get('opendaylight','odl_version')
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -74,47 +74,47 @@ class Configuration(object):
     
     @property
     def BASIC_CONFIG_IP(self):
-        return self._BASIC_CONFIG_IP
+        return self.__BASIC_CONFIG_IP
     
     @property
     def BASIC_CONFIG_PORT(self):
-        return self._BASIC_CONFIG_PORT
+        return self.__BASIC_CONFIG_PORT
     
     @property
     def BASIC_CONFIG_TIMEOUT(self):
-        return self._BASIC_CONFIG_TIMEOUT
+        return self.__BASIC_CONFIG_TIMEOUT
     
     @property
     def LOG_FILE(self):
-        return self._LOG_FILE
+        return self.__LOG_FILE
     
     @property
     def LOG_VERBOSE(self):
-        return self._LOG_VERBOSE
+        return self.__LOG_VERBOSE
     
     @property
     def LOG_DEBUG(self):
-        return self._LOG_DEBUG
+        return self.__LOG_DEBUG
     
     @property
     def DATABASE_CONNECTION(self):
-        return self._DATABASE_CONNECTION
+        return self.__DATABASE_CONNECTION
     
     @property
     def ODL_USERNAME(self):
-        return self._ODL_USERNAME
+        return self.__ODL_USERNAME
     
     @property
     def ODL_PASSWORD(self):
-        return self._ODL_PASSWORD
+        return self.__ODL_PASSWORD
     
     @property
     def ODL_ENDPOINT(self):
-        return self._ODL_ENDPOINT
+        return self.__ODL_ENDPOINT
     
     @property
     def ODL_VERSION(self):
-        return self._ODL_VERSION
+        return self.__ODL_VERSION
     
     
     

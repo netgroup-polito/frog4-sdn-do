@@ -19,6 +19,9 @@ import logging, json
 # Configuration Parser
 from odl_ca_core.config import Configuration
 
+# Create database
+from odl_ca_core.sql.sql_server import session_create_database
+
 # Orchestrator Core
 from odl_ca_core.user_authentication import UserAuthentication
 from odl_ca_core.opendaylight_ca import OpenDayLightCA
@@ -36,6 +39,9 @@ conf.log_configuration()
 # START OPENDAYLIGHT CONTROL ADAPTER
 logging.debug("OpenDayLight Control Adapter Starting...")
 print "Welcome to 'OpenDayLight Control Adapter'"
+
+
+session_create_database()
     
 
 
@@ -57,7 +63,7 @@ if deldel:
         odlCA.NFFG_Delete(988)
     except Exception as ex:
         print ex.message
-    #quit()
+    quit()
     
 # NF-FG File
 in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1a.json","r")
