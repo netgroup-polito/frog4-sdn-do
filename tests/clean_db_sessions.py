@@ -16,4 +16,4 @@ session.query(MatchModel).delete()
 session.query(PortModel).delete()
 session.query(VlanModel).delete()
 
-print "Database sessions deleted"
+print("Database sessions deleted")

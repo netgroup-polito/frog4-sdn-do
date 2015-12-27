@@ -5,7 +5,6 @@
 '''
 
 from __future__ import division
-from __builtin__ import str
 import logging, json
 
 from nffg_library.nffg import FlowRule
@@ -63,7 +62,7 @@ class OpenDayLightCA(object):
             
         # Instantiate a new NF-FG
         try:
-            self._session_id = GraphSession().addNFFG(nffg, self.user_data.getUserID())
+            self._session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             
             # Profile graph for ODL functions
@@ -89,8 +88,8 @@ class OpenDayLightCA(object):
     def NFFG_Update(self, new_nffg):
 
         # Check and get the session id for this user-graph couple
-        logging.debug("Update NF-FG: check if the user "+self.user_data.getUserID()+" has already instantiated the graph "+new_nffg.id+".")
-        session = GraphSession().getActiveSession(self.user_data.getUserID(), new_nffg.id, error_aware=True)
+        logging.debug("Update NF-FG: check if the user "+self.user_data.user_id+" has already instantiated the graph "+new_nffg.id+".")
+        session = GraphSession().getActiveSession(self.user_data.user_id, new_nffg.id, error_aware=True)
         if session is None:
             return None
         self._session_id = session.session_id
@@ -134,7 +133,7 @@ class OpenDayLightCA(object):
     
     def NFFG_Delete(self, nffg_id):
         
-        session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
+        session = GraphSession().getActiveSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         
@@ -159,7 +158,7 @@ class OpenDayLightCA(object):
 
 
     def NFFG_Get(self, nffg_id):
-        session = GraphSession().getActiveSession(self.user_data.getUserID(), nffg_id, error_aware=False)
+        session = GraphSession().getActiveSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -170,7 +169,7 @@ class OpenDayLightCA(object):
 
 
     def NFFG_Status(self, nffg_id):
-        session = GraphSession().getActiveSession(self.user_data.getUserID(),nffg_id,error_aware=True)
+        session = GraphSession().getActiveSession(self.user_data.user_id,nffg_id,error_aware=True)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -201,7 +200,7 @@ class OpenDayLightCA(object):
                 msg = "NFFG: presence of 'end-points.remote-ip'. This CA does not process this information."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
-            if(ep.type <> "interface"):
+            if(ep.type != "interface"):
                 msg = "NFFG: 'end-points.type' must be 'interface'."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
@@ -419,7 +418,7 @@ class OpenDayLightCA(object):
         nodes_path = None
         nodes_path_flag = None
         
-        print "\n\n\nodlProcessFlowrule"
+        print("\n\n\nodlProcessFlowrule")
         
         # Add "Drop" flow rules only, and return.
         # If a flow rule has a drop action, we don't care other actions!
@@ -657,9 +656,8 @@ class OpenDayLightCA(object):
             vlan_in = flowrule.match.vlan_id
             original_vlan_out = vlan_in
         
-        print ""
-        print "Flow id: "+str(pfr.get_flow_id())
-        print "Flow priority: "+str(pfr.get_priority())
+        print("\nFlow id: "+str(pfr.get_flow_id()))
+        print("Flow priority: "+str(pfr.get_priority()))
         
         # Clean actions and search for an egress vlan id
         for a in flowrule.actions:
@@ -752,7 +750,7 @@ class OpenDayLightCA(object):
             # Set next ingress vlan
             vlan_in = vlan_out
                 
-            print "["+pfr.get_flow_name()+"] "+pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out)
+            print("["+pfr.get_flow_name()+"] "+pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out))
             
             base_match.setInputMatch(port_in)
             pfr.set_match(base_match)
@@ -789,7 +787,7 @@ class OpenDayLightCA(object):
             
         # Detect if a mod_vlan action is needed
         set_vlan_out = None
-        if vlan_out is not None and vlan_out<>vlan_in:
+        if vlan_out is not None and vlan_out != vlan_in:
             set_vlan_out = vlan_out
         
         # Set the output vlan that we have to check in the next switch

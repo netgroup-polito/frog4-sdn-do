@@ -6,7 +6,7 @@ Created on 18 set 2015
 
 from sqlalchemy import Column, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
-import logging
+import logging, random, time
 
 from odl_ca_core.sql.sql_server import get_session
 from odl_ca_core.exception import UserNotFound, TenantNotFound
@@ -18,13 +18,16 @@ class UserModel(Base):
     Maps the database table user
     '''
     __tablename__ = 'user'
-    attributes = ['id', 'name', 'password', 'tenant_id', 'mail']
+    attributes = ['id', 'name', 'pwdhash', 'tenant_id', 'mail', 'token', 'token_timestamp']
     id = Column(VARCHAR(64), primary_key=True)
-    name = Column(VARCHAR(64))
-    password = Column(VARCHAR(64))
+    username = Column(VARCHAR(64))
+    pwdhash = Column(VARCHAR(64))
     tenant_id = Column(VARCHAR(64))
     mail = Column(VARCHAR(64))
-    
+    token = Column(VARCHAR(64))
+    token_timestamp = Column(VARCHAR(64))
+
+
 class TenantModel(Base):
     '''
     Maps the database table tenant
@@ -36,18 +39,27 @@ class TenantModel(Base):
     description = Column(VARCHAR(128))
     
 
+
 class User(object):
     
     def __init__(self):
         pass
     
-    def getUser(self, username):
+    def getUserByUsername(self, username):
         session = get_session()
         try:
-            return session.query(UserModel).filter_by(name = username).one()
+            return session.query(UserModel).filter_by(username = username).one()
         except Exception as ex:
             logging.error(ex)
-            raise UserNotFound("User not found: "+str(username))
+            raise UserNotFound("User not found: "+str(username)+" (username)")
+    
+    def getUserByID(self, user_id):
+        session = get_session()
+        try:
+            return session.query(UserModel).filter_by(id = user_id).one()
+        except Exception as ex:
+            logging.error(ex)
+            raise UserNotFound("User not found: "+str(user_id)+" (id)")
     
     def getTenantName(self, tenant_id):
         session = get_session()
@@ -55,4 +67,38 @@ class User(object):
             return session.query(TenantModel).filter_by(id = tenant_id).one().name
         except Exception as ex:
             logging.error(ex)
-            raise TenantNotFound("User not found: "+str(tenant_id))
+            raise TenantNotFound("Tenant not found: "+str(tenant_id))
+    
+    def setPwdHash(self, user_id, pwdhash):
+        session = get_session()
+        with session.begin():
+            session.query(UserModel).filter_by(id=user_id).update({"pwdhash":pwdhash})
+    
+    def getNewToken(self, user_id):
+        exists = True
+        while exists:
+            token = hex(random.getrandbits(256))[2:] #len=64
+            timestamp = time.time()
+            exists = self.checkToken(token)
+        
+        timestamp = int(timestamp)
+        return token,timestamp
+
+    def setNewToken(self, user_id, token, timestamp):
+        session = get_session()
+        with session.begin():
+            session.query(UserModel).filter_by(id=user_id).update({"token":token,"token_timestamp":timestamp})
+    
+    def checkToken(self, token):
+        session = get_session()
+        try:
+            session.query(UserModel).filter_by(token = token).one()
+            return True
+        except Exception:
+            return False
+
+        
+        
+
+
+

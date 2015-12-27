@@ -23,30 +23,33 @@ import logging, falcon
 # Configuration Parser
 from odl_ca_core.config import Configuration
 
+# Create database
+from odl_ca_core.sql.sql_server import session_create_database
+from odl_ca_core.user_authentication import UserAuthentication
 # REST Interface
-from odl_ca_core.rest_interface import OpenDayLightCA_REST_NFFG, OpenDayLightCA_REST_NFFGStatus
+from odl_ca_core.rest_interface import OpenDayLightCA_REST_NFFG, OpenDayLightCA_REST_NFFGStatus, OpenDayLightCA_UserAuthentication
 
 # Configuration
 conf = Configuration()
 conf.log_configuration()
 
 
-
-
 # START OPENDAYLIGHT CONTROL ADAPTER
 logging.debug("OpenDayLight Control Adapter Starting...")
-print "Welcome to 'OpenDayLight Control Adapter'"
+print("Welcome to 'OpenDayLight Control Adapter'")
     
 # Falcon
 logging.info("Starting server application")
 app = falcon.API()
 
 rest_interface = OpenDayLightCA_REST_NFFG()
-nffg_status = OpenDayLightCA_REST_NFFGStatus()
+rest_nffg_status = OpenDayLightCA_REST_NFFGStatus()
+rest_user_auth = OpenDayLightCA_UserAuthentication()
 
+app.add_route('/auth', rest_user_auth)
 app.add_route('/NF-FG', rest_interface)
 app.add_route('/NF-FG/{nffg_id}', rest_interface)
-app.add_route('/NF-FG/status/{nffg_id}', nffg_status)
+app.add_route('/NF-FG/status/{nffg_id}', rest_nffg_status)
 
 logging.info("Falcon Successfully started")
 

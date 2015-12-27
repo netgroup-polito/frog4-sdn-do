@@ -34,22 +34,15 @@ from nffg_library.nffg import NF_FG
 conf = Configuration()
 conf.log_configuration()
 
-
-
 # START OPENDAYLIGHT CONTROL ADAPTER
 logging.debug("OpenDayLight Control Adapter Starting...")
-print "Welcome to 'OpenDayLight Control Adapter'"
-
-
-session_create_database()
-    
-
-
-
+print("Welcome to 'OpenDayLight Control Adapter'")
 
 # Instantiate the control adapter
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlCA = OpenDayLightCA(user)
+
+
 
 # Delete
 deldel=False
@@ -58,11 +51,11 @@ if deldel:
     try:
         odlCA.NFFG_Delete(977)
     except Exception as ex:
-        print ex.message
+        print(ex.message)
     try:
         odlCA.NFFG_Delete(988)
     except Exception as ex:
-        print ex.message
+        print(ex.message)
     quit()
     
 # NF-FG File

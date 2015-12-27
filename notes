@@ -1,0 +1,32 @@
+PYTHON: requirements and instructions
+
+Python 3.4 and the following modules:
+- gunicorn 19.4.1
+- falcon 0.3.0
+- requests 2.9.1
+- configparser 3.5.0
+- jsonschema 2.5.1
+- sqlite3 2.6.0
+- sqlalchemy 1.0.11
+- networkx 1.10
+
+Installations
+$ sudo apt-get install python3
+$ sudo apt-get install python3-setuptools
+$ sudo easy_install3 pip
+
+To install a python3 module:
+$ sudo pip3 install <module>
+
+To check if a module is already installed and its version:
+$ pip3 freeze
+
+
+
+INSTRUCTIONS
+
+1)	Set full permissions on the main directory:
+	$ chmod 777 <directory>
+
+2)	Check ./configuration.conf and write your own configuration.
+   

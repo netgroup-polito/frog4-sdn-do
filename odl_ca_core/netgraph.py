@@ -34,7 +34,7 @@ class NetGraph():
         
         
     def print_json(self,data):
-        print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+        print(json.dumps(data, sort_keys=True, indent=4, separators=(',', ': ')))
         
         
         
@@ -96,7 +96,7 @@ class NetGraph():
     
     def getTopologyGraph(self):
         
-        print "getTopologyGraph"
+        print("getTopologyGraph")
         
         myGraph = nx.DiGraph()
         
@@ -120,7 +120,7 @@ class NetGraph():
     
     def getShortestPath(self,source_switch_id,target_switch_id):
         
-        print "getShortestPath"
+        print("getShortestPath")
         
         try:
             path = nx.dijkstra_path(self.topology, source_switch_id, target_switch_id, self.WEIGHT_PROPERTY_NAME)

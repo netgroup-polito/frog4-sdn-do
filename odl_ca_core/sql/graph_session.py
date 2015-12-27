@@ -7,8 +7,6 @@ Created on Jun 20, 2015
 
 import datetime, logging, uuid
 
-from exceptions import Exception 
-
 from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action
 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func

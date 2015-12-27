@@ -4,7 +4,8 @@ Created on Oct 1, 2014
 @author: fabiomignini
 @author: giacomoratta
 '''
-import ConfigParser, os, inspect, logging
+
+import configparser, os, inspect, logging
 from odl_ca_core.exception import WrongConfigurationFile 
 
 
@@ -24,7 +25,7 @@ class Configuration(object):
         self.inizialize()
     
     def inizialize(self): 
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         base_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])).rpartition('/')[0]
         try:
             config.read(base_folder+'/configuration.conf')
@@ -33,6 +34,9 @@ class Configuration(object):
             self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
             self.__BASIC_CONFIG_PORT = config.get('basic_config','port')
             self.__BASIC_CONFIG_TIMEOUT = config.get('basic_config','timeout')
+            
+            # [authentication]
+            self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
             
             # [log]
             self.__LOG_FILE = config.get('log', 'file')
@@ -83,6 +87,10 @@ class Configuration(object):
     @property
     def BASIC_CONFIG_TIMEOUT(self):
         return self.__BASIC_CONFIG_TIMEOUT
+    
+    @property
+    def AUTH_TOKEN_EXPIRATION(self):
+        return self.__AUTH_TOKEN_EXPIRATION
     
     @property
     def LOG_FILE(self):

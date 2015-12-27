@@ -10,7 +10,7 @@ import logging, json, jsonschema, requests, falcon
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
-from odl_ca_core.user_authentication import UserAuthentication
+from odl_ca_core.user_authentication import UserAuthentication, UserData
 from odl_ca_core.opendaylight_ca import OpenDayLightCA
 
 # NF-FG
@@ -51,9 +51,12 @@ class OpenDayLightCA_REST_Base(object):
         logging.debug("Unauthorized access attempt"+username_string+".")
         raise falcon.HTTPUnauthorized("Unauthorized", ex.message)
 
-    def _except_standardException(self,ex):
+    def _except_standardException(self,ex,title=None):
         logging.exception(ex)
-        raise falcon.HTTPInternalServerError('Contact the admin. ',ex.message)
+        if title is None:
+            title = 'Contact the admin'
+        title = title+'. '
+        raise falcon.HTTPInternalServerError(title,ex.message)
 
 
 
@@ -192,8 +195,11 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
             
-            # TODO: write a json response
-            response.body = odlCA.NFFG_Status(nffg_id)
+            # Writting a json response
+            status_json = {}
+            status_json['status'] = odlCA.NFFG_Status(nffg_id)
+            
+            response.body = json.dumps(status_json)
             response.status = falcon.HTTP_200
         
         # JSON format error
@@ -214,7 +220,42 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
             raise falcon.HTTPNotFound()
         
         # Other errors
-        except request.HTTPError as err:
+        except requests.HTTPError as err:
             self._except_requests_HTTPError(err)
         except Exception as ex:
             self._except_standardException(ex)
+
+
+
+
+
+class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
+    def on_post(self, request, response):
+        try :
+            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+            
+            response.body = userdata.getResponseJSON()
+            response.status = falcon.HTTP_200
+        
+        # Authorization
+        except unauthorizedRequest as err:
+            self._except_unauthorizedRequest(err,request)
+        except wrongRequest as err:
+            self._except_standardException(err,"Wrong authentication request")
+        
+        # No Results
+        except NoResultFound:
+            logging.exception('Result Not found.')
+            raise falcon.HTTPNotFound()
+        except sessionNotFound as err:
+            logging.exception(err.message)
+            raise falcon.HTTPNotFound()
+        
+        # Other errors
+        except requests.HTTPError as err:
+            self._except_requests_HTTPError(err)
+        except Exception as ex:
+            self._except_standardException(ex)
+
+
+
