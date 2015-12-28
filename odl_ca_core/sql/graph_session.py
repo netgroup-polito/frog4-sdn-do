@@ -26,7 +26,7 @@ sqlserver = Configuration().DATABASE_CONNECTION
 class GraphSessionModel(Base):
     __tablename__ = 'graph_session'
     attributes = ['session_id', 'user_id', 'graph_id', 'graph_name', 'status',
-                  'started_at', 'last_update', 'error', 'ended']
+                  'started_at', 'last_update', 'error', 'ended', 'description']
     session_id = Column(VARCHAR(64), primary_key=True)
     user_id = Column(VARCHAR(64))
     graph_id = Column(Text)     # id in the json [see "forwarding-graph" section]
@@ -36,6 +36,7 @@ class GraphSessionModel(Base):
     last_update = Column(DateTime, default=func.now())
     error = Column(DateTime)
     ended = Column(DateTime)
+    description = Column(VARCHAR(256))
 
 
 class PortModel(Base):
@@ -85,7 +86,7 @@ class EndpointResourceModel(Base):
 class FlowRuleModel(Base):
     __tablename__ = 'flow_rule'
     attributes = ['id', 'graph_flow_rule_id', 'internal_id', 'session_id', 
-                  'switch_id', 'type', 'priority','status', 'creation_date','last_update']
+                  'switch_id', 'type', 'priority','status', 'creation_date','last_update','description']
     id = Column(Integer, primary_key=True)
     graph_flow_rule_id = Column(VARCHAR(64)) # id in the json [see "flow-rules" section]
     internal_id = Column(VARCHAR(64)) # auto-generated id, for the same graph_flow_rule_id
@@ -97,6 +98,7 @@ class FlowRuleModel(Base):
     status = Column(VARCHAR(64))    # = ( initialization | complete | error )
     creation_date = Column(DateTime)
     last_update = Column(DateTime, default=func.now())
+    description = Column(VARCHAR(128))
     
     
     
@@ -391,7 +393,7 @@ class GraphSession(object):
             
             session_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
-                                last_update = datetime.datetime.now(), status='inizialization')
+                                last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
             session.add(session_ref)
                             
             for flow_rule in nffg.flow_rules:
@@ -437,7 +439,7 @@ class GraphSession(object):
                 flow_rule_db_id = 0
             flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
                                        graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
-                                       priority=flow_rule.priority,  status=flow_rule.status,
+                                       priority=flow_rule.priority,  status=flow_rule.status, description=flow_rule.description,
                                        creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
             session.add(flow_rule_ref)
             

@@ -10,7 +10,7 @@ import logging, json, jsonschema, requests, falcon
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
-from odl_ca_core.user_authentication import UserAuthentication, UserData
+from odl_ca_core.user_authentication import UserAuthentication
 from odl_ca_core.opendaylight_ca import OpenDayLightCA
 
 # NF-FG

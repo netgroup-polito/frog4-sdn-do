@@ -3,7 +3,7 @@ Created on Jun 22, 2015
 
 @author: fabiomignini
 '''
-import sqlalchemy, sqlite3, os, sys
+import sqlalchemy, sqlite3, os
 from sqlalchemy.orm import sessionmaker
 from odl_ca_core.config import Configuration
 
