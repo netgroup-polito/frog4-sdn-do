@@ -23,15 +23,19 @@ import logging, falcon
 # Configuration Parser
 from odl_ca_core.config import Configuration
 
-# Create database
-from odl_ca_core.sql.sql_server import session_create_database
-from odl_ca_core.user_authentication import UserAuthentication
+# SQL Session
+from odl_ca_core.sql.sql_server import try_session
+
 # REST Interface
 from odl_ca_core.rest_interface import OpenDayLightCA_REST_NFFG, OpenDayLightCA_REST_NFFGStatus, OpenDayLightCA_UserAuthentication
 
 # Configuration
 conf = Configuration()
 conf.log_configuration()
+
+# Test connection to database
+try_session()
+
 
 
 # START OPENDAYLIGHT CONTROL ADAPTER

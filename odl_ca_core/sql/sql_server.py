@@ -3,24 +3,58 @@ Created on Jun 22, 2015
 
 @author: fabiomignini
 '''
-import sqlalchemy, sqlite3, os.path, os
+import sqlalchemy, sqlite3, os, sys
 from sqlalchemy.orm import sessionmaker
 from odl_ca_core.config import Configuration
 
-sqlserver = Configuration().DATABASE_CONNECTION
 
-def create_session():
-    #TODO: check if db exists
+def get_session():
+    '''
+    The only one function to create a connection with the database.
+    Make some checks before the effective session creation.
+    Raise the FileNotFoundError exception (if SQLite is used).
+    '''
+    sqlserver = Configuration().DATABASE_CONNECTION
+    
+    # Manage SQLite connection
+    if sqlserver[:6] == "sqlite":
+        if __check_sqlite_database(sqlserver):
+            return __create_session(sqlserver)
+        else:
+            raise FileNotFoundError("SQLite Database File not found")
+    
+    # Return standard session
+    return __create_session()
+
+def try_session():
+    '''
+    Create and close a database connection.
+    Raise some exceptions and print some informations.
+    '''
+    print("Testing database connection...")
+    s = get_session()
+    s.close_all()
+    print("Database connection estabilished correctly.\n")
+ 
+def __create_session(sqlserver):
     engine = sqlalchemy.create_engine(sqlserver) # connect to server
     session = sessionmaker()
     session.configure(bind=engine,autocommit=True)
     return session()
 
-def get_session():
-    return create_session()
+def __check_sqlite_database(sqlserverconnection):
+    # sqlserverconnection starts with "sqlite:///"
+    #filename = os.path.basename(sqlserverconnection)
+    filename = sqlserverconnection[10:]
+    return os.path.exists(filename)
 
 
-def session_create_database():
+
+
+
+
+# Work in progress
+def __session_create_database():
 
     # Relative file addresses
     db_filename = "../db.sqlite3"
@@ -28,7 +62,6 @@ def session_create_database():
 
     if os.path.exists(db_filename):
         return
-    print("ddd")
     if os.path.exists(dbdumpfile) == False:
         return
     

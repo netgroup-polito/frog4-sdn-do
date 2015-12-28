@@ -19,8 +19,8 @@ import logging, json
 # Configuration Parser
 from odl_ca_core.config import Configuration
 
-# Create database
-from odl_ca_core.sql.sql_server import session_create_database
+# SQL Session
+from odl_ca_core.sql.sql_server import try_session
 
 # Orchestrator Core
 from odl_ca_core.user_authentication import UserAuthentication
@@ -34,9 +34,15 @@ from nffg_library.nffg import NF_FG
 conf = Configuration()
 conf.log_configuration()
 
+# Test connection to database
+try_session()
+
+
+
 # START OPENDAYLIGHT CONTROL ADAPTER
 logging.debug("OpenDayLight Control Adapter Starting...")
 print("Welcome to 'OpenDayLight Control Adapter'")
+
 
 # Instantiate the control adapter
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
