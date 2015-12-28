@@ -74,8 +74,8 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: session " + self._session_id + " correctly instantiated!")
 
         except Exception as ex:
-            logging.error(ex.message)
-            logging.exception(ex.message)
+            logging.error(ex)
+            logging.exception(ex)
             GraphSession().deleteGraph(self._session_id)
             GraphSession().setErrorStatus(self._session_id)
             raise ex
@@ -119,8 +119,8 @@ class OpenDayLightCA(object):
             logging.debug("Update NF-FG: session " + self._session_id + " correctly updated!")
             
         except Exception as ex:
-            logging.error("Update NF-FG: "+ex.message)
-            logging.exception("Update NF-FG: "+ex.message)
+            logging.error("Update NF-FG: ",ex)
+            logging.exception("Update NF-FG: ",ex)
             # TODO: discuss... delete the graph when an error occurs in this phase?
             #GraphSession().deleteGraph(self._session_id)
             #GraphSession().setErrorStatus(self._session_id)
@@ -149,8 +149,8 @@ class OpenDayLightCA(object):
             logging.debug("Delete NF-FG: session " + self._session_id + " correctly deleted!")
             
         except Exception as ex:
-            logging.error("Delete NF-FG: "+ex.message)
-            logging.exception("Delete NF-FG: "+ex.message)
+            logging.error("Delete NF-FG: ",ex)
+            logging.exception("Delete NF-FG: ",ex)
             #raise ex - no raise because we need to delete the session in any case
         GraphSession().deleteGraph(self._session_id)
         GraphSession().setEnded(self._session_id)
@@ -425,7 +425,7 @@ class OpenDayLightCA(object):
         for a in flowrule.actions:
             if a.drop is True:
                 fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , None, "1")
-                self.__ODL_PushFlow(fr1)
+                self.__ODL_Push_ExternalFlow(fr1)
                 return  
         
         # Split the action handling in output and non-output.
@@ -500,11 +500,11 @@ class OpenDayLightCA(object):
                                               "Path Length = "+str(len(nodes_path)))
         # Push the fr1, if it is ready                
         if fr1.isReady():
-            self.__ODL_PushFlow(fr1)
+            self.__ODL_Push_ExternalFlow(fr1)
         
             # Push the fr2, if it is ready     
             if fr2.isReady():
-                self.__ODL_PushFlow(fr2)
+                self.__ODL_Push_ExternalFlow(fr2)
         
         # There is a path between the two endpoint
         if(nodes_path_flag is not None and nodes_path is not None):
@@ -514,11 +514,11 @@ class OpenDayLightCA(object):
 
 
 
-    def __ODL_PushFlow(self, pfr):
+    def __ODL_Push_ExternalFlow(self, pfr):
         # pfr = __processedFLowrule
         '''
         This is the only function that should be used to push an external flow
-        ("custom", in other words) in database and in opendaylight controller.
+        (a "custom flow", in other words) in the database and in the opendaylight controller.
         GraphSession().addFlowrule(...) is also used in GraphSession().updateNFFG 
         and in GraphSession().addNFFG to store the flow rules written in nffg.json.
         '''
@@ -759,7 +759,7 @@ class OpenDayLightCA(object):
             action_output.setOutputAction(port_out, 65535)
             pfr.append_action(action_output)
             
-            self.__ODL_PushFlow(pfr)
+            self.__ODL_Push_ExternalFlow(pfr)
             i = i+1
         # end-for
         '''

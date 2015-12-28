@@ -106,7 +106,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             logging.exception('Result Not found.')
             raise falcon.HTTPNotFound()
         except sessionNotFound as err:
-            logging.exception(err.message)
+            logging.exception(err)
             raise falcon.HTTPNotFound()
         
         # Other errors
@@ -130,8 +130,8 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             
         # JSON format error
         except jsonschema.ValidationError as err:
-            logging.exception(err.message)
-            raise falcon.HTTPBadRequest('Bad Request',err.message)
+            logging.exception(err)
+            raise falcon.HTTPBadRequest('Bad Request',err)
         
         # Authorization
         except unauthorizedRequest as err:
@@ -142,7 +142,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             logging.exception('Result Not found.')
             raise falcon.HTTPNotFound()
         except sessionNotFound as err:
-            logging.exception(err.message)
+            logging.exception(err)
             raise falcon.HTTPNotFound()
         
         # Other errors
@@ -164,8 +164,8 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
         
         # JSON format error
         except jsonschema.ValidationError as err:
-            logging.exception(err.message)
-            raise falcon.HTTPBadRequest('Bad Request',err.message)
+            logging.exception(err)
+            raise falcon.HTTPBadRequest('Bad Request',err)
         
         # Authorization
         except unauthorizedRequest as err:
@@ -176,7 +176,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             logging.exception('Result Not found.')
             raise falcon.HTTPNotFound()
         except sessionNotFound as err:
-            logging.exception(err.message)
+            logging.exception(err)
             raise falcon.HTTPNotFound()
         
         # Other errors
@@ -204,8 +204,8 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
         
         # JSON format error
         except jsonschema.ValidationError as err:
-            logging.exception(err.message)
-            raise falcon.HTTPBadRequest('Bad Request',err.message)
+            logging.exception(err)
+            raise falcon.HTTPBadRequest('Bad Request',err)
         
         # Authorization
         except unauthorizedRequest as err:
@@ -216,7 +216,7 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
             logging.exception('Result Not found.')
             raise falcon.HTTPNotFound()
         except sessionNotFound as err:
-            logging.exception(err.message)
+            logging.exception(err)
             raise falcon.HTTPNotFound()
         
         # Other errors
@@ -248,7 +248,7 @@ class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
             logging.exception('Result Not found.')
             raise falcon.HTTPNotFound()
         except sessionNotFound as err:
-            logging.exception(err.message)
+            logging.exception(err)
             raise falcon.HTTPNotFound()
         
         # Other errors
