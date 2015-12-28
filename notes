@@ -29,4 +29,10 @@ INSTRUCTIONS
 	$ chmod 777 <directory>
 
 2)	Check ./configuration.conf and write your own configuration.
+
+3)	Create the database.
+	$ python3 ./create_database.py
+	The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
+	All the tables are empty, except "user" and "tenant".
+	
    
