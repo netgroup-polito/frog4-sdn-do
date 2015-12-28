@@ -1,4 +1,3 @@
-BEGIN TRANSACTION;
 CREATE TABLE "action" (
   "id" int(64) NOT NULL,
   "flow_rule_id" varchar(64) NOT NULL,
@@ -32,31 +31,6 @@ CREATE TABLE "endpoint_resource" (
   "resource_type" varchar(64) NOT NULL,
   "resource_id" int(64) NOT NULL,
   PRIMARY KEY ("endpoint_id","resource_type","resource_id")
-);
-CREATE TABLE "flow_rule" (
-  "id" int(64) NOT NULL,
-  "graph_flow_rule_id" varchar(64) NOT NULL,
-  "internal_id" varchar(255) DEFAULT NULL,
-  "session_id" varchar(64) NOT NULL,
-  "switch_id" varchar(64) DEFAULT NULL,
-  "type" varchar(64) DEFAULT NULL,
-  "priority" varchar(64) DEFAULT NULL,
-  "status" varchar(64) DEFAULT NULL,
-  "creation_date" datetime NOT NULL,
-  "last_update" datetime DEFAULT NULL,
-  PRIMARY KEY ("id")
-);
-CREATE TABLE "graph_session" (
-  "session_id" varchar(64) NOT NULL,
-  "user_id" varchar(64) DEFAULT NULL,
-  "graph_id" varchar(64) NOT NULL,
-  "graph_name" varchar(64) NOT NULL,
-  "status" varchar(64) NOT NULL,
-  "started_at" datetime NOT NULL,
-  "last_update" datetime DEFAULT NULL,
-  "error" datetime DEFAULT NULL,
-  "ended" datetime DEFAULT NULL,
-  PRIMARY KEY ("session_id")
 );
 CREATE TABLE "match" (
   "id" int(64) NOT NULL,
@@ -98,24 +72,36 @@ CREATE TABLE "tenant" (
   PRIMARY KEY ("id")
 );
 INSERT INTO "tenant" ("id","name","description") VALUES ('1','admin_tenant','Admin Tenant');
-CREATE TABLE "user" (
+CREATE TABLE 'vlan' ( 'id' int(64) NOT NULL, "switch_id" varchar(64) NOT NULL, "port_in" int(64) NOT NULL, "vlan_in" varchar(64), "port_out" int(64) NOT NULL, "vlan_out" varchar(64), 'flow_rule_id' TEXT, PRIMARY KEY ("id") );
+CREATE TABLE 'user' (
   "id" varchar(64) NOT NULL,
-  "tenant_id" varchar(64) NOT NULL,
-  "name" varchar(64) NOT NULL,
-  "password" varchar(64) NOT NULL,
-  "mail" varchar(64) DEFAULT NULL,
+  "tenant_id" varchar(64) NOT NULL,'username' varchar(64) NOT NULL,'pwdhash' varchar(64) NOT NULL,
+  "mail" varchar(64) DEFAULT NULL, 'token'  varchar(64) DEFAULT NULL , 'token_timestamp'  int(64) DEFAULT NULL ,
   PRIMARY KEY ("id")
 );
-INSERT INTO "user" ("id","tenant_id","name","password","mail") VALUES ('1','1','admin','admin','admin@admin');
-CREATE TABLE 'vlan' ( 'id' int(64) NOT NULL, "switch_id" varchar(64) NOT NULL, "port_in" int(64) NOT NULL, "vlan_in" varchar(64), "port_out" int(64) NOT NULL, "vlan_out" varchar(64), 'flow_rule_id' TEXT, PRIMARY KEY ("id") );
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-COMMIT;
+INSERT INTO "user" ("id","tenant_id","username","pwdhash","mail","token","token_timestamp") VALUES ('1','1','admin','8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918','admin@admin',NULL,NULL);
+CREATE TABLE 'graph_session' (
+  "session_id" varchar(64) NOT NULL,
+  "user_id" varchar(64) DEFAULT NULL,
+  "graph_id" varchar(64) NOT NULL,
+  "graph_name" varchar(64) NOT NULL,
+  "status" varchar(64) NOT NULL,
+  "started_at" datetime NOT NULL,
+  "last_update" datetime DEFAULT NULL,
+  "error" datetime DEFAULT NULL,
+  "ended" datetime DEFAULT NULL, 'description'  varchar(256) DEFAULT NULL ,
+  PRIMARY KEY ("session_id")
+);
+CREATE TABLE 'flow_rule' (
+  "id" int(64) NOT NULL,
+  "graph_flow_rule_id" varchar(64) NOT NULL,
+  "internal_id" varchar(255) DEFAULT NULL,
+  "session_id" varchar(64) NOT NULL,
+  "switch_id" varchar(64) DEFAULT NULL,
+  "type" varchar(64) DEFAULT NULL,
+  "priority" varchar(64) DEFAULT NULL,
+  "status" varchar(64) DEFAULT NULL,
+  "creation_date" datetime NOT NULL,
+  "last_update" datetime DEFAULT NULL, 'description'  varchar(128) DEFAULT NULL ,
+  PRIMARY KEY ("id")
+);
