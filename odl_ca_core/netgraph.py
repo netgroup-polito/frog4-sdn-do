@@ -23,13 +23,11 @@ class NetGraph():
         self.odlpassword = odlpassword
         self.odlversion = odlversion
         
-        #variables declared by Matteo
-        self.topology = nx.Graph();
+        self.topology = None #nx.Graph()
         self.WEIGHT_PROPERTY_NAME = 'weight'
         self.ACTIONS_SEPARATOR_CHARACTER = ','
         self.VLAN_BUSY_CODE = 1
         self.VLAN_FREE_CODE = 0
-        #end of custom variable declaration
         
         
         
@@ -94,12 +92,13 @@ class NetGraph():
     
     
     
-    def getTopologyGraph(self):
+    def getTopologyGraph(self, reset=False):
         
-        print("getTopologyGraph")
+        # Check topology cache
+        if self.topology is not None and reset==False:
+            return self.topology
         
         myGraph = nx.DiGraph()
-        
         swList = self.getSwitchList()
         lkList = self.getSwitchLinksList()
         
@@ -120,13 +119,31 @@ class NetGraph():
     
     def getShortestPath(self,source_switch_id,target_switch_id):
         
-        print("getShortestPath")
-        
+        if self.topology is None:
+            self.getTopologyGraph()
         try:
             path = nx.dijkstra_path(self.topology, source_switch_id, target_switch_id, self.WEIGHT_PROPERTY_NAME)
         except nx.NetworkXNoPath:
             path=None
         return path
+    
+    
+    def switchPortIn(self, switch, from_switch):
+        # Return the port of "switch" that receives packets from "from_switch"
+        if switch is None or from_switch is None:
+            return None
+        if self.topology is None:
+            self.getTopologyGraph()
+        return self.topology[switch][from_switch]['from_port']
+    
+    def switchPortOut(self, switch, to_switch):
+        # Return the port of "switch" that sends packets to "to_switch"
+        if switch is None or to_switch is None:
+            return None
+        if self.topology is None:
+            self.getTopologyGraph()
+        return self.topology[switch][to_switch]['from_port']
+        
     
     
     

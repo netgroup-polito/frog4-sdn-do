@@ -28,7 +28,8 @@ INSTRUCTIONS
 1)	Set full permissions on the main directory:
 	$ chmod 777 <directory>
 
-2)	Check ./configuration.conf and write your own configuration.
+2)	Check ./configuration.conf and write your own configuration;
+	pay attention to all the paths (they must be absolute path).
 
 3)	Create the database.
 	$ python3 ./create_database.py

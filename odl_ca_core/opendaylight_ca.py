@@ -204,6 +204,10 @@ class OpenDayLightCA(object):
                 msg = "NFFG: 'end-points.type' must be 'interface'."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
+        
+        # TODO: detect multiple output and raise exception
+        # If multiple output are needed, multiple flow rules should be written in the nffg.json,
+        # with a different priority!
 
 
 
@@ -256,21 +260,27 @@ class OpenDayLightCA(object):
 
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
-            if flowrule.status =='new':
-                
-                #TODO: check priority
-                
-                if flowrule.match is not None:
-                    if flowrule.match.port_in is not None:
-                        
-                        tmp1 = flowrule.match.port_in.split(':')
-                        port1_type = tmp1[0]
-                        port1_id = tmp1[1]
-                        
-                        if port1_type == 'endpoint':
-                            endp1 = profile_graph.endpoints[port1_id]
-                            if endp1.type == 'interface':        
-                                self.__ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
+            # Flow rule checks
+            if flowrule.status !='new':
+                continue                
+            if flowrule.match is None:
+                continue            
+            if flowrule.match.port_in is None:
+                continue
+            
+            # Endpoint checks
+            tmp1 = flowrule.match.port_in.split(':')
+            port1_type = tmp1[0]
+            port1_id = tmp1[1]
+            if port1_type != 'endpoint':
+                continue
+            endp1 = profile_graph.endpoints[port1_id]
+            if endp1.type != 'interface':
+                continue
+            
+            #TODO: check priority
+            
+            self.__ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
 
 
 
@@ -379,8 +389,6 @@ class OpenDayLightCA(object):
 
         def set_priority(self, value):
             self.__priority = value
-            
-            
 
 
         def setFr1(self, switch_id, action, port_in, port_out, flowname_suffix):
@@ -404,27 +412,34 @@ class OpenDayLightCA(object):
 
 
 
-    def __ODL_ProcessFlowrule(self, endpoint1, flowrule, profile_graph):
-        #Process a flow rule written in the section "big switch" of a nffg json.
-        
-        fr1 = OpenDayLightCA.__processedFLowrule(match=Match(flowrule.match),
-                                                  priority=flowrule.priority,
-                                                  flow_id=flowrule.id)
-        
-        fr2 = OpenDayLightCA.__processedFLowrule(priority=flowrule.priority,
-                                                  flow_id=flowrule.id)
+    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
+        '''
+        Process a flow rule written in the section "big switch" of a nffg json.
+        After the verification that output is an endpoint, this function manages
+        three main cases:
+            1) endpoints are on the same switch;
+            2) endpoints are on different switches directly linked;
+            3) endpoints are on different switches not directly linked, so search for a path.
+        '''
 
-           
-        nodes_path = None
-        nodes_path_flag = None
+        def getEndpointID(output_string):
+            tmp2 = output_string.split(':')
+            port2_type = tmp2[0]
+            port2_id = tmp2[1]
+            if port2_type == 'endpoint':
+                return port2_id
+            return None
         
-        print("\n\n\nodlProcessFlowrule")
+        fr1 = OpenDayLightCA.__processedFLowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id)
+        fr2 = OpenDayLightCA.__processedFLowrule( priority=flowrule.priority, flow_id=flowrule.id)
+        out_endpoint = None
+        nodes_path = None
         
         # Add "Drop" flow rules only, and return.
         # If a flow rule has a drop action, we don't care other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , None, "1")
+                fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
                 self.__ODL_Push_ExternalFlow(fr1)
                 return  
         
@@ -436,79 +451,69 @@ class OpenDayLightCA(object):
             if a.output is None:
                 no_output = Action(a)
                 fr1.append_action(no_output)
+                continue
             
             # If this action is an output action (a.output is not None),
             # we check that the output is an endpoint and manage the main cases.
-            else:
+
+            # Is the 'output' destination an endpoint?
+            port2_id = getEndpointID(a.output)
+            if port2_id is None:
+                continue
+            out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
+
+
+            # [ 1 ] Endpoints are on the same switch
+            if in_endpoint.switch_id == out_endpoint.switch_id:
                 
-                # Is the 'output' destination an endpoint?
-                tmp2 = a.output.split(':')
-                port2_type = tmp2[0]
-                port2_id = tmp2[1]
-                if port2_type == 'endpoint':
-                    endpoint2 = profile_graph.endpoints[port2_id]
-                    
-                    # Endpoints are on the same switch
-                    if endpoint1.switch_id == endpoint2.switch_id:
-                        
-                        # Error: endpoints are equal!
-                        if endpoint1.interface == endpoint2.interface:
-                            raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
-                        
-                        # Install a flow between two ports of the switch
-                        else:
-                            fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , endpoint2.interface, "1")
-                    
-                    # Endpoints are on different switches              
-                    else:
-                        
-                        # Check if a link between endpoint switches exists.
-                        # Return: port12 (on endpoint1 switch) and port21 (on endpoint2 switch).
-                        port12,port21 = self.__ODL_GetLinkPortsBetweenSwitches(endpoint1.switch_id, endpoint2.switch_id)       
-                        
-                        # A link between endpoint switches exists!
-                        if port12 is not None and port21 is not None:
-                            
-                            # Endpoints are not on the link: 2 flows (most probable setup) 
-                            if endpoint1.interface != port12 and endpoint2.interface != port21:
-                                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , port12, "1")
-                                fr2.setFr1(endpoint2.switch_id, None, port21 , endpoint2.interface, "2")
-                            
-                            # Flow installed on first switch
-                            elif endpoint1.interface != port12 and endpoint2.interface == port21:
-                                fr1.setFr1(endpoint1.switch_id, a, endpoint1.interface , port12, "1")
-                                                                
-                            # Flow installed on second switch                                
-                            elif endpoint1.interface == port12 and endpoint2.interface != port21:
-                                fr1.setFr1(endpoint2.switch_id, a, endpoint2.interface , port21, "2")
-                            
-                            # Endpoints are on the link: cannot install flow
-                            elif endpoint1.interface == port12 and endpoint2.interface == port21:
-                                logging.warning("Flow not installed for flowrule id "+flowrule.id+ ": both endpoints are on the same link")
-                        
-                        # No link between endpoint switches...search for a path!
-                        else:
-                            if(nodes_path_flag == None):
-                                self.netgraph.getTopologyGraph()
-                                nodes_path = self.netgraph.getShortestPath(endpoint1.switch_id, endpoint2.switch_id)
-                                nodes_path_flag = 1
-                            
-                            if(nodes_path == None):
-                                logging.debug("Cannot find a link between "+endpoint1.switch_id+" and "+endpoint2.switch_id)
-                            else:
-                                logging.debug("Creating a path bewteen "+endpoint1.switch_id+" and "+endpoint2.switch_id+". "+
-                                              "Path Length = "+str(len(nodes_path)))
+                # Error: endpoints are equal!
+                if in_endpoint.interface == out_endpoint.interface:
+                    raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
+                
+                # Install a flow between two ports of the switch
+                fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
+                continue
+
+
+            # [ 2 ] Endpoints are on different switches directly linked
+            # Check if a link between endpoint switches exists.
+            # Return: port12 (on in_endpoint switch) and port21 (on out_endpoint switch).
+            port12,port21 = self.__ODL_GetLinkPortsBetweenSwitches(in_endpoint.switch_id, out_endpoint.switch_id)       
+            if port12 is not None and port21 is not None:
+
+                # Endpoints are not on the link: 2 flows (most probable setup) 
+                if in_endpoint.interface != port12 and out_endpoint.interface != port21:
+                    fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , port12, "1")
+                    fr2.setFr1(out_endpoint.switch_id, None, port21 , out_endpoint.interface, "2")
+                    continue
+                           
+                # One or both endpoints interfaces overlap the ports of the link!
+                else:
+                    logging.warning("Flow not installed for flowrule id "+flowrule.id+": "+
+                                    "one or both endpoints are on the same link "+
+                                    "[ ("+in_endpoint.interface+","+port12+");("+out_endpoint.interface+","+port21+")]")
+
+
+            # [ 3 ] Endpoints are on different switches not directly linked...search for a path!
+            nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
+            if(nodes_path is not None):
+                logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
+            else:
+                logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
+        
+        # <-- End-for on "flowrule.actions" array 
+        
         # Push the fr1, if it is ready                
         if fr1.isReady():
             self.__ODL_Push_ExternalFlow(fr1)
         
-            # Push the fr2, if it is ready     
+            # Push the fr2, if it is ready
             if fr2.isReady():
                 self.__ODL_Push_ExternalFlow(fr2)
         
         # There is a path between the two endpoint
-        if(nodes_path_flag is not None and nodes_path is not None):
-            self.__ODL_LinkEndpoints(nodes_path, endpoint1, endpoint2, flowrule)
+        if nodes_path is not None:
+            self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
 
 
 
@@ -633,7 +638,7 @@ class OpenDayLightCA(object):
 
 
 
-    def __ODL_LinkEndpoints(self,path,ep1,ep2,flowrule):
+    def __ODL_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
         
         ''' 
         This function links two endpoints with a set of flow rules pushed in
@@ -656,9 +661,6 @@ class OpenDayLightCA(object):
             vlan_in = flowrule.match.vlan_id
             original_vlan_out = vlan_in
         
-        print("\nFlow id: "+str(pfr.get_flow_id()))
-        print("Flow priority: "+str(pfr.get_priority()))
-        
         # Clean actions and search for an egress vlan id
         for a in flowrule.actions:
             
@@ -674,13 +676,9 @@ class OpenDayLightCA(object):
                 base_actions.append(no_output)
         
         # Detect if it is a mod/strip flow
-        if vlan_in is not None:
-            is_mod_strip_flow=False
-        else:
-            is_mod_strip_flow=True
+        is_mod_strip_flow = (vlan_in is None)
         
         # Traverse the path and create the flow for each switch
-        i = 0
         for i in range(0, len(path)):
             hop = path[i]
             pfr.set_flow_name(i)
@@ -691,24 +689,24 @@ class OpenDayLightCA(object):
             pos = 0 # (-1:first, 0:middle, 1:last)
             
             # Next switch and next ingress port
-            next_switch_id = None
-            next_port_in = None
+            next_switch_ID = None
+            next_switch_portIn = None
             if i < (len(path)-1):
-                next_switch_id = path[i+1]
-                next_port_in = self.netgraph.topology[hop][next_switch_id]['to_port']
+                next_switch_ID = path[i+1]
+                next_switch_portIn = self.netgraph.switchPortIn(next_switch_ID, hop)
             
             # First switch
             if i==0:
                 pos = -1
                 pfr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
-                port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
+                port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
             
             # Last switch
             elif i==len(path)-1:
                 pos = 1
                 pfr.set_switch_id(ep2.switch_id)
-                port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
+                port_in = self.netgraph.switchPortIn(hop, path[i-1])
                 port_out = ep2.interface
                 # Force the vlan out to be equal to the original
                 if is_mod_strip_flow == False and original_vlan_out is not None:
@@ -717,11 +715,11 @@ class OpenDayLightCA(object):
             # Middle way switch
             else:
                 pfr.set_switch_id(hop)
-                port_in = self.netgraph.topology[path[i-1]][hop]['to_port']
-                port_out = self.netgraph.topology[hop][path[i+1]]['from_port']
+                port_in = self.netgraph.switchPortIn(hop, path[i-1])
+                port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
             
             # Check, generate and set vlan ids
-            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_id, next_port_in)
+            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
             
             # Match
             if vlan_in is not None:
@@ -752,19 +750,17 @@ class OpenDayLightCA(object):
                 
             print("["+pfr.get_flow_name()+"] "+pfr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out))
             
+            # Push the flow rule
             base_match.setInputMatch(port_in)
             pfr.set_match(base_match)
-            
             action_output = Action()
             action_output.setOutputAction(port_out, 65535)
             pfr.append_action(action_output)
-            
             self.__ODL_Push_ExternalFlow(pfr)
-            i = i+1
         # end-for
         '''
-        Original vlan id
-            vlan id = flowrule.match.vlan_id
+        Note#1 - Where are the original vlan id?
+            vlan in = flowrule.match.vlan_id
             vlan out = original_vlan_out
         '''
         return
@@ -773,7 +769,7 @@ class OpenDayLightCA(object):
 
 
 
-    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
+    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
         
         # Rectify vlan ids
         if vlan_in is not None:
@@ -795,15 +791,15 @@ class OpenDayLightCA(object):
             vlan_out = vlan_in
         
         # Verify this output vlan id
-        if vlan_out is not None and next_switch_id is not None:
+        if vlan_out is not None and next_switch_ID is not None:
             #check vlan output in next switch-port / return None if non suitable
-            vlan_out = GraphSession().vlanTracking_check(port_in,port_out,vlan_in,vlan_out,next_switch_id,next_port_in)
+            vlan_out = GraphSession().vlanTracking_check(port_in,port_out,vlan_in,vlan_out,next_switch_ID,next_switch_portIn)
 
         # Check if an output vlan id is needed
-        if vlan_out is None and next_switch_id is not None:
+        if vlan_out is None and next_switch_ID is not None:
             #generate for the next switch-port
             # TODO: manage the '0' value (error) and '-1' value (all vlan ids are busy)
-            vlan_out = GraphSession().vlanTracking_new_vlan_out(port_in,port_out,vlan_in,vlan_out,next_switch_id,next_port_in) 
+            vlan_out = GraphSession().vlanTracking_new_vlan_out(port_in,port_out,vlan_in,vlan_out,next_switch_ID,next_switch_portIn) 
             set_vlan_out = vlan_out
         
         return vlan_in, vlan_out, set_vlan_out

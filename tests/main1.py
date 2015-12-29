@@ -75,7 +75,6 @@ nffg.parseDict(nffg_file)
 odlCA.NFFG_Validate(nffg)
 odlCA.NFFG_Put(nffg)
 
-
 quit()
 
 # NF-FG File
