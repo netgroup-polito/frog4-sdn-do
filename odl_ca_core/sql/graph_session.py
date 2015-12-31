@@ -398,7 +398,7 @@ class GraphSession(object):
                             
             for flow_rule in nffg.flow_rules:
                 self.addFlowrule(session_id, None, flow_rule, nffg)
-                                
+
             for endpoint in nffg.end_points:
                 
                 endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
@@ -426,63 +426,97 @@ class GraphSession(object):
             return session_id
     
     
-      
-    def addFlowrule(self, session_id, switch_id, flow_rule, nffg):
+    
+    def dbStoreMatch(self, match, flow_rule_db_id, match_db_id, port_in=None, port_in_type=None):
         session = get_session()
-        flow_rule_db_id = None
         with session.begin():
-             
-            # FlowRule
-            if self._get_higher_flow_rule_id() is not None:
-                flow_rule_db_id = self._get_higher_flow_rule_id() + 1
-            else:
-                flow_rule_db_id = 0
+            
+            if port_in is None:
+                port_in=match.port_in
+            
+            # Flowrule and match have a 1:1 relationship,
+            # so the match record can have the same id of the flowrule record!
+            match_ref = MatchModel(id=match_db_id, flow_rule_id=flow_rule_db_id, 
+                                   port_in_type=port_in_type, port_in=port_in,
+                                   ether_type=match.ether_type, vlan_id=match.vlan_id,
+                                   vlan_priority=match.vlan_priority, source_mac=match.source_mac,
+                                   dest_mac=match.dest_mac, source_ip=match.source_ip,
+                                   dest_ip=match.dest_ip, tos_bits=match.tos_bits,
+                                   source_port=match.source_port, dest_port=match.dest_port,
+                                   protocol=match.protocol)
+            session.add(match_ref)
+            return match_ref
+        return None
+    
+    
+    def dbStoreAction(self, action, flow_rule_db_id, action_db_id=None, output=None, output_type=None):
+        
+        if action_db_id is None:
+            action_db_id = 0
+            if self._get_higher_action_id() is not None:
+                action_db_id = self._get_higher_action_id() + 1
+        
+        if output is None:
+            output=action.output
+                
+        session = get_session()
+        with session.begin():
+            action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
+                                     output_type=output_type, output=output,
+                                     controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
+                                     set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
+                                     set_ethernet_src_address=action.set_ethernet_src_address, 
+                                     set_ethernet_dst_address=action.set_ethernet_dst_address,
+                                     set_ip_src_address=action.set_ip_src_address, set_ip_dst_address=action.set_ip_dst_address,
+                                     set_ip_tos=action.set_ip_tos, set_l4_src_port=action.set_l4_src_port,
+                                     set_l4_dst_port=action.set_l4_dst_port, output_to_queue=action.output_to_queue)
+            session.add(action_ref)
+            return action_ref
+        return None
+    
+    
+    def dbStoreFlowrule(self, session_id, flow_rule, flow_rule_db_id, switch_id):
+        session = get_session()
+        with session.begin():
             flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
                                        graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
                                        priority=flow_rule.priority,  status=flow_rule.status, description=flow_rule.description,
                                        creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
             session.add(flow_rule_ref)
-            
-            # Match
-            if flow_rule.match is not None:
-                match_db_id = flow_rule_db_id
-                port_in_type = None
-                port_in = None
-                if flow_rule.match.port_in.split(':')[0] == 'endpoint':
-                    port_in_type = 'endpoint'
-                    port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
-                match_ref = MatchModel(id=match_db_id, flow_rule_id=flow_rule_db_id, port_in_type = port_in_type, port_in=port_in,
-                                ether_type=flow_rule.match.ether_type, vlan_id=flow_rule.match.vlan_id,
-                                vlan_priority=flow_rule.match.vlan_priority, source_mac=flow_rule.match.source_mac,
-                                dest_mac=flow_rule.match.dest_mac, source_ip=flow_rule.match.source_ip,
-                                dest_ip=flow_rule.match.dest_ip, tos_bits=flow_rule.match.tos_bits,
-                                source_port=flow_rule.match.source_port, dest_port=flow_rule.match.dest_port,
-                                protocol=flow_rule.match.protocol)
-                session.add(match_ref)
-            
-            # Actions
-            if flow_rule.actions:
-                if self._get_higher_action_id() is not None:
-                    action_db_id = self._get_higher_action_id() + 1
-                else:
-                    action_db_id = 0
-                for action in flow_rule.actions:
-                    output_type = None
-                    output = None
-                    if action.output != None and action.output.split(':')[0] == 'endpoint':
-                        output_type = 'endpoint'
-                        output = nffg.getEndPoint(action.output.split(':')[1]).db_id
-                    action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
-                                             output_type=output_type, output=output,
-                                             controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
-                                             set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
-                                             set_ethernet_src_address=action.set_ethernet_src_address, 
-                                             set_ethernet_dst_address=action.set_ethernet_dst_address,
-                                             set_ip_src_address=action.set_ip_src_address, set_ip_dst_address=action.set_ip_dst_address,
-                                             set_ip_tos=action.set_ip_tos, set_l4_src_port=action.set_l4_src_port,
-                                             set_l4_dst_port=action.set_l4_dst_port, output_to_queue=action.output_to_queue)
-                    session.add(action_ref)
-                    action_db_id += 1
+            return flow_rule_ref
+        return None
+
+
+
+    def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None):   
+                  
+        # FlowRule
+        if self._get_higher_flow_rule_id() is not None:
+            flow_rule_db_id = self._get_higher_flow_rule_id() + 1
+        else:
+            flow_rule_db_id = 0
+        self.dbStoreFlowrule(session_id, flow_rule, flow_rule_db_id, switch_id)
+        
+        # Match
+        if nffg is not None and flow_rule.match is not None:
+            match_db_id = flow_rule_db_id
+            port_in_type = None
+            port_in = None
+            if flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                port_in_type = 'endpoint'
+                port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
+            self.dbStoreMatch(flow_rule.match, flow_rule_db_id, match_db_id, port_in=port_in, port_in_type=port_in_type)
+        
+        # Actions
+        if nffg is not None and len(flow_rule.actions)>0:
+            for action in flow_rule.actions:
+                output_type = None
+                output_port = None
+                if action.output != None and action.output.split(':')[0] == 'endpoint':
+                    output_type = 'endpoint'
+                    output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
+                self.dbStoreAction(action, flow_rule_db_id, None, output=output_port, output_type=output_type)
+
         return flow_rule_db_id
 
 

@@ -7,7 +7,7 @@
 from __future__ import division
 import logging, json
 
-from nffg_library.nffg import FlowRule
+from nffg_library.nffg import FlowRule, Match as NffgMatch, Action as NffgAction
 
 from odl_ca_core.sql.graph_session import GraphSession
 
@@ -15,7 +15,7 @@ from odl_ca_core.config import Configuration
 from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
-from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations
+from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations, NffgInvalidActions
 
 
 
@@ -101,8 +101,6 @@ class OpenDayLightCA(object):
         # Get the old NFFG
         old_nffg = GraphSession().getNFFG(self._session_id)
         logging.debug("Update NF-FG: the old session: "+old_nffg.getJSON())
-        
-        # TODO: remove or integrate remote_graph and remote_endpoint
 
         try:
             updated_nffg = old_nffg.diff(new_nffg)
@@ -121,7 +119,7 @@ class OpenDayLightCA(object):
         except Exception as ex:
             logging.error("Update NF-FG: ",ex)
             logging.exception("Update NF-FG: ",ex)
-            # TODO: discuss... delete the graph when an error occurs in this phase?
+            # TODO: delete the graph when an error occurs in this phase?
             #GraphSession().deleteGraph(self._session_id)
             #GraphSession().setErrorStatus(self._session_id)
             raise ex
@@ -185,31 +183,52 @@ class OpenDayLightCA(object):
         The original json, as specified in the extern NFFG library,
         could contain useless objects and fields for this CA.
         If this happens, we have to raise exceptions to stop the request processing.  
-        '''        
+        '''
+        # VNFs inspections
         if len(nffg.vnfs)>0:
-            msg = "NFFG: presence of 'VNFs'. This CA does not process this information."
+            msg = "NFFG Validation: presence of 'VNFs'. This CA does not process this information."
             logging.debug(msg)
             raise NffgUselessInformations(msg)
         
+        # END POINTs inspections
         for ep in nffg.end_points:
             if(ep.remote_endpoint_id is not None):
-                msg = "NFFG: presence of 'end-points.remote_endpoint_id'. This CA does not process this information."
+                msg = "NFFG Validation: presence of 'end-points.remote_endpoint_id'. This CA does not process this information."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
             if(ep.remote_ip is not None):
-                msg = "NFFG: presence of 'end-points.remote-ip'. This CA does not process this information."
+                msg = "NFFG Validation: presence of 'end-points.remote-ip'. This CA does not process this information."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
             if(ep.type != "interface"):
-                msg = "NFFG: 'end-points.type' must be 'interface'."
+                msg = "NFFG Validation: 'end-points.type' must be 'interface'."
                 logging.debug(msg)
                 raise NffgUselessInformations(msg)
-        
-        # TODO: detect multiple output and raise exception
-        # If multiple output are needed, multiple flow rules should be written in the nffg.json,
-        # with a different priority!
+
+        # FLOW RULEs inspection
+        for flowrule in nffg.flow_rules:
+
+            # Detect multiple output actions (they are not allowed).
+            # If multiple output are needed, multiple flow rules should be written
+            # in the nffg.json, with a different priorities!
+            output_action_counter=0
+            for a in flowrule.actions:
+                if a.output is not None:
+                    if output_action_counter > 0:
+                        msg = "NFFG Validation: not allowed 'multiple output' (flow rule "+flowrule.id+")."
+                        logging.debug(msg)
+                        raise NffgInvalidActions(msg)
+                    output_action_counter = output_action_counter+1
+                    
+                
 
 
+
+    '''
+    ######################################################################################################
+    #########################    Interactions with OpenDaylight              #############################
+    ######################################################################################################
+    '''
 
     def __ProfileGraph_BuildFromNFFG(self, nffg):
         '''
@@ -228,8 +247,6 @@ class OpenDayLightCA(object):
                 status = "new"
             else:
                 status = endpoint.status
-
-            # TODO: remove or integrate 'remote_endpoint' code
             
             ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
             profile_graph.addEndpoint(ep)
@@ -244,19 +261,8 @@ class OpenDayLightCA(object):
 
 
 
-     
-    '''
-    ######################################################################################################
-    #########################    Interactions with OpenDaylight              #############################
-    ######################################################################################################
-    '''
         
     def __ODL_FlowsInstantiation(self, profile_graph):
-        
-        # Create the endpoints
-        # for endpoint in profile_graph.endpoints.values():
-        #    if endpoint.status == "new":
-                # TODO: remove or integrate remote_graph and remote_endpoint
 
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
@@ -299,8 +305,6 @@ class OpenDayLightCA(object):
         for endpoint in updated_nffg.end_points[:]:
             if endpoint.status == 'to_be_deleted':
                 
-                # TODO: remove or integrate remote_graph, remote_endpoint, endpoint_resource "flowrule", and graph_connection
-                
                 # Delete endpoints and all resourcess associated to it.
                 GraphSession().deleteEndpoint(endpoint.id, self._session_id)
                 GraphSession().deleteEndpointResourceAndResources(endpoint.db_id)
@@ -330,13 +334,21 @@ class OpenDayLightCA(object):
 
     class __processedFLowrule(object):
             
-        def __init__(self,switch_id=None,match=None,actions=None,flow_id=None,priority=None,flowname_suffix=None):
+        def __init__(self,switch_id=None,match=None,actions=None,flow_id=None,priority=None,flowname_suffix=None,nffg_flowrule=None):
             self.__switch_id = switch_id
-            self.__match = match
-            self.set_actions(actions)
             self.set_flow_id(flow_id)
             self.set_flow_name(flowname_suffix)
             self.__priority = priority
+            
+            # match = resources.Match object
+            self.__match = match
+            
+            # actions = array of resources.Action object
+            self.set_actions(actions)
+            
+            # nffg_flowrule = nffg.FlowRule object
+            # (usually not used, but useful in some cases)
+            self.__nffg_flowrule = nffg_flowrule
             
 
         def get_switch_id(self):
@@ -356,7 +368,6 @@ class OpenDayLightCA(object):
 
         def get_priority(self):
             return self.__priority
-
 
         def set_switch_id(self, value):
             self.__switch_id = value
@@ -406,6 +417,78 @@ class OpenDayLightCA(object):
         
         def isReady(self):
             return ( self.__switch_id is not None and self.__flow_id is not None )
+        
+        
+        def getNffgMatch(self):
+            
+            port_in = self.__match.input_port
+            ether_type = self.__match.ethertype
+            vlan_id = self.__match.vlan_id
+            source_mac = self.__match.eth_source
+            dest_mac = self.__match.eth_dest
+            source_ip = self.__match.ip_source
+            dest_ip = self.__match.ip_dest
+            source_port = self.__match.port_source
+            dest_port = self.__match.port_dest
+            protocol = self.__match.ip_protocol
+            
+            # Not directly supported fields
+            tos_bits = self.__nffg_flowrule.match.tos_bits
+            vlan_priority = self.__nffg_flowrule.match.vlan_priority
+            db_id = None
+            
+            return NffgMatch(port_in=port_in, ether_type=ether_type, 
+                             vlan_id=vlan_id, vlan_priority=vlan_priority,
+                             source_mac=source_mac, dest_mac=dest_mac, 
+                             source_ip=source_ip, dest_ip=dest_ip, 
+                             tos_bits=tos_bits,
+                             source_port=source_port, dest_port=dest_port,
+                             protocol=protocol, db_id=db_id)
+            
+            
+        def getNffgAction(self):
+            
+            output = None
+            controller = False
+            drop = False
+            set_vlan_id = None
+            pop_vlan = False
+            set_ethernet_src_address = None
+            set_ethernet_dst_address = None
+            
+            # Not supported fields
+            set_vlan_priority = None
+            set_ip_src_address = None 
+            set_ip_dst_address= None
+            set_ip_tos = None
+            set_l4_src_port=None
+            set_l4_dst_port = None
+            output_to_queue= None
+            
+            # Compress all actions in a single NffgAction (for dbStoreAction)
+            # Multiple output not allowed
+            for a in self.__actions:
+                if a.is_output_port_action():
+                    output = a.output_port
+                elif a.is_output_controller_action():
+                    controller = True
+                elif a.is_drop_action():
+                    drop = True
+                elif a.is_set_vlan_action():
+                    set_vlan_id = a.vlan_id
+                elif a.is_pop_vlan_action():
+                    pop_vlan = True
+                elif a.is_eth_src_action():
+                    set_ethernet_src_address = a.address
+                elif a.is_eth_dst_action():
+                    set_ethernet_dst_address = a.address
+
+            return NffgAction(output = output, controller = controller, drop = drop, 
+                              set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, pop_vlan = pop_vlan,
+                              set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
+                              set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
+                              set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
+                              output_to_queue = output_to_queue, db_id = None)
 
 
 
@@ -430,8 +513,8 @@ class OpenDayLightCA(object):
                 return port2_id
             return None
         
-        fr1 = OpenDayLightCA.__processedFLowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id)
-        fr2 = OpenDayLightCA.__processedFLowrule( priority=flowrule.priority, flow_id=flowrule.id)
+        fr1 = OpenDayLightCA.__processedFLowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
+        fr2 = OpenDayLightCA.__processedFLowrule( priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
         out_endpoint = None
         nodes_path = None
         
@@ -529,6 +612,8 @@ class OpenDayLightCA(object):
         '''
         
         '''
+        TODO: store entire flowrule in the database
+        
         TODO: check if a "similar" flow rule already exists in the specified switch.
         Similar flow rules are replaced by ovs switch, so one of them disappear!
         
@@ -545,9 +630,14 @@ class OpenDayLightCA(object):
         json_req = flowj.getJSON(self.odlversion, pfr.get_switch_id())
         ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, pfr.get_switch_id(), pfr.get_flow_name())
         
-        # DATABASE: Add flow rule and vlan tracking
-        flow_rule = FlowRule(_id=pfr.get_flow_id(),node_id=pfr.get_switch_id(), _type='external', status='complete',priority=pfr.get_priority(), internal_id=pfr.get_flow_name())  
-        flow_rule_db_id = GraphSession().addFlowrule(self._session_id, pfr.get_switch_id(), flow_rule, None)
+        # DATABASE: Add flow rule
+        flow_rule = FlowRule(_id=pfr.get_flow_id(),node_id=pfr.get_switch_id(), _type='external', status='complete',
+                             priority=pfr.get_priority(), internal_id=pfr.get_flow_name())
+        flow_rule_db_id = GraphSession().addFlowrule(self._session_id, pfr.get_switch_id(), flow_rule)
+        GraphSession().dbStoreMatch(pfr.getNffgMatch(), flow_rule_db_id, flow_rule_db_id)
+        GraphSession().dbStoreAction(pfr.getNffgAction(), flow_rule_db_id)
+        
+        # DATABASE: Add vlan tracking
         self.__ODL_VlanTraking_add(pfr, flow_rule_db_id)
     
     
@@ -650,13 +740,14 @@ class OpenDayLightCA(object):
         conflicts in the traversed switches.
         '''
 
-        pfr = OpenDayLightCA.__processedFLowrule(flow_id=flowrule.id, priority=flowrule.priority)
+        pfr = OpenDayLightCA.__processedFLowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
         
         base_actions = []
         vlan_out = None
         original_vlan_out = None
         vlan_in = None
         
+        # Initialize vlan_id and save it
         if flowrule.match.vlan_id is not None:
             vlan_in = flowrule.match.vlan_id
             original_vlan_out = vlan_in

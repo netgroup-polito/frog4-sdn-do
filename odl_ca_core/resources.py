@@ -343,6 +343,32 @@ class Action(object):
         
         return j_action
     
+    
+    def is_eth_src_action(self):
+        return self.action_type == "set-dl-src-action"
+    
+    def is_eth_dst_action(self):
+        return self.action_type == "set-dl-dst-action"
+    
+    def is_push_vlan_action(self):
+        return self.action_type == "push-vlan-action"
+    
+    def is_pop_vlan_action(self):
+        return self.action_type == "pop-vlan-action"
+    
+    def is_drop_action(self):
+        return self.action_type == "drop-action"
+    
+    def is_output_port_action(self):
+        return (self.action_type == "output-action" and self.output_port.isdigit())
+    
+    def is_output_controller_action(self):
+        return (self.action_type == "output-action" and self.output_port=="CONTROLLER")
+    
+    def is_set_vlan_action(self):
+        return self.action_type == "vlan-match"
+    
+    
 class Match(object):
     def __init__(self, match = None):
         '''
