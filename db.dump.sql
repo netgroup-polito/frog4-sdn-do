@@ -95,7 +95,7 @@ CREATE TABLE 'graph_session' (
 CREATE TABLE 'flow_rule' (
   "id" int(64) NOT NULL,
   "graph_flow_rule_id" varchar(64) NOT NULL,
-  "internal_id" varchar(255) DEFAULT NULL,
+  "internal_id" varchar(64) DEFAULT NULL,
   "session_id" varchar(64) NOT NULL,
   "switch_id" varchar(64) DEFAULT NULL,
   "type" varchar(64) DEFAULT NULL,
