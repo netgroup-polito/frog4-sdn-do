@@ -250,7 +250,6 @@ class OpenDayLightCA(object):
     
     
     
-    
     def __NFFG_Update__deletions(self, updated_nffg):
         
         def getEndpointID(endpoint_string):
@@ -298,7 +297,6 @@ class OpenDayLightCA(object):
 
 
 
-
     def __ODL_FlowsInstantiation(self, profile_graph):
 
         # Create and push the flowrules
@@ -329,74 +327,6 @@ class OpenDayLightCA(object):
     
     
     
-    
-
-    def __deleteFlowRuleByGraphID(self, graph_flow_rule_id):
-        flowrules = GraphSession().getFlowrules(self.__session_id, graph_flow_rule_id)
-        if flowrules is not None:
-            for fr in flowrules:
-                self.__deleteFlowRule(fr)
-    
-    def __deleteFlowRuleByID(self, flow_rule_id):
-        fr = GraphSession().getFlowruleByID(flow_rule_id)
-        if fr is None:
-            return
-        if fr.internal_id is not None and fr.type is not None:
-            self.__deleteFlowRule(fr)
-        self.__deleteFlowRuleByGraphID(fr.graph_flow_rule_id)
-    
-    def __deleteFlowRule(self, flow_rule):
-        # flow_rule is a FlowRuleModel object
-        if flow_rule.type == 'external': #and flow.status == "complete" 
-            ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule.switch_id, flow_rule.internal_id)
-        GraphSession().deleteFlowrule(flow_rule.id)
-
-    
-    def __deletePortByID(self, port_id):
-        GraphSession().deletePort(port_id)
-
-       
-    def __deleteEndpointByGraphID(self, graph_endpoint_id):
-        ep = GraphSession().getEndpointByGraphID(graph_endpoint_id, self.__session_id)
-        if ep is not None:
-            self.__deleteEndpointByID(ep.id)
-
-    def __deleteEndpointByID(self, endpoint_id):
-        ep_resources = GraphSession().getEndpointResources(endpoint_id)
-        if ep_resources is None:
-            return
-        for eprs in ep_resources:
-            if eprs.resource_type == 'flow-rule':
-                self.__deleteFlowRuleByID(eprs.resource_id)
-            elif eprs.resource_type == 'port':
-                self.__deletePortByID(eprs.resource_id)
-        GraphSession().deleteEndpoint(endpoint_id)
-    
-    
-    def __deleteGraph(self):
-        # Endpoints
-        endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
-        if endpoints is not None:
-            for ep in endpoints:
-                self.__deleteEndpointByID(ep.id)
-        # Flowrules (maybe will never enter)
-        flowrules = GraphSession().getFlowrules(self.__session_id)
-        if flowrules is None:
-            for fr in flowrules:
-                self.__deleteFlowRule(fr)
-        # End field
-        GraphSession().updateEnded(self.__session_id)
-        
-        
-        
-
-
-
-
-    
-
-
-
 
     def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
         '''
@@ -405,8 +335,7 @@ class OpenDayLightCA(object):
         After the verification that output is an endpoint, this function manages
         three main cases:
             1) endpoints are on the same switch;
-            2) endpoints are on different switches directly linked;
-            3) endpoints are on different switches not directly linked, so search for a path.
+            2) endpoints are on different switches, so search for a path.
         '''
         
         # TODO: check "vlan in" match on in_endpoint
@@ -421,8 +350,7 @@ class OpenDayLightCA(object):
                 return port2_id
             return None
         
-        fr1 = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
-        fr2 = OpenDayLightCA.__externalFlowrule( priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
+        single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
         out_endpoint = None
         nodes_path = None
         
@@ -430,8 +358,8 @@ class OpenDayLightCA(object):
         # If a flow rule has a drop action, we don't care other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
-                self.__Push_externalFlowrule(fr1)
+                single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
+                self.__Push_externalFlowrule(single_efr)
                 return  
         
         # Split the action handling in output and non-output.
@@ -441,7 +369,7 @@ class OpenDayLightCA(object):
             # we just append it to the final actions list 'actions1'.
             if a.output is None:
                 no_output = Action(a)
-                fr1.append_action(no_output)
+                single_efr.append_action(no_output)
                 continue
             
             # If this action is an output action (a.output is not None),
@@ -462,52 +390,45 @@ class OpenDayLightCA(object):
                     raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
                 
                 # Install a flow between two ports of the switch
-                fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
+                single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
                 continue
 
 
-            # [ 2 ] Endpoints are on different switches directly linked
-            # Check if a link between endpoint switches exists.
-            # Return: port12 (on in_endpoint switch) and port21 (on out_endpoint switch).
-            port12,port21 = self.__ODL_GetLinkPortsBetweenSwitches(in_endpoint.switch_id, out_endpoint.switch_id)       
-            if port12 is not None and port21 is not None:
-
-                # Endpoints are not on the link: 2 flows (most probable setup) 
-                if in_endpoint.interface != port12 and out_endpoint.interface != port21:
-                    fr1.setFr1(in_endpoint.switch_id, a, in_endpoint.interface , port12, "1")
-                    fr2.setFr1(out_endpoint.switch_id, None, port21 , out_endpoint.interface, "2")
-                    continue
-                           
-                # One or both endpoints interfaces overlap the ports of the link!
-                else:
-                    logging.warning("Flow not installed for flowrule id "+flowrule.id+": "+
-                                    "one or both endpoints are on the same link "+
-                                    "[ ("+in_endpoint.interface+","+port12+");("+out_endpoint.interface+","+port21+")]")
-
-
-            # [ 3 ] Endpoints are on different switches not directly linked...search for a path!
+            # [ 2 ] Endpoints are on different switches...search for a path!
             nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
             if(nodes_path is not None):
                 logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
+                if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
+                    nodes_path = None
             else:
                 logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
         
         # <-- End-for on "flowrule.actions" array 
         
-        # Push the fr1, if it is ready                
-        if fr1.isReady():
-            self.__Push_externalFlowrule(fr1)
-        
-            # Push the fr2, if it is ready
-            if fr2.isReady():
-                self.__Push_externalFlowrule(fr2)
-        
         # There is a path between the two endpoint
         if nodes_path is not None:
             self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            return
+        
+        # Push the single_efr, if it is ready                
+        if single_efr.isReady():
+            self.__Push_externalFlowrule(single_efr)
+            return
 
 
-
+    def __ODL_checkEndpointsOnPath(self, path, ep1, ep2):
+        if len(path)<2:
+            return None
+        #check if ep1 stays on the link
+        if ep1.interface == self.netgraph.switchPortIn(path[0], path[1]):
+            logging.debug("...path not valid: endpoint "+ep1.switch_id+" port:"+ep1.interface+" stay on the link!")
+            return False
+        #check if ep2 stays on the link
+        path_last = len(path)-1
+        if ep2.interface == self.netgraph.switchPortIn(path[path_last], path[path_last-1]):
+            logging.debug("...path not valid: endpoint "+ep2.switch_id+" port:"+ep2.interface+" stay on the link!")
+            return False
+        return True
 
 
     def __ODL_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
@@ -638,14 +559,6 @@ class OpenDayLightCA(object):
         '''
         return
 
-
-
-
-
-    
-    
-    
-    
     
     
     def __ODL_VlanTraking_add(self, efr, flow_rule_db_id):
@@ -676,14 +589,11 @@ class OpenDayLightCA(object):
     
     
 
-
-
     def __ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
         '''
         Retrieve the link between two switches, where you can find ports to use.
         switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
         '''
-        
         # Get Topology
         json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
         topology = json.loads(json_data)
@@ -704,9 +614,6 @@ class OpenDayLightCA(object):
                     return link
         return None
 
-
-    
-    
     
     def __ODL_GetLinkPortsBetweenSwitches(self, switch1, switch2):
         link = self.__ODL_GetLinkBetweenSwitches(switch1, switch2)
@@ -727,8 +634,6 @@ class OpenDayLightCA(object):
         
         # Return port12@switch1 and port21@switch2
         return port12,port21
-
-
 
 
 
@@ -772,6 +677,75 @@ class OpenDayLightCA(object):
     
     
     
+    
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DELETE Functions
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+    
+    def __deleteFlowRuleByGraphID(self, graph_flow_rule_id):
+        flowrules = GraphSession().getFlowrules(self.__session_id, graph_flow_rule_id)
+        if flowrules is not None:
+            for fr in flowrules:
+                self.__deleteFlowRule(fr)
+    
+    def __deleteFlowRuleByID(self, flow_rule_id):
+        fr = GraphSession().getFlowruleByID(flow_rule_id)
+        if fr is None:
+            return
+        if fr.internal_id is not None and fr.type is not None:
+            self.__deleteFlowRule(fr)
+        self.__deleteFlowRuleByGraphID(fr.graph_flow_rule_id)
+    
+    def __deleteFlowRule(self, flow_rule):
+        # flow_rule is a FlowRuleModel object
+        if flow_rule.type == 'external': #and flow.status == "complete" 
+            ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule.switch_id, flow_rule.internal_id)
+        GraphSession().deleteFlowrule(flow_rule.id)
+
+    def __deletePortByID(self, port_id):
+        GraphSession().deletePort(port_id)
+       
+    def __deleteEndpointByGraphID(self, graph_endpoint_id):
+        ep = GraphSession().getEndpointByGraphID(graph_endpoint_id, self.__session_id)
+        if ep is not None:
+            self.__deleteEndpointByID(ep.id)
+
+    def __deleteEndpointByID(self, endpoint_id):
+        ep_resources = GraphSession().getEndpointResources(endpoint_id)
+        if ep_resources is None:
+            return
+        for eprs in ep_resources:
+            if eprs.resource_type == 'flow-rule':
+                self.__deleteFlowRuleByID(eprs.resource_id)
+            elif eprs.resource_type == 'port':
+                self.__deletePortByID(eprs.resource_id)
+        GraphSession().deleteEndpoint(endpoint_id)
+    
+    def __deleteGraph(self):
+        # Endpoints
+        endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
+        if endpoints is not None:
+            for ep in endpoints:
+                self.__deleteEndpointByID(ep.id)
+        # Flowrules (maybe will never enter)
+        flowrules = GraphSession().getFlowrules(self.__session_id)
+        if flowrules is None:
+            for fr in flowrules:
+                self.__deleteFlowRule(fr)
+        # End field
+        GraphSession().updateEnded(self.__session_id)
+    
+    
+    
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        EXTERNAL FLOWRULE
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
 
     def __Push_externalFlowrule(self, efr):
         # efr = __externalFlowrule
@@ -887,7 +861,7 @@ class OpenDayLightCA(object):
             self.__priority = value
 
 
-        def setFr1(self, switch_id, action, port_in, port_out, flowname_suffix):
+        def setInOut(self, switch_id, action, port_in, port_out, flowname_suffix):
             if(self.__match is None):
                 self.__match = Match()
             new_act = Action(action)

@@ -10,7 +10,7 @@
         "type": "interface",
         "interface": {
           "switch-id": "openflow:261693184597067",
-          "interface": "1"
+          "interface": "2"
         }
       },      
       {
@@ -42,7 +42,7 @@
           "priority": 101,
           "match": {
             "port_in": "endpoint:End21",
-            "vlan_id": "977"
+            "vlan_id": "988"
           },
           "actions": [
           	{

@@ -173,10 +173,6 @@ class GraphSession(object):
         pass
     
     
-    
-    
-    
-    
     def addNFFG(self, nffg, user_id):
             
         # New session id
