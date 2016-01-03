@@ -55,6 +55,7 @@ deldel=False
 deldel=True
 if deldel: 
     try:
+        #print(odlCA.NFFG_Get(977))
         odlCA.NFFG_Delete(977)
     except Exception as ex:
         print(ex)
@@ -62,10 +63,10 @@ if deldel:
         odlCA.NFFG_Delete(988)
     except Exception as ex:
         print(ex)
-    quit()
+    #quit()
     
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_novlan1a.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
@@ -75,10 +76,10 @@ nffg.parseDict(nffg_file)
 odlCA.NFFG_Validate(nffg)
 odlCA.NFFG_Put(nffg)
 
-quit()
+#quit()
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1b.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan2a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

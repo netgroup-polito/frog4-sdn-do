@@ -72,11 +72,23 @@ CREATE TABLE "tenant" (
   PRIMARY KEY ("id")
 );
 INSERT INTO "tenant" ("id","name","description") VALUES ('1','admin_tenant','Admin Tenant');
-CREATE TABLE 'vlan' ( 'id' int(64) NOT NULL, "switch_id" varchar(64) NOT NULL, "port_in" int(64) NOT NULL, "vlan_in" varchar(64), "port_out" int(64) NOT NULL, "vlan_out" varchar(64), 'flow_rule_id' TEXT, PRIMARY KEY ("id") );
+CREATE TABLE 'vlan' ( 
+  "id" int(64) NOT NULL, 
+  "switch_id" varchar(64) NOT NULL, 
+  "port_in" int(64) NOT NULL, 
+  "vlan_in" varchar(64), 
+  "port_out" int(64) NOT NULL, 
+  "vlan_out" varchar(64), 
+  "flow_rule_id" int(64), 
+  PRIMARY KEY ("id") 
+);
 CREATE TABLE 'user' (
   "id" varchar(64) NOT NULL,
-  "tenant_id" varchar(64) NOT NULL,'username' varchar(64) NOT NULL,'pwdhash' varchar(64) NOT NULL,
-  "mail" varchar(64) DEFAULT NULL, 'token'  varchar(64) DEFAULT NULL , 'token_timestamp'  int(64) DEFAULT NULL ,
+  "tenant_id" varchar(64) NOT NULL,'username' varchar(64) NOT NULL,
+  "pwdhash" varchar(64) NOT NULL,
+  "mail" varchar(64) DEFAULT NULL,
+  "token"  varchar(64) DEFAULT NULL ,
+  "token_timestamp"  int(64) DEFAULT NULL ,
   PRIMARY KEY ("id")
 );
 INSERT INTO "user" ("id","tenant_id","username","pwdhash","mail","token","token_timestamp") VALUES ('1','1','admin','8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918','admin@admin',NULL,NULL);

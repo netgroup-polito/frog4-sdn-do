@@ -92,35 +92,32 @@ class NetGraph():
     
     
     
-    def getTopologyGraph(self, reset=False):
+    def setTopologyGraph(self, reset=False):
         
         # Check topology cache
         if self.topology is not None and reset==False:
-            return self.topology
+            return
         
-        myGraph = nx.DiGraph()
+        self.topology = nx.DiGraph()
         swList = self.getSwitchList()
         lkList = self.getSwitchLinksList()
         
         for sw in swList:
-            myGraph.add_node(sw['node_id'])
+            self.topology.add_node(sw['node_id'])
             
         for lk in lkList:
-            p_in = lk["head"]["port_id"]
-            p_out = lk["tail"]["port_id"]
-            
-            myGraph.add_edge(lk["head"]["node_id"],lk["tail"]["node_id"],
-                             {self.WEIGHT_PROPERTY_NAME:1, 'from_port':p_in,'to_port':p_out})
-
-        self.topology = myGraph
-        return myGraph
+            self.topology.add_edge(lk["head"]["node_id"],
+                                   lk["tail"]["node_id"],
+                                   {
+                                        self.WEIGHT_PROPERTY_NAME:1, 
+                                        'from_port':lk["head"]["port_id"],
+                                        'to_port':lk["tail"]["port_id"]
+                                    })
     
     
     
     def getShortestPath(self,source_switch_id,target_switch_id):
-        
-        if self.topology is None:
-            self.getTopologyGraph()
+        self.setTopologyGraph()
         try:
             path = nx.dijkstra_path(self.topology, source_switch_id, target_switch_id, self.WEIGHT_PROPERTY_NAME)
         except nx.NetworkXNoPath:
@@ -132,16 +129,14 @@ class NetGraph():
         # Return the port of "switch" that receives packets from "from_switch"
         if switch is None or from_switch is None:
             return None
-        if self.topology is None:
-            self.getTopologyGraph()
+        self.setTopologyGraph()
         return self.topology[switch][from_switch]['from_port']
     
     def switchPortOut(self, switch, to_switch):
         # Return the port of "switch" that sends packets to "to_switch"
         if switch is None or to_switch is None:
             return None
-        if self.topology is None:
-            self.getTopologyGraph()
+        self.setTopologyGraph()
         return self.topology[switch][to_switch]['from_port']
         
     

@@ -21,6 +21,15 @@
           "switch-id": "openflow:192368849455687",
           "interface": "4"
         }
+      },      
+      {
+        "id": "End41",
+        "name": "EGRESS",
+        "type": "interface",
+        "interface": {
+          "switch-id": "openflow:16240894443595",
+          "interface": "67"
+        }
       }
     ],
     
@@ -29,7 +38,7 @@
       "flow-rules": [
       
         {
-          "id": "9771",
+          "id": "8771",
           "priority": 101,
           "match": {
             "port_in": "endpoint:End21",
@@ -37,13 +46,13 @@
           },
           "actions": [
           	{
-          		"output": "endpoint:End31"
+          		"output": "endpoint:End41"
           	}
           ]
         },
         
         {
-          "id": "9772",
+          "id": "8772",
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31",

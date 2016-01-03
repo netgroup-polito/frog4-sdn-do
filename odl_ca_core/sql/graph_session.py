@@ -156,7 +156,7 @@ class VlanModel(Base):
     __tablename__ = 'vlan'
     attributes = ['id', 'flow_rule_id', 'switch_id', 'port_in', 'vlan_in', 'port_out', 'vlan_out']
     id = Column(Integer, primary_key=True)
-    flow_rule_id = Column(VARCHAR(64))
+    flow_rule_id = Column(Integer)
     switch_id = Column(VARCHAR(64))
     port_in = Column(Integer)
     vlan_in = Column(VARCHAR(64))
@@ -184,9 +184,48 @@ class GraphSession(object):
     
     
     
-    def getFlowrules(self, session_id):
+    def getFlowruleByID(self, flow_rule_id=None):
+        try:
+            session = get_session()
+            return session.query(FlowRuleModel).filter_by(id=flow_rule_id).one()
+        except:
+            return None
+        return None
+        
+    
+    def getFlowrules(self, session_id, graph_flow_rule_id=None):
         session = get_session()
-        return session.query(FlowRuleModel).filter_by(session_id = session_id).all()
+        if graph_flow_rule_id is None:
+            return session.query(FlowRuleModel).filter_by(session_id = session_id).all()
+        else:
+            return session.query(FlowRuleModel).filter_by(session_id = session_id).filter_by(graph_flow_rule_id = graph_flow_rule_id).all()
+    
+    
+    def getEndpointByGraphID(self, graph_endpoint_id, session_id):
+        session = get_session()
+        try:
+            ep = session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).one()
+            return ep
+        except:
+            return None
+    
+    
+    def getEndpointsBySessionID(self, session_id):
+        session = get_session()
+        try:
+            ep = session.query(EndpointModel).filter_by(session_id = session_id).all()
+            return ep
+        except:
+            return None
+    
+    
+    def getEndpointResources(self, endpoint_id):
+        session = get_session()
+        try:
+            eprs = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).all()
+            return eprs
+        except:
+            return None
     
     
 
@@ -215,58 +254,48 @@ class GraphSession(object):
         session = get_session() 
         with session.begin():       
             session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+
     
     
     
-    def deleteGraph(self, session_id):
-        session = get_session()
-        with session.begin():
-            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
-            session.query(PortModel).filter_by(session_id=session_id).delete()
-              
-            flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id = session_id).all()
-            for flow_rule_ref in flow_rules_ref:
-                session.query(MatchModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-                session.query(ActionModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-                session.query(VlanModel).filter_by(flow_rule_id = flow_rule_ref.id).delete()
-            session.query(FlowRuleModel).filter_by(session_id = session_id).delete()
-            endpoints_ref = session.query(EndpointModel.id).filter_by(session_id = session_id).all()
-            for endpoint_ref in endpoints_ref:
-                # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
-                session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_ref.id).delete()
-            session.query(EndpointModel).filter_by(session_id = session_id).delete()
+    
+
     
     
     
-    def deleteEndpoint(self, graph_endpoint_id, session_id):
+    
+    def deleteEndpointByGraphID(self, graph_endpoint_id, session_id):
+        # delete from tables: EndpointModel.
         session = get_session()
         with session.begin():
             session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
     
-
     
-    def deleteEndpointResourceAndResources(self, endpoint_id):
+    
+    
+    
+    def deleteEndpoint(self, endpoint_id):
+        # delete from tables: EndpointModel.
         session = get_session()
         with session.begin():
-            end_point_resources_ref = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).all()
-            for end_point_resource_ref in end_point_resources_ref:
-                if end_point_resource_ref.resource_type == 'port':
-                    session.query(PortModel).filter_by(id = end_point_resource_ref.resource_id).delete()
-                elif end_point_resource_ref.resource_type == 'flowrule':
-                    session.query(FlowRuleModel).filter_by(id = end_point_resource_ref.resource_id).delete()
-                    session.query(MatchModel).filter_by(flow_rule_id = end_point_resource_ref.resource_id).delete()
-                    session.query(ActionModel).filter_by(flow_rule_id = end_point_resource_ref.resource_id).delete()    
-            session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).delete()
+            session.query(EndpointModel).filter_by(id = endpoint_id).delete()
     
-    
-    
-    def deleteFlowrule(self,  flowrule_id):       
+    def deletePort(self,  port_id):
+        # delete from tables: PortModel, EndpointResourceModel.
         session = get_session()
         with session.begin():
-            session.query(FlowRuleModel).filter_by(id = flowrule_id).delete()
-            session.query(MatchModel).filter_by(flow_rule_id = flowrule_id).delete()
-            session.query(ActionModel).filter_by(flow_rule_id = flowrule_id).delete()
-            session.query(VlanModel).filter_by(flow_rule_id = flowrule_id).delete()
+            session.query(PortModel).filter_by(id = port_id).delete()
+            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
+    
+    def deleteFlowrule(self,  flow_rule_id):
+        # delete from tables: FlowRuleModel, MatchModel, ActionModel, VlanModel, EndpointResourceModel.
+        session = get_session()
+        with session.begin():
+            session.query(FlowRuleModel).filter_by(id=flow_rule_id).delete()
+            session.query(MatchModel).filter_by(flow_rule_id=flow_rule_id).delete()
+            session.query(ActionModel).filter_by(flow_rule_id=flow_rule_id).delete()
+            session.query(VlanModel).filter_by(flow_rule_id=flow_rule_id).delete()
+            session.query(EndpointResourceModel).filter_by(resource_id=flow_rule_id).filter_by(resource_type='flow-rule').delete()
     
     
     
@@ -395,9 +424,7 @@ class GraphSession(object):
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
                                 last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
             session.add(session_ref)
-                            
-            for flow_rule in nffg.flow_rules:
-                self.addFlowrule(session_id, None, flow_rule, nffg)
+            
 
             for endpoint in nffg.end_points:
                 
@@ -421,9 +448,17 @@ class GraphSession(object):
                     session.add(endpoint_resource_ref)
                     self.port_id = self.port_id + 1
                 
-                # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
-
+            for flow_rule in nffg.flow_rules:
+                self.addFlowrule(session_id, None, flow_rule, nffg)
+                
             return session_id
+        
+        
+    def dbStoreEndpointResourceFlowrule(self, endpoint_id, flow_rule_id):
+        session = get_session()
+        with session.begin():
+            ep_res_ref = EndpointResourceModel(endpoint_id=endpoint_id,resource_type='flow-rule',resource_id=flow_rule_id)
+            session.add(ep_res_ref)
     
     
     
@@ -488,7 +523,7 @@ class GraphSession(object):
 
 
 
-    def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None):   
+    def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None, ingress=None, egress=None):   
                   
         # FlowRule
         if self._get_higher_flow_rule_id() is not None:
@@ -505,6 +540,7 @@ class GraphSession(object):
             if flow_rule.match.port_in.split(':')[0] == 'endpoint':
                 port_in_type = 'endpoint'
                 port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
+                self.dbStoreEndpointResourceFlowrule(port_in, flow_rule_db_id)
             self.dbStoreMatch(flow_rule.match, flow_rule_db_id, match_db_id, port_in=port_in, port_in_type=port_in_type)
         
         # Actions
@@ -515,6 +551,7 @@ class GraphSession(object):
                 if action.output != None and action.output.split(':')[0] == 'endpoint':
                     output_type = 'endpoint'
                     output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
+                    self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
                 self.dbStoreAction(action, flow_rule_db_id, None, output=output_port, output_type=output_type)
 
         return flow_rule_db_id
@@ -657,7 +694,15 @@ class GraphSession(object):
         
         # Vlan out is compliant with actual and next switches
         return vlan_out
-
+    
+    
+    
+    def vlanInIsBusy(self, switch_id, vlan_in, port_in):
+        session = get_session()
+        query_ref = session.query(VlanModel.id).filter_by(vlan_in=vlan_in).filter_by(switch_id=switch_id).filter_by(port_in=port_in).all()
+        if len(query_ref)>0:
+            return True
+        return False
 
 
     def vlanTracking_new_vlan_out(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_id=None, next_port_in=None):
