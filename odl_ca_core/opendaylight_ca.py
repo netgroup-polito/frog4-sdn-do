@@ -75,7 +75,7 @@ class OpenDayLightCA(object):
         except Exception as ex:
             logging.error(ex)
             self.__deleteGraph()
-            GraphSession().setErrorStatus(self.__session_id)
+            GraphSession().updateError(self.__session_id)
             raise ex                           
         return self.__session_id
 
@@ -85,7 +85,7 @@ class OpenDayLightCA(object):
 
         # Check and get the session id for this user-graph couple
         logging.debug("Update NF-FG: check if the user "+self.user_data.user_id+" has already instantiated the graph "+new_nffg.id+".")
-        session = GraphSession().getActiveSession(self.user_data.user_id, new_nffg.id, error_aware=True)
+        session = GraphSession().getUserGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
         if session is None:
             return None
         self.__session_id = session.session_id
@@ -119,7 +119,7 @@ class OpenDayLightCA(object):
         except Exception as ex:
             logging.error("Update NF-FG: ",ex)
             self.__deleteGraph()
-            GraphSession().setErrorStatus(self.__session_id)
+            GraphSession().updateError(self.__session_id)
             raise ex
         return self.__session_id
 
@@ -127,7 +127,7 @@ class OpenDayLightCA(object):
     
     def NFFG_Delete(self, nffg_id):
         
-        session = GraphSession().getActiveSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         self.__session_id = session.session_id
@@ -145,7 +145,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Get(self, nffg_id):
-        session = GraphSession().getActiveSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -156,7 +156,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Status(self, nffg_id):
-        session = GraphSession().getActiveSession(self.user_data.user_id,nffg_id,error_aware=True)
+        session = GraphSession().getUserGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -272,7 +272,7 @@ class OpenDayLightCA(object):
             if endpoint.status == 'to_be_deleted':
                 self.__deleteEndpointByGraphID(endpoint.id)
                 updated_nffg.end_points.remove(endpoint)
-            elif endpoint.status == 'new':
+            elif endpoint.status == 'new' or endpoint.status is None:
                 updated_endpoints.append(endpoint.id)
         
         # Delete the flowrules 'to_be_deleted'
@@ -385,7 +385,7 @@ class OpenDayLightCA(object):
             for fr in flowrules:
                 self.__deleteFlowRule(fr)
         # End field
-        GraphSession().setEnded(self.__session_id)
+        GraphSession().updateEnded(self.__session_id)
         
         
         

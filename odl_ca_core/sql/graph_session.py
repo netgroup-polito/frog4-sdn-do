@@ -170,37 +170,73 @@ class VlanModel(Base):
 
 class GraphSession(object):
     def __init__(self):
-        pass        
-    
-    def getActiveSession(self, user_id, graph_id, error_aware=True):
-        session = get_session()
-        if error_aware:
-            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
-        else:
-            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphSessionModel.started_at)).first()
-        #if session_ref is None:
-        #    raise sessionNotFound("Session Not Found, for servce graph id: "+str(graph_id))        
-        return session_ref
+        pass
     
     
     
-    def getFlowruleByID(self, flow_rule_id=None):
-        try:
-            session = get_session()
-            return session.query(FlowRuleModel).filter_by(id=flow_rule_id).one()
-        except:
-            return None
-        return None
+    
+    
+    
+    def addNFFG(self, nffg, user_id):
+            
+        # New session id
+        session_id = self.__get_univocal_session_id()
         
+        # Add a new record in GraphSession
+        self.dbStoreGraphSessionFromNffgObject(session_id, user_id, nffg)
+
+            
+        # [ ENDPOINTS ]
+        for endpoint in nffg.end_points:
+            
+            # Add a new endpoint
+            endpoint_id = self.dbStoreEndpoint(session_id, None, endpoint.id, endpoint.name, endpoint.type)
+            endpoint.db_id = endpoint_id
+            
+            # Add end-point resources
+            # End-point attached to something that is not another graph
+            if endpoint.type=="interface" or endpoint.type=="vlan":
+                self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.switch_id, endpoint.vlan_id, 'complete')
+
+        # [ FLOW RULES ]
+        for flow_rule in nffg.flow_rules:
+            self.addFlowrule(session_id, None, flow_rule, nffg)
+            
+        return session_id
     
-    def getFlowrules(self, session_id, graph_flow_rule_id=None):
-        session = get_session()
-        if graph_flow_rule_id is None:
-            return session.query(FlowRuleModel).filter_by(session_id = session_id).all()
-        else:
-            return session.query(FlowRuleModel).filter_by(session_id = session_id).filter_by(graph_flow_rule_id = graph_flow_rule_id).all()
     
     
+    def updateNFFG(self, nffg, session_id):     
+                            
+        # [ ENDPOINTS ]
+        for endpoint in nffg.end_points:
+            
+            # Add a new endpoint
+            if endpoint.status == 'new' or endpoint.status is None:
+                endpoint_id = self.dbStoreEndpoint(session_id, None, endpoint.id, endpoint.name, endpoint.type)
+                endpoint.db_id = endpoint_id
+
+                # Add end-point resources
+                # End-point attached to something that is not another graph
+                if endpoint.type=="interface" or endpoint.type=="vlan":
+                    self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.switch_id, endpoint.vlan_id, 'complete')
+        
+        # [ FLOW RULES ]
+        for flow_rule in nffg.flow_rules:
+            if flow_rule.status == 'new' or flow_rule.status is None:
+                self.addFlowrule(session_id, None, flow_rule, nffg)            
+
+
+
+
+
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DATABASE INTERFACE - GET section "def get*"
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+
     def getEndpointByGraphID(self, graph_endpoint_id, session_id):
         session = get_session()
         try:
@@ -228,65 +264,131 @@ class GraphSession(object):
             return None
     
     
-
-    def updateStatus(self, session_id, status):
-        session = get_session()  
-        with session.begin():
-            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"last_update":datetime.datetime.now(), 'status':status})
-
+    def getFlowruleByID(self, flow_rule_id=None):
+        try:
+            session = get_session()
+            return session.query(FlowRuleModel).filter_by(id=flow_rule_id).one()
+        except:
+            return None
+        return None
+        
     
-
-    def setErrorStatus(self, session_id):
-        '''
-        Set the error status for the active session associated to the user id passed
-        '''
+    def getFlowrules(self, session_id, graph_flow_rule_id=None):
         session = get_session()
-        with session.begin():
-            logging.debug("Put session "+str(session_id)+" in error")
-            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+        if graph_flow_rule_id is None:
+            return session.query(FlowRuleModel).filter_by(session_id = session_id).all()
+        else:
+            return session.query(FlowRuleModel).filter_by(session_id = session_id).filter_by(graph_flow_rule_id = graph_flow_rule_id).all()
+
+
+    def getUserGraphSession(self, user_id, graph_id, error_aware=True):
+        session = get_session()
+        if error_aware:
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
+        else:
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphSessionModel.started_at)).first()
+        #if session_ref is None:
+        #    raise sessionNotFound("Session Not Found, for servce graph id: "+str(graph_id))        
+        return session_ref
+    
+    
+    
+    
+    
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DATABASE INTERFACE - INSERT section "def add*"
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+    
+    def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None):   
+                  
+        # FlowRule
+        flow_rule_db_id = self.dbStoreFlowrule(session_id, flow_rule, None, switch_id)
+        
+        # Match
+        if nffg is not None and flow_rule.match is not None:
+            match_db_id = flow_rule_db_id
+            port_in_type = None
+            port_in = None
+            if flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                port_in_type = 'endpoint'
+                port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
+                self.dbStoreEndpointResourceFlowrule(port_in, flow_rule_db_id)
+            self.dbStoreMatch(flow_rule.match, flow_rule_db_id, match_db_id, port_in=port_in, port_in_type=port_in_type)
+        
+        # Actions
+        if nffg is not None and len(flow_rule.actions)>0:
+            for action in flow_rule.actions:
+                output_type = None
+                output_port = None
+                if action.output != None and action.output.split(':')[0] == 'endpoint':
+                    output_type = 'endpoint'
+                    output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
+                    self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
+                self.dbStoreAction(action, flow_rule_db_id, None, output=output_port, output_type=output_type)
+
+        return flow_rule_db_id
+    
+    
+    def addPort(self, session_id, endpoint_id, port_id, graph_port_id, switch_id, vlan_id, status):
+        port_id = self.dbStorePort(session_id, port_id, graph_port_id, switch_id, vlan_id, status)
+        self.dbStoreEndpointResourcePort(endpoint_id, port_id)
 
 
 
-    def setEnded(self, session_id):
-        '''
-        Set the ended status for the session identified with session_id
-        '''
+
+
+
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DATABASE INTERFACE - UPDATE section "def update*"
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+    
+    def updateEnded(self, session_id):
         session = get_session() 
         with session.begin():       
             session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
 
-    
-    
-    
-    
 
-    
-    
-    
-    
-    def deleteEndpointByGraphID(self, graph_endpoint_id, session_id):
-        # delete from tables: EndpointModel.
+    def updateError(self, session_id):
         session = get_session()
         with session.begin():
-            session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
-    
-    
-    
-    
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+
+
+    def updateStatus(self, session_id, status, error=False):
+        session = get_session()
+        with session.begin():
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"last_update":datetime.datetime.now(), 'status':status})
+
+
+
+
+
+
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DATABASE INTERFACE - DELETE section "def delete*"
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
     
     def deleteEndpoint(self, endpoint_id):
         # delete from tables: EndpointModel.
         session = get_session()
         with session.begin():
             session.query(EndpointModel).filter_by(id = endpoint_id).delete()
-    
-    def deletePort(self,  port_id):
-        # delete from tables: PortModel, EndpointResourceModel.
+
+
+    def deleteEndpointByGraphID(self, graph_endpoint_id, session_id):
+        # delete from tables: EndpointModel.
         session = get_session()
         with session.begin():
-            session.query(PortModel).filter_by(id = port_id).delete()
-            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
+            session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
     
+
     def deleteFlowrule(self,  flow_rule_id):
         # delete from tables: FlowRuleModel, MatchModel, ActionModel, VlanModel, EndpointResourceModel.
         session = get_session()
@@ -298,8 +400,29 @@ class GraphSession(object):
             session.query(EndpointResourceModel).filter_by(resource_id=flow_rule_id).filter_by(resource_type='flow-rule').delete()
     
     
+    def deletePort(self,  port_id):
+        # delete from tables: PortModel, EndpointResourceModel.
+        session = get_session()
+        with session.begin():
+            session.query(PortModel).filter_by(id = port_id).delete()
+            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # TODO: clean and improve!
     def getNFFG(self, session_id):
         nffg = NF_FG()
         session = get_session()
@@ -377,89 +500,96 @@ class GraphSession(object):
     
     
     
-    def updateNFFG(self, nffg, session_id):        
-        session = get_session()  
-        with session.begin():
-            self._ids_generator(nffg=nffg, session_id=session_id, update=True)         
-                            
-            for flow_rule in nffg.flow_rules:
-                if flow_rule.status == 'new' or flow_rule.status is None:
-                    self.addFlowrule(session_id, None, flow_rule, nffg)            
-
-            for endpoint in nffg.end_points:
-                if endpoint.status == 'new' or endpoint.status is None:
-                    
-                    endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             session_id=session_id, name = endpoint.name, type=endpoint.type)
-                    session.add(endpoint_ref)
-                    
-                    # Add end-point resources
-                    # End-point attached to something that is not another graph
-                    # TODO: set status
-                    if "interface" in endpoint.type or endpoint.type == "vlan":
-                        port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
-                                             session_id=session_id, status='complete', switch_id=endpoint.switch_id,
-                                             vlan_id=endpoint.vlan_id,
-                                             creation_date=datetime.datetime.now(), 
-                                             last_update=datetime.datetime.now())
-                        session.add(port_ref)
-                        endpoint_resource_ref = EndpointResourceModel(endpoint_id=endpoint.db_id,
-                                              resource_type='port',
-                                              resource_id=self.port_id)
-                        session.add(endpoint_resource_ref)
-                        self.port_id = self.port_id + 1
-                    # TODO: remove or integrate GraphConnectionModel, remote endpoint, etc.
-  
-  
     
-    def addNFFG(self, nffg, user_id):
+  
+  
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DB STORE FUNCTIONS "def dbStore*"
+        These functions works only with the database to add new records.
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+    
+    def dbStoreAction(self, action, flow_rule_db_id, action_db_id=None, output=None, output_type=None):    
+        session = get_session()
+        
+        if action_db_id is None:
+            action_db_id = session.query(func.max(ActionModel.id).label("max_id")).one().max_id
+            if action_db_id is None:
+                action_db_id = 0
+            else:
+                action_db_id = int(action_db_id) + 1
+        
+        if output is None:
+            output=action.output
+            
+        with session.begin():
+            action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
+                                     output_type=output_type, output=output,
+                                     controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
+                                     set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
+                                     set_ethernet_src_address=action.set_ethernet_src_address, 
+                                     set_ethernet_dst_address=action.set_ethernet_dst_address,
+                                     set_ip_src_address=action.set_ip_src_address, set_ip_dst_address=action.set_ip_dst_address,
+                                     set_ip_tos=action.set_ip_tos, set_l4_src_port=action.set_l4_src_port,
+                                     set_l4_dst_port=action.set_l4_dst_port, output_to_queue=action.output_to_queue)
+            session.add(action_ref)
+            return action_ref
+
+
+    def dbStoreEndpoint(self, session_id, endpoint_id, graph_endpoint_id, name, _type):
+        session = get_session()
+        if endpoint_id is None:
+            endpoint_id = session.query(func.max(EndpointModel.id).label("max_id")).one().max_id
+            if endpoint_id is None:
+                endpoint_id = 0
+            else:
+                endpoint_id=int(endpoint_id)+1
+        with session.begin():
+            endpoint_ref = EndpointModel(id=endpoint_id, graph_endpoint_id=graph_endpoint_id, 
+                                         session_id=session_id, name=name, type=_type)
+            session.add(endpoint_ref)
+            return endpoint_id
+    
+    
+    def dbStoreEndpointResourcePort(self, endpoint_id, port_id):
         session = get_session()
         with session.begin():
-            
-            session_id = None
-            # session_id by ref
-            session_id = self._ids_generator(nffg, session_id)
-            
-            session_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
-                                started_at = datetime.datetime.now(), graph_name=nffg.name,
-                                last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
-            session.add(session_ref)
-            
+            ep_res_ref = EndpointResourceModel(endpoint_id=endpoint_id, resource_type='port', resource_id=port_id)
+            session.add(ep_res_ref)
 
-            for endpoint in nffg.end_points:
                 
-                endpoint_ref = EndpointModel(id=endpoint.db_id, graph_endpoint_id=endpoint.id, 
-                                             session_id=session_id, name = endpoint.name, type=endpoint.type)
-                session.add(endpoint_ref)
-                
-                # Add end-point resources
-                # End-point attached to something that is not another graph
-                if "interface" in endpoint.type or endpoint.type == "vlan":                    
-                    port_ref = PortModel(id=self.port_id, graph_port_id=endpoint.interface,
-                                         session_id=session_id, status='complete', switch_id=endpoint.switch_id,
-                                         vlan_id=endpoint.vlan_id,
-                                         creation_date=datetime.datetime.now(), 
-                                         last_update=datetime.datetime.now())
-                    
-                    session.add(port_ref)
-                    endpoint_resource_ref = EndpointResourceModel(endpoint_id=endpoint.db_id,
-                                          resource_type='port',
-                                          resource_id=self.port_id)
-                    session.add(endpoint_resource_ref)
-                    self.port_id = self.port_id + 1
-                
-            for flow_rule in nffg.flow_rules:
-                self.addFlowrule(session_id, None, flow_rule, nffg)
-                
-            return session_id
-        
-        
     def dbStoreEndpointResourceFlowrule(self, endpoint_id, flow_rule_id):
         session = get_session()
         with session.begin():
             ep_res_ref = EndpointResourceModel(endpoint_id=endpoint_id,resource_type='flow-rule',resource_id=flow_rule_id)
             session.add(ep_res_ref)
     
+
+    def dbStoreFlowrule(self, session_id, flow_rule, flow_rule_db_id, switch_id):
+        session = get_session()
+        if flow_rule_db_id is None:
+            flow_rule_db_id = session.query(func.max(FlowRuleModel.id).label("max_id")).one().max_id
+            if flow_rule_db_id is None:
+                flow_rule_db_id = 0
+            else:
+                flow_rule_db_id=int(flow_rule_db_id)+1
+        with session.begin():
+            flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
+                                       graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
+                                       priority=flow_rule.priority,  status=flow_rule.status, description=flow_rule.description,
+                                       creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
+            session.add(flow_rule_ref)
+            return flow_rule_db_id
+    
+    
+    def dbStoreGraphSessionFromNffgObject(self, session_id, user_id, nffg):
+        session = get_session()
+        with session.begin():
+            graphsession_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
+                                started_at = datetime.datetime.now(), graph_name=nffg.name,
+                                last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
+            session.add(graphsession_ref)
     
     
     def dbStoreMatch(self, match, flow_rule_db_id, match_db_id, port_in=None, port_in_type=None):
@@ -481,80 +611,47 @@ class GraphSession(object):
                                    protocol=match.protocol)
             session.add(match_ref)
             return match_ref
-        return None
     
     
-    def dbStoreAction(self, action, flow_rule_db_id, action_db_id=None, output=None, output_type=None):
-        
-        if action_db_id is None:
-            action_db_id = 0
-            if self._get_higher_action_id() is not None:
-                action_db_id = self._get_higher_action_id() + 1
-        
-        if output is None:
-            output=action.output
-                
+    def dbStorePort(self, session_id, port_id, graph_port_id, switch_id, vlan_id, status):
         session = get_session()
+        if port_id is None:
+            port_id = session.query(func.max(PortModel.id).label("max_id")).one().max_id
+            if port_id is None:
+                port_id = 0
+            else:
+                port_id=int(port_id)+1
         with session.begin():
-            action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
-                                     output_type=output_type, output=output,
-                                     controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
-                                     set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
-                                     set_ethernet_src_address=action.set_ethernet_src_address, 
-                                     set_ethernet_dst_address=action.set_ethernet_dst_address,
-                                     set_ip_src_address=action.set_ip_src_address, set_ip_dst_address=action.set_ip_dst_address,
-                                     set_ip_tos=action.set_ip_tos, set_l4_src_port=action.set_l4_src_port,
-                                     set_l4_dst_port=action.set_l4_dst_port, output_to_queue=action.output_to_queue)
-            session.add(action_ref)
-            return action_ref
-        return None
-    
-    
-    def dbStoreFlowrule(self, session_id, flow_rule, flow_rule_db_id, switch_id):
-        session = get_session()
-        with session.begin():
-            flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
-                                       graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
-                                       priority=flow_rule.priority,  status=flow_rule.status, description=flow_rule.description,
-                                       creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
-            session.add(flow_rule_ref)
-            return flow_rule_ref
-        return None
+            port_ref = PortModel(id=port_id, 
+                                 graph_port_id=graph_port_id,
+                                 session_id=session_id, status=status, 
+                                 switch_id=switch_id,
+                                 vlan_id=vlan_id,
+                                 creation_date=datetime.datetime.now(), 
+                                 last_update=datetime.datetime.now())
+            session.add(port_ref)
+            return port_id
 
-
-
-    def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None, ingress=None, egress=None):   
-                  
-        # FlowRule
-        if self._get_higher_flow_rule_id() is not None:
-            flow_rule_db_id = self._get_higher_flow_rule_id() + 1
-        else:
-            flow_rule_db_id = 0
-        self.dbStoreFlowrule(session_id, flow_rule, flow_rule_db_id, switch_id)
         
-        # Match
-        if nffg is not None and flow_rule.match is not None:
-            match_db_id = flow_rule_db_id
-            port_in_type = None
-            port_in = None
-            if flow_rule.match.port_in.split(':')[0] == 'endpoint':
-                port_in_type = 'endpoint'
-                port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
-                self.dbStoreEndpointResourceFlowrule(port_in, flow_rule_db_id)
-            self.dbStoreMatch(flow_rule.match, flow_rule_db_id, match_db_id, port_in=port_in, port_in_type=port_in_type)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
         
-        # Actions
-        if nffg is not None and len(flow_rule.actions)>0:
-            for action in flow_rule.actions:
-                output_type = None
-                output_port = None
-                if action.output != None and action.output.split(':')[0] == 'endpoint':
-                    output_type = 'endpoint'
-                    output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
-                    self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
-                self.dbStoreAction(action, flow_rule_db_id, None, output=output_port, output_type=output_type)
-
-        return flow_rule_db_id
+    
+    
+    
+    
 
 
 
@@ -566,47 +663,10 @@ class GraphSession(object):
 
 
     
-    def _ids_generator(self, nffg, session_id=None, update=False):
-        port_base_id = self._get_higher_port_id()
-        endpoint_base_id = self._get_higher_endpoint_id()
-        flow_rule_base_id = self._get_higher_flow_rule_id()
-        action_base_id = self._get_higher_action_id()
-        
-        if (session_id==None):
-            session_id = self._get_univocal_session_id()
-        
-        if port_base_id is not None:
-            self.port_id = int(port_base_id) + 1
-        else:
-            self.port_id = 0
-        if endpoint_base_id is not None:
-            self.endpoint_id = int(endpoint_base_id) + 1
-        else:
-            self.endpoint_id = 0
-        if flow_rule_base_id is not None:
-            self.flow_rule_id = int(flow_rule_base_id) + 1
-        else:
-            self.flow_rule_id = 0
-        if action_base_id is not None:
-            self.action_id = int(action_base_id) + 1
-        else:
-            self.action_id = 0  
-        for flow_rule in nffg.flow_rules: 
-            if flow_rule.status is None or flow_rule.status == "new": 
-                flow_rule.db_id = self.flow_rule_id
-                self.flow_rule_id = self.flow_rule_id +1
-            for action in flow_rule.actions:
-                if flow_rule.status is None or flow_rule.status == "new":
-                    action.db_id = self.action_id
-                    self.action_id = self.action_id + 1
-        for endpoint in nffg.end_points:
-            if endpoint.status is None or endpoint.status == "new":   
-                endpoint.db_id = self.endpoint_id 
-                self.endpoint_id = self.endpoint_id + 1
-        return session_id
     
     
     
+    # used by getNFFG only
     def _getPort(self, port_id):
         session = get_session()  
         try:
@@ -614,34 +674,14 @@ class GraphSession(object):
         except Exception as ex:
             logging.error(ex)
             raise PortNotFound("Port "+str(port_id)+" not found.")
-    
-        
-    def _get_higher_port_id(self):
-        session = get_session()  
-        return session.query(func.max(PortModel.id).label("max_id")).one().max_id
 
-        
-    def _get_higher_endpoint_id(self):
-        session = get_session()  
-        return session.query(func.max(EndpointModel.id).label("max_id")).one().max_id
-
-        
-    def _get_higher_flow_rule_id(self):
-        session = get_session()  
-        return session.query(func.max(FlowRuleModel.id).label("max_id")).one().max_id
 
     
-    def _get_higher_action_id(self):
-        session = get_session()  
-        return session.query(func.max(ActionModel.id).label("max_id")).one().max_id
-    
-    
-    def _get_higher_vlan_tracking_id(self):
-        session = get_session()  
-        return session.query(func.max(VlanModel.id).label("max_id")).one().max_id
-
-    
-    def _get_univocal_session_id(self):
+    def __get_univocal_session_id(self):
+        '''
+        Compute a new session id 32 byte long.
+        Check if it is already exists: if yes, repeat the computation. 
+        '''
         session = get_session()
         rows = session.query(GraphSessionModel.session_id).all()
         
@@ -667,11 +707,12 @@ class GraphSession(object):
             
     def vlanTracking_add(self, flow_rule_id, switch_id, vlan_in, port_in, vlan_out, port_out):
         session = get_session()
-        max_id = self._get_higher_vlan_tracking_id()
+        
+        max_id = session.query(func.max(VlanModel.id).label("max_id")).one().max_id
         if max_id  is None:
             max_id = 0
         else:
-            max_id = max_id+1
+            max_id = int(max_id)+1
         
         with session.begin():    
             vlan_ref = VlanModel(id=max_id, flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_in=vlan_in, port_in=port_in, vlan_out=vlan_out, port_out=port_out)
@@ -741,20 +782,6 @@ class GraphSession(object):
             except:
                 new_vlan_in=0
         return new_vlan_in
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
     
     
