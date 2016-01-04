@@ -30,10 +30,8 @@ class NetGraph():
         self.VLAN_FREE_CODE = 0
         
         
-        
     def print_json(self,data):
-        print(json.dumps(data, sort_keys=True, indent=4, separators=(',', ': ')))
-        
+        print(json.dumps(data, sort_keys=True, indent=4, separators=(',', ': ')))        
         
         
     def getSwitchList(self):
@@ -56,7 +54,6 @@ class NetGraph():
                 swList.append({'node_id':node["node-id"]})
         
         return swList
-    
     
     
     
@@ -115,7 +112,6 @@ class NetGraph():
                                     })
     
     
-    
     def getShortestPath(self,source_switch_id,target_switch_id):
         self.setTopologyGraph()
         try:
@@ -138,18 +134,3 @@ class NetGraph():
             return None
         self.setTopologyGraph()
         return self.topology[switch][to_switch]['from_port']
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

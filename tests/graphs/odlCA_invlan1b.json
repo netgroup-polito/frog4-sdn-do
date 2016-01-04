@@ -1,6 +1,6 @@
 {
   "forwarding-graph": {
-    "id": "977",
+    "id": "988",
     "name": "GR Test1",
     
     "end-points": [
@@ -52,7 +52,7 @@
         },
         
         {
-          "id": "9772",
+          "id": "8771",
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31",

@@ -246,12 +246,12 @@ class GraphSession(object):
                 if (this_vlan_in-prev_vlan_in)<2 :
                     prev_vlan_in = this_vlan_in
                     continue
-                
-                new_vlan_in = prev_vlan_in+1
-                if new_vlan_in<=1 or new_vlan_in>=4095:
-                    new_vlan_in=None
-                    logging.debug("Invalid ingress vlan ID: "+new_vlan_in+" [port:"+port_in+" on "+switch_id+"]")
-                break                   
+                break
+            
+            new_vlan_in = prev_vlan_in+1
+            if new_vlan_in<=1 or new_vlan_in>=4095:
+                new_vlan_in=None
+                logging.debug("Invalid ingress vlan ID: "+new_vlan_in+" [port:"+port_in+" on "+switch_id+"]")                   
         return new_vlan_in
     
     
@@ -285,6 +285,22 @@ class GraphSession(object):
         if len(query_ref)>0:
             return True
         return False
+    
+    
+    def externalFlowruleExists(self, switch_id, internal_id):
+        session = get_session()
+        try:
+            session.query(FlowRuleModel).filter_by(internal_id=internal_id).filter_by(switch_id=switch_id).filter_by(type='external').one()
+            return True
+        except:
+            return False
+    
+    
+    def getExternalFlowrulesByGraphFlowruleID(self, switch_id, graph_flow_rule_id):
+        #return all flowrules with a graph_flow_rule_id, ordered by "internal_id" (asc) 
+        session = get_session()
+        flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_flow_rule_id=graph_flow_rule_id).filter_by(switch_id=switch_id).filter_by(type='external').order_by(asc(FlowRuleModel.internal_id)).all()
+        return flow_rules_ref
     
     
     
@@ -413,8 +429,8 @@ class GraphSession(object):
         # delete from tables: PortModel, EndpointResourceModel.
         session = get_session()
         with session.begin():
-            session.query(PortModel).filter_by(id = port_id).delete()
-            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').filter_by(session_id=session_id).delete()
+            session.query(PortModel).filter_by(id = port_id).filter_by(session_id=session_id).delete()
+            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
 
 
 

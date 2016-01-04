@@ -18,10 +18,6 @@ from odl_ca_core.netgraph import NetGraph
 from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations, NffgInvalidActions
 
 
-
-
-
-
 class OpenDayLightCA(object):
 
     def __init__(self, user_data):
@@ -724,6 +720,9 @@ class OpenDayLightCA(object):
         TODO: check if the flow name already exists in the database ("internal_id");
             if it exists change the name automatically.
         '''
+        
+        # If the flow name already exists, get new one
+        self.__checkFlowname_externalFlowrule(efr)
 
         # ODL/Switch: Add flow rule
         flowj = Flow("flowrule", efr.get_flow_name(), 0, efr.get_priority(), True, 0, 0, efr.get_actions(), efr.get_match())
@@ -740,7 +739,36 @@ class OpenDayLightCA(object):
         # DATABASE: Add vlan tracking
         self.__addVlanTraking(efr, flow_rule_db_id)
     
-
+    
+    
+    def __checkFlowname_externalFlowrule(self, efr):
+        '''
+        Check if the flow name already exists on the same switch,
+        in order to avoid subscribing the existing flowrule in one switch.
+        '''
+        if GraphSession().externalFlowruleExists(efr.get_switch_id(),efr.get_flow_name())==False:
+            return
+        
+        efr.set_flow_name(0)
+        this_efr = OpenDayLightCA.__externalFlowrule()
+        
+        flow_rules_ref = GraphSession().getExternalFlowrulesByGraphFlowruleID(efr.get_switch_id(),efr.get_flow_id())
+        for fr in flow_rules_ref:
+            if fr.type != 'external' or fr.internal_id is None:
+                continue
+            
+            this_efr.set_complete_flow_name(fr.internal_id)
+            
+            if this_efr.compare_flow_name(efr.get_flow_name())<2: #[ ( this_efr.flow_name - prev_efr.flow_name ) < 2 ]
+                efr.set_complete_flow_name(fr.internal_id)
+                continue            
+            break
+        efr.inc_flow_name()
+            
+            
+        
+        
+        
     
     class __externalFlowrule(object):
         '''
@@ -808,15 +836,49 @@ class OpenDayLightCA(object):
 
         def set_flow_name(self, suffix):
             self.__reset_flow_name()
-            if(suffix is not None):
+            self.__flow_name_suffix = None
+            if(suffix is not None and str(suffix).isdigit()):
                 self.__flow_name = self.__flow_name + str(suffix)
+                self.__flow_name_suffix = int(suffix)
+        
+        def set_complete_flow_name(self, flow_name):
+            fn = self.split_flow_name(flow_name)
+            if len(fn)<2:
+                return
+            self.__flow_id = fn[0]
+            self.set_flow_name(fn[1])
 
         def set_priority(self, value):
             self.__priority = value
         
-        def split_flow_name(self):
-            return self.__flow_name.split("_")
-
+        def split_flow_name(self, flow_name=None):
+            if flow_name is not None:
+                fn = flow_name.split("_")
+                if len(fn)<2:
+                    return None
+                if fn[1].isdigit()==False:
+                    return None
+                fn[1]=int(fn[1])
+                return fn
+            return [self.__flow_id,self.__flow_name_suffix]
+        
+        def inc_flow_name(self):
+            fn = self.split_flow_name()
+            if fn is not None:
+                self.set_flow_name(int(fn[1])+1)
+        
+        def compare_flow_name(self, flow_name):
+            fn1 = self.split_flow_name()
+            if fn1 is None:
+                return 0
+            fn2 = self.split_flow_name(flow_name)
+            if fn2 is None:
+                return 0
+            fn1[1] = int(fn1[1])
+            fn2[1] = int(fn2[1])
+            return ( fn1[1] - fn2[1] )
+            
+            
 
         def setInOut(self, switch_id, action, port_in, port_out, flowname_suffix):
             if(self.__match is None):
