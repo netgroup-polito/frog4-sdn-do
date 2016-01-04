@@ -84,7 +84,7 @@ class OpenDayLightCA(object):
 
         # Check and get the session id for this user-graph couple
         logging.debug("Update NF-FG: check if the user "+self.user_data.user_id+" has already instantiated the graph "+new_nffg.id+".")
-        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
         if session is None:
             return None
         self.__session_id = session.session_id
@@ -125,7 +125,7 @@ class OpenDayLightCA(object):
     
     def NFFG_Delete(self, nffg_id):
         
-        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         self.__session_id = session.session_id
@@ -143,7 +143,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Get(self, nffg_id):
-        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -154,7 +154,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Status(self, nffg_id):
-        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -670,14 +670,14 @@ class OpenDayLightCA(object):
             self.__deleteFlowRule(fr)
         self.__deleteFlowRuleByGraphID(fr.graph_flow_rule_id)
     
-    def __deleteFlowRule(self, flow_rule):
-        # flow_rule is a FlowRuleModel object
-        if flow_rule.type == 'external': #and flow.status == "complete" 
-            ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule.switch_id, flow_rule.internal_id)
-        GraphSession().deleteFlowrule(flow_rule.id)
+    def __deleteFlowRule(self, flow_rule_ref):
+        # flow_rule_ref is a FlowRuleModel object
+        if flow_rule_ref.type == 'external': #and flow.status == "complete" 
+            ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule_ref.switch_id, flow_rule_ref.internal_id)
+        GraphSession().deleteFlowruleByID(flow_rule_ref.id)
 
     def __deletePortByID(self, port_id):
-        GraphSession().deletePort(port_id)
+        GraphSession().deletePort(port_id, self.__session_id)
        
     def __deleteEndpointByGraphID(self, graph_endpoint_id):
         ep = GraphSession().getEndpointByGraphID(graph_endpoint_id, self.__session_id)
@@ -685,7 +685,7 @@ class OpenDayLightCA(object):
             self.__deleteEndpointByID(ep.id)
 
     def __deleteEndpointByID(self, endpoint_id):
-        ep_resources = GraphSession().getEndpointResources(endpoint_id)
+        ep_resources = GraphSession().getEndpointResourcesByEndpointID(endpoint_id)
         if ep_resources is None:
             return
         for eprs in ep_resources:
@@ -693,7 +693,7 @@ class OpenDayLightCA(object):
                 self.__deleteFlowRuleByID(eprs.resource_id)
             elif eprs.resource_type == 'port':
                 self.__deletePortByID(eprs.resource_id)
-        GraphSession().deleteEndpoint(endpoint_id)
+        GraphSession().deleteEndpointByID(endpoint_id)
     
     
     
@@ -716,17 +716,13 @@ class OpenDayLightCA(object):
         '''
         
         '''
-        TODO: check if a "similar" flow rule already exists in the specified switch.
-        Similar flow rules are replaced by ovs switch, so one of them disappear!
+        TODO: check if a "similar" flow rule already exists in the specified switch;
+            if it exists, raise an exception!
+            Similar flow rules are replaced by ovs switch, so one of them disappear!
+            def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action).
         
-        def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action):
-        
-        If exists, we should:
-            1) change the priority and push flow rule, or
-            2) replace with new flow rule, or
-            3) extend the old flow rule with the new flow rule charateristics (action/match)
-        
-        In the third case ("joined flow rules"), ...
+        TODO: check if the flow name already exists in the database ("internal_id");
+            if it exists change the name automatically.
         '''
 
         # ODL/Switch: Add flow rule
@@ -817,6 +813,9 @@ class OpenDayLightCA(object):
 
         def set_priority(self, value):
             self.__priority = value
+        
+        def split_flow_name(self):
+            return self.__flow_name.split("_")
 
 
         def setInOut(self, switch_id, action, port_in, port_out, flowname_suffix):

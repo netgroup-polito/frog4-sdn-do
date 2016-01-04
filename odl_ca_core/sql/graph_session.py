@@ -175,7 +175,16 @@ class GraphSession(object):
         DATABASE INTERFACE - GET section "def get*" and other releated functions
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
-
+    
+    def getActiveUserGraphSession(self, user_id, graph_id, error_aware=True):
+        session = get_session()
+        if error_aware:
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
+        else:
+            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphSessionModel.started_at)).first()  
+        return session_ref
+    
+    
     def getEndpointByGraphID(self, graph_endpoint_id, session_id):
         session = get_session()
         try:
@@ -194,7 +203,7 @@ class GraphSession(object):
             return None
     
     
-    def getEndpointResources(self, endpoint_id):
+    def getEndpointResourcesByEndpointID(self, endpoint_id):
         session = get_session()
         try:
             eprs = session.query(EndpointResourceModel).filter_by(endpoint_id = endpoint_id).all()
@@ -246,7 +255,7 @@ class GraphSession(object):
         return new_vlan_in
     
     
-    def getUnivocalSessionID(self):
+    def getNewUnivocalSessionID(self):
         '''
         Compute a new session id 32 byte long.
         Check if it is already exists: if yes, repeat the computation. 
@@ -263,15 +272,6 @@ class GraphSession(object):
                     break
             if found==False:
                 return session_id
-    
-    
-    def getUserActiveGraphSession(self, user_id, graph_id, error_aware=True):
-        session = get_session()
-        if error_aware:
-            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).filter_by(error = None).first()
-        else:
-            session_ref = session.query(GraphSessionModel).filter_by(user_id = user_id).filter_by(graph_id = graph_id).filter_by(ended = None).order_by(desc(GraphSessionModel.started_at)).first()  
-        return session_ref
     
     
     def getVlanInIDs(self, port_in, switch_id):
@@ -384,7 +384,7 @@ class GraphSession(object):
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
     
-    def deleteEndpoint(self, endpoint_id):
+    def deleteEndpointByID(self, endpoint_id):
         # delete from tables: EndpointModel.
         session = get_session()
         with session.begin():
@@ -398,7 +398,7 @@ class GraphSession(object):
             session.query(EndpointModel).filter_by(session_id = session_id).filter_by(graph_endpoint_id = graph_endpoint_id).delete()
     
 
-    def deleteFlowrule(self,  flow_rule_id):
+    def deleteFlowruleByID(self, flow_rule_id):
         # delete from tables: FlowRuleModel, MatchModel, ActionModel, VlanModel, EndpointResourceModel.
         session = get_session()
         with session.begin():
@@ -409,47 +409,17 @@ class GraphSession(object):
             session.query(EndpointResourceModel).filter_by(resource_id=flow_rule_id).filter_by(resource_type='flow-rule').delete()
     
     
-    def deletePort(self,  port_id):
+    def deletePort(self,  port_id, session_id):
         # delete from tables: PortModel, EndpointResourceModel.
         session = get_session()
         with session.begin():
             session.query(PortModel).filter_by(id = port_id).delete()
-            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+            session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').filter_by(session_id=session_id).delete()
 
-    
-    
-    
-    
-    
-    
 
-    
-            
-            
-    
-    
-    
-    
-    
-  
+
+
+
   
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -595,7 +565,7 @@ class GraphSession(object):
     def addNFFG(self, nffg, user_id):
             
         # New session id
-        session_id = self.getUnivocalSessionID()
+        session_id = self.getNewUnivocalSessionID()
         
         # Add a new record in GraphSession
         self.dbStoreGraphSessionFromNffgObject(session_id, user_id, nffg)
