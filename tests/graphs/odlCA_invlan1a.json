@@ -42,7 +42,7 @@
           "priority": 101,
           "match": {
             "port_in": "endpoint:End21",
-            "vlan_id": "988"
+            "vlan_id": "688"
           },
           "actions": [
           	{
@@ -56,7 +56,7 @@
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31",
-            "vlan_id": "977"
+            "vlan_id": "677"
           },
           "actions": [
           	{

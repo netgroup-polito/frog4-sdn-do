@@ -76,7 +76,7 @@ nffg.parseDict(nffg_file)
 odlCA.NFFG_Validate(nffg)
 odlCA.NFFG_Put(nffg)
 
-quit()
+#quit()
 
 # NF-FG File
 in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan2a.json","r")

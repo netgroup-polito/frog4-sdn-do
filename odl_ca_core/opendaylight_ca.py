@@ -5,7 +5,7 @@
 '''
 
 from __future__ import division
-import logging, json
+import logging
 
 from nffg_library.nffg import FlowRule, Match as NffgMatch, Action as NffgAction
 
@@ -65,16 +65,15 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
             
-            # Send flow rules to ODL by profile_graph
-            profile_graph = self.__ProfileGraph_BuildFromNFFG(nffg)
-            self.__ODL_FlowsInstantiation(profile_graph)
+            # Send flow rules to ODL
+            self.__ODL_FlowsInstantiation(nffg)
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
             
         except Exception as ex:
             logging.error(ex)
-            self.__deleteGraph()
+            self.__NFFG_ODL_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex                           
         return self.__session_id
@@ -85,7 +84,7 @@ class OpenDayLightCA(object):
 
         # Check and get the session id for this user-graph couple
         logging.debug("Update NF-FG: check if the user "+self.user_data.user_id+" has already instantiated the graph "+new_nffg.id+".")
-        session = GraphSession().getUserGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
+        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
         if session is None:
             return None
         self.__session_id = session.session_id
@@ -103,22 +102,21 @@ class OpenDayLightCA(object):
             updated_nffg = old_nffg.diff(new_nffg)
             logging.debug("Update NF-FG: coming updates: "+updated_nffg.getJSON(True))            
             
-            # Delete useless endpoints and flowrules 
-            self.__NFFG_Update__deletions(updated_nffg)
+            # Delete useless endpoints and flowrules, from DB and ODL 
+            self.__NFFG_ODL_DeleteAndUpdate(updated_nffg)
             
             # Update database
             GraphSession().updateNFFG(updated_nffg, self.__session_id)
             
-            # Send flowrules to ODL by profile_graph
-            profile_graph = self.__ProfileGraph_BuildFromNFFG(updated_nffg)
-            self.__ODL_FlowsInstantiation(profile_graph)
+            # Send flowrules to ODL
+            self.__ODL_FlowsInstantiation(updated_nffg)
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
             
             GraphSession().updateStatus(self.__session_id, 'complete')
             
         except Exception as ex:
             logging.error("Update NF-FG: ",ex)
-            self.__deleteGraph()
+            self.__NFFG_ODL_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
         return self.__session_id
@@ -127,7 +125,7 @@ class OpenDayLightCA(object):
     
     def NFFG_Delete(self, nffg_id):
         
-        session = GraphSession().getUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Delete NF-FG: session not found for graph "+str(nffg_id))
         self.__session_id = session.session_id
@@ -135,7 +133,7 @@ class OpenDayLightCA(object):
         try:
             instantiated_nffg = GraphSession().getNFFG(self.__session_id)
             logging.debug("Delete NF-FG: [session="+str(self.__session_id)+"] we are going to delete: "+instantiated_nffg.getJSON())
-            self.__deleteGraph()
+            self.__NFFG_ODL_deleteGraph()
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
         except Exception as ex:
@@ -145,7 +143,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Get(self, nffg_id):
-        session = GraphSession().getUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -156,7 +154,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Status(self, nffg_id):
-        session = GraphSession().getUserGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
+        session = GraphSession().getUserActiveGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
@@ -208,35 +206,85 @@ class OpenDayLightCA(object):
                         logging.debug(msg)
                         raise NffgInvalidActions(msg)
                     output_action_counter = output_action_counter+1
-                    
+
                 
 
 
 
+
     '''
-    ######################################################################################################
-    #########################    Interactions with OpenDaylight              #############################
-    ######################################################################################################
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        OPENDAYLIGHT INTERACTIONS
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
+    
+    def __NFFG_ODL_deleteGraph(self):
+        
+        # Endpoints
+        endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
+        if endpoints is not None:
+            for ep in endpoints:
+                self.__deleteEndpointByID(ep.id)
+        
+        # Flowrules (maybe will never enter)
+        flowrules = GraphSession().getFlowrules(self.__session_id)
+        if flowrules is None:
+            for fr in flowrules:
+                self.__deleteFlowRule(fr)
+        
+        # End field
+        GraphSession().updateEnded(self.__session_id)
+
+
+
+
+    def __NFFG_ODL_DeleteAndUpdate(self, updated_nffg):
+        
+        # List of updated endpoints
+        updated_endpoints = []
+        
+        # Delete the endpoints 'to_be_deleted'
+        for endpoint in updated_nffg.end_points[:]: # "[:]" keep in memory deleted items during the loop.
+            if endpoint.status == 'to_be_deleted':
+                self.__deleteEndpointByID(endpoint.db_id)
+                updated_nffg.end_points.remove(endpoint)
+            elif endpoint.status == 'new' or endpoint.status is None:
+                updated_endpoints.append(endpoint.id)
+        
+        # Delete the flowrules 'to_be_deleted'
+        for flowrule in updated_nffg.flow_rules[:]: # "[:]" keep in memory deleted items during the loop.
+            
+            # Delete flowrule
+            if flowrule.status == 'to_be_deleted': #and flowrule.type != 'external':
+                self.__deleteFlowRuleByGraphID(flowrule.id)
+                updated_nffg.flow_rules.remove(flowrule)
+            
+            # Set flowrule as "new" when associated endpoint has been updated
+            elif flowrule.status == 'already_deployed':
+                ep_in = self.__getEndpointIdFromString(flowrule.match.port_in)
+                if ep_in is not None and ep_in in updated_endpoints:
+                    flowrule.status = 'new'
+                else:
+                    for a in  flowrule.actions:
+                        ep_out = self.__getEndpointIdFromString(a.output)
+                        if ep_out is not None and ep_out in updated_endpoints:
+                            flowrule.status = 'new'
+
+
+
 
     def __ProfileGraph_BuildFromNFFG(self, nffg):
-        '''
-        Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        Args:
-            nffg:
-                Object of the Class Common.NF_FG.nffg.NF_FG
-        Return:
-            Object of the Class odl_ca_core.resources.ProfileGraph
-        '''
+        # Create a ProfileGraph with the flowrules and endpoints specified in nffg.
+        # Return a resources.ProfileGraph object.
+        
         profile_graph = ProfileGraph()
-
         for endpoint in nffg.end_points:
             
             if endpoint.status is None:
                 status = "new"
             else:
                 status = endpoint.status
-            
+
             ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
             profile_graph.addEndpoint(ep)
         
@@ -250,55 +298,24 @@ class OpenDayLightCA(object):
     
     
     
-    def __NFFG_Update__deletions(self, updated_nffg):
-        
-        def getEndpointID(endpoint_string):
-            if endpoint_string is None:
-                return None
-            endpoint_string = str(endpoint_string)
-            tmp2 = endpoint_string.split(':')
-            port2_type = tmp2[0]
-            port2_id = tmp2[1]
-            if port2_type == 'endpoint':
-                return port2_id
+    def __getEndpointIdFromString(self, endpoint_string):
+        if endpoint_string is None:
             return None
+        endpoint_string = str(endpoint_string)
+        tmp2 = endpoint_string.split(':')
+        port2_type = tmp2[0]
+        port2_id = tmp2[1]
+        if port2_type == 'endpoint':
+            return port2_id
+        return None
+    
+    
+    
+
+    def __ODL_FlowsInstantiation(self, nffg):
         
-        # List of updated endpoints
-        updated_endpoints = []
+        profile_graph = self.__ProfileGraph_BuildFromNFFG(nffg)
         
-        # Delete the endpoints 'to_be_deleted'
-        for endpoint in updated_nffg.end_points:
-            if endpoint.status == 'to_be_deleted':
-                self.__deleteEndpointByGraphID(endpoint.id)
-                updated_nffg.end_points.remove(endpoint)
-            elif endpoint.status == 'new' or endpoint.status is None:
-                updated_endpoints.append(endpoint.id)
-        
-        # Delete the flowrules 'to_be_deleted'
-        # "[:]" keep in memory deleted items during the loop.
-        for flowrule in updated_nffg.flow_rules[:]:
-            
-            # Delete flowrule
-            if flowrule.status == 'to_be_deleted': #and flowrule.type != 'external':
-                self.__deleteFlowRuleByGraphID(flowrule.id)
-                updated_nffg.flow_rules.remove(flowrule)
-            
-            # Set flowrule as "new" when associated endpoint has been updated
-            elif flowrule.status == 'already_deployed':
-                ep_in = getEndpointID(flowrule.match.port_in)
-                if ep_in is not None and ep_in in updated_endpoints:
-                    flowrule.status = 'new'
-                else:
-                    for a in  flowrule.actions:
-                        ep_out = getEndpointID(a.output)
-                        if ep_out is not None and ep_out in updated_endpoints:
-                            flowrule.status = 'new'
-
-
-
-
-    def __ODL_FlowsInstantiation(self, profile_graph):
-
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
             
@@ -339,16 +356,8 @@ class OpenDayLightCA(object):
         '''
         
         # TODO: check "vlan in" match on in_endpoint
-        if GraphSession().vlanInIsBusy(in_endpoint.switch_id, flowrule.match.vlan_id, in_endpoint.interface):
+        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
             raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same port in (ingress endpoint "+in_endpoint.id+")")
-
-        def getEndpointID(output_string):
-            tmp2 = output_string.split(':')
-            port2_type = tmp2[0]
-            port2_id = tmp2[1]
-            if port2_type == 'endpoint':
-                return port2_id
-            return None
         
         single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
         out_endpoint = None
@@ -376,7 +385,7 @@ class OpenDayLightCA(object):
             # we check that the output is an endpoint and manage the main cases.
 
             # Is the 'output' destination an endpoint?
-            port2_id = getEndpointID(a.output)
+            port2_id = self.__getEndpointIdFromString(a.output)
             if port2_id is None:
                 continue
             out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
@@ -416,6 +425,8 @@ class OpenDayLightCA(object):
             return
 
 
+
+
     def __ODL_checkEndpointsOnPath(self, path, ep1, ep2):
         if len(path)<2:
             return None
@@ -431,8 +442,9 @@ class OpenDayLightCA(object):
         return True
 
 
+
+
     def __ODL_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
-        
         ''' 
         This function links two endpoints with a set of flow rules pushed in
         all the intermediate switches (and in first and last switches, of course).
@@ -513,7 +525,7 @@ class OpenDayLightCA(object):
                 port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
             
             # Check, generate and set vlan ids
-            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking_check(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
+            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
             
             # Match
             if vlan_in is not None:
@@ -558,10 +570,65 @@ class OpenDayLightCA(object):
             vlan out = original_vlan_out
         '''
         return
+    
+    
+    
+    
+    def __ODL_VlanTraking(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
+        '''
+        Receives the main parameters of a "vlan based" flow rule.
+        Check all vlan ids on the specified ports of current switch and the next switch.
+        If a similar "vlan based" flow rule exists, new vlan in/out will be chosen.
+        This function make other some checks to verify the correctness of all parameters.
+        
+        '''
+        # Rectify vlan ids
+        if vlan_in is not None:
+            vlan_in = int(vlan_in)
+        if vlan_out is not None:
+            vlan_out = int(vlan_out)
+        if vlan_out is not None and ( vlan_out<=0 or vlan_out>=4095 ):
+            vlan_out = None
+        if vlan_in is not None and ( vlan_in<=0 or vlan_in>=4095 ):
+            vlan_in = None
+            
+        # Detect if a mod_vlan action is needed
+        set_vlan_out = None
+        if vlan_out is not None and vlan_out != vlan_in:
+            set_vlan_out = vlan_out
+        
+        # Set the output vlan that we have to check in the next switch
+        if vlan_in is not None and vlan_out is None:
+            vlan_out = vlan_in
+        
+        # Check if the output vlan can be accepted on next_switch_portIn@next_switch_ID
+        if vlan_out is not None and next_switch_ID is not None:
+            if GraphSession().ingressVlanIsBusy(vlan_out, next_switch_portIn, next_switch_ID):
+                vlan_out = None
+        ''' 
+            Check if an output vlan id is needed.
+            Enter this "if" when vlan_out is None and this happens in two main cases:
+                1) when it is not specified;
+                2) when it is not compliant with the next switch port in.
+        '''
+        if vlan_out is None and next_switch_ID is not None:
+            vlan_out = GraphSession().getFreeIngressVlanID(next_switch_portIn,next_switch_ID) #return int or None
+            set_vlan_out = vlan_out
+        
+        return vlan_in, vlan_out, set_vlan_out
+
 
     
     
-    def __ODL_VlanTraking_add(self, efr, flow_rule_db_id):
+    
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        DATABASE INTERACTIONS
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+    
+    def __addVlanTraking(self, efr, flow_rule_db_id):
         # efr = __externalFlowrule
         vlan_in = None
         vlan_out = None
@@ -585,105 +652,9 @@ class OpenDayLightCA(object):
                 vlan_out = None
         
         # DATABASE: Add vlan tracking
-        GraphSession().vlanTracking_add(flow_rule_db_id, switch_id,vlan_in,port_in,vlan_out,port_out)
-    
-    
-
-    def __ODL_GetLinkBetweenSwitches(self, switch1, switch2):             
-        '''
-        Retrieve the link between two switches, where you can find ports to use.
-        switch1, switch2 = "openflow:123456789" or "00:00:64:e9:50:5a:90:90" in Hydrogen.
-        '''
-        # Get Topology
-        json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
-        topology = json.loads(json_data)
+        GraphSession().addVlanTracking(flow_rule_db_id, switch_id,vlan_in,port_in,vlan_out,port_out)
         
-        if self.odlversion == "Hydrogen":
-            tList = topology["edgeProperties"]
-            for link in tList:
-                source_node = link["edge"]["headNodeConnector"]["node"]["id"]
-                dest_node = link["edge"]["tailNodeConnector"]["node"]["id"]
-                if (source_node == switch1 and dest_node == switch2):
-                    return link
-        else:
-            tList = topology["network-topology"]["topology"][0]["link"]
-            for link in tList:
-                source_node = link["source"]["source-node"]
-                dest_node = link["destination"]["dest-node"]
-                if (source_node == switch1 and dest_node == switch2):
-                    return link
-        return None
-
-    
-    def __ODL_GetLinkPortsBetweenSwitches(self, switch1, switch2):
-        link = self.__ODL_GetLinkBetweenSwitches(switch1, switch2)
-        if link is None:
-            return None,None
         
-        if self.odlversion == "Hydrogen":
-            port12 = link["edge"]["headNodeConnector"]["id"]
-            port21 = link["edge"]["tailNodeConnector"]["id"]
-        else:
-            tmp = link["source"]["source-tp"]
-            tmpList = tmp.split(":")
-            port12 = tmpList[2]
-
-            tmp = link["destination"]["dest-tp"]
-            tmpList = tmp.split(":")
-            port21 = tmpList[2]
-        
-        # Return port12@switch1 and port21@switch2
-        return port12,port21
-
-
-
-    def __ODL_VlanTraking_check(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
-        
-        # Rectify vlan ids
-        if vlan_in is not None:
-            vlan_in = int(vlan_in)
-        if vlan_out is not None:
-            vlan_out = int(vlan_out)
-        if vlan_out is not None and ( vlan_out<=0 or vlan_out>=4095 ):
-            vlan_out = None
-        if vlan_in is not None and ( vlan_in<=0 or vlan_in>=4095 ):
-            vlan_in = None
-            
-        # Detect if a mod_vlan action is needed
-        set_vlan_out = None
-        if vlan_out is not None and vlan_out != vlan_in:
-            set_vlan_out = vlan_out
-        
-        # Set the output vlan that we have to check in the next switch
-        if vlan_in is not None and vlan_out is None:
-            vlan_out = vlan_in
-        
-        # Verify this output vlan id
-        if vlan_out is not None and next_switch_ID is not None:
-            #check vlan output in next switch-port / return None if non suitable
-            #vlan_out = GraphSession().vlanTracking_check(port_in,port_out,vlan_in,vlan_out,next_switch_ID,next_switch_portIn)
-            if GraphSession().vlanInIsBusy(next_switch_ID, vlan_out, next_switch_portIn):
-                vlan_out = None
-
-        # Check if an output vlan id is needed
-        if vlan_out is None and next_switch_ID is not None:
-            #generate for the next switch-port
-            # TODO: manage the '0' value (error) and '-1' value (all vlan ids are busy)
-            vlan_out = GraphSession().vlanTracking_new_vlan_out(port_in,port_out,vlan_in,vlan_out,next_switch_ID,next_switch_portIn) 
-            set_vlan_out = vlan_out
-        
-        return vlan_in, vlan_out, set_vlan_out
-    
-    
-    
-    
-    
-    
-    '''
-    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-        DELETE Functions
-    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    '''
     
     def __deleteFlowRuleByGraphID(self, graph_flow_rule_id):
         flowrules = GraphSession().getFlowrules(self.__session_id, graph_flow_rule_id)
@@ -724,19 +695,7 @@ class OpenDayLightCA(object):
                 self.__deletePortByID(eprs.resource_id)
         GraphSession().deleteEndpoint(endpoint_id)
     
-    def __deleteGraph(self):
-        # Endpoints
-        endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
-        if endpoints is not None:
-            for ep in endpoints:
-                self.__deleteEndpointByID(ep.id)
-        # Flowrules (maybe will never enter)
-        flowrules = GraphSession().getFlowrules(self.__session_id)
-        if flowrules is None:
-            for fr in flowrules:
-                self.__deleteFlowRule(fr)
-        # End field
-        GraphSession().updateEnded(self.__session_id)
+    
     
     
     
@@ -757,11 +716,10 @@ class OpenDayLightCA(object):
         '''
         
         '''
-        TODO: store entire flowrule in the database
-        def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action):
-        
         TODO: check if a "similar" flow rule already exists in the specified switch.
         Similar flow rules are replaced by ovs switch, so one of them disappear!
+        
+        def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action):
         
         If exists, we should:
             1) change the priority and push flow rule, or
@@ -784,7 +742,7 @@ class OpenDayLightCA(object):
         GraphSession().dbStoreAction(efr.getNffgAction(), flow_rule_db_id)
         
         # DATABASE: Add vlan tracking
-        self.__ODL_VlanTraking_add(efr, flow_rule_db_id)
+        self.__addVlanTraking(efr, flow_rule_db_id)
     
 
     
