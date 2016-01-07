@@ -185,6 +185,11 @@ class GraphSession(object):
         return session_ref
     
     
+    def getAllExternalFlowrules(self):
+        session = get_session()
+        return session.query(FlowRuleModel).filter_by(type = 'external').all()
+    
+    
     def getEndpointByGraphID(self, graph_endpoint_id, session_id):
         session = get_session()
         try:
@@ -399,6 +404,19 @@ class GraphSession(object):
         DATABASE INTERFACE - DELETE section "def delete*"
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
+    
+    def cleanAll(self):
+        session = get_session()
+        session.query(ActionModel).delete()
+        session.query(EndpointModel).delete()
+        session.query(EndpointResourceModel).delete()
+        session.query(FlowRuleModel).delete()
+        session.query(GraphSessionModel).delete()
+        session.query(MatchModel).delete()
+        session.query(PortModel).delete()
+        session.query(VlanModel).delete()
+        session.query(GraphSessionModel).delete()
+    
     
     def deleteEndpointByID(self, endpoint_id):
         # delete from tables: EndpointModel.

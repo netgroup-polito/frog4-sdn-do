@@ -139,7 +139,7 @@ class OpenDayLightCA(object):
 
     
     def NFFG_Get(self, nffg_id):
-        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=True)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph "+str(nffg_id))
         
