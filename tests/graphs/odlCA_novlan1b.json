@@ -39,7 +39,7 @@
             	"set_vlan_id": "977"
           	},
           	{
-            	"output": "endpoint:End51"
+            	"output_to_port": "endpoint:End51"
           	}
           ]
         },
@@ -55,7 +55,7 @@
             	"set_vlan_id": "977"
           	},
           	{
-            	"output": "endpoint:End21"
+            	"output_to_port": "endpoint:End21"
           	}
           ]
         }

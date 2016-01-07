@@ -66,7 +66,7 @@
             	"set_vlan_id": "461"
           	},
           	{
-            	"output": "endpoint:End31"
+            	"output_to_port": "endpoint:End31"
           	}
           ]
         },
@@ -82,7 +82,7 @@
             	"set_vlan_id": "461"
           	},
           	{
-            	"output": "endpoint:End21"
+            	"output_to_port": "endpoint:End21"
           	}
           ]
         }

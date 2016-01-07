@@ -221,7 +221,7 @@ class Action(object):
             #TODO: add remaining actions
             if action.drop is True:
                 self.setDropAction()
-            elif action.controller is True:
+            elif action.output_to_controller is True:
                 self.setControllerAction()
             elif action.set_vlan_id is not None:
                 self.setSwapVlanAction(action.set_vlan_id)

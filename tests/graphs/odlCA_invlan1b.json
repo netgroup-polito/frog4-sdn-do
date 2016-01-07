@@ -46,7 +46,7 @@
           },
           "actions": [
           	{
-          		"output": "endpoint:End41"
+          		"output_to_port": "endpoint:End41"
           	}
           ]
         },
@@ -60,7 +60,7 @@
           },
           "actions": [
           	{
-            	"output": "endpoint:End21"
+            	"output_to_port": "endpoint:End21"
           	}
           ]
         }

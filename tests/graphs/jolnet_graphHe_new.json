@@ -66,7 +66,7 @@
             "vlan_id": "295"
           },
           "actions": [{
-            "output": "endpoint:ucs"
+            "output_to_port": "endpoint:ucs"
           }]
         },
         {
@@ -76,7 +76,7 @@
             "port_in": "endpoint:ucs"
           },
           "actions": [{
-            "output": "endpoint:user_ingress"
+            "output_to_port": "endpoint:user_ingress"
           }]
         },
         {
@@ -87,7 +87,7 @@
             "vlan_id": "295"
           },
           "actions": [{
-            "output": "endpoint:ucs"
+            "output_to_port": "endpoint:ucs"
           }]
         },
         {
@@ -98,7 +98,7 @@
             "vlan_id": "295"
           },
           "actions": [{
-            "output": "vnf:Switch_prova1:L2Port:0"
+            "output_to_port": "vnf:Switch_prova1:L2Port:0"
           }]
         },
         {
@@ -109,7 +109,7 @@
             "vlan_id": "293"
           },
           "actions": [{
-            "output": "vnf:Switch_prova2:L2Port:0"
+            "output_to_port": "vnf:Switch_prova2:L2Port:0"
           }]
         },
         {
@@ -120,7 +120,7 @@
             "vlan_id": "293"
           },
           "actions": [{
-            "output": "vnf:Switch_prova1:L2Port:1"
+            "output_to_port": "vnf:Switch_prova1:L2Port:1"
           }]
         },
         {
@@ -131,7 +131,7 @@
             "vlan_id": "288"
           },
           "actions": [{
-            "output": "endpoint:out"
+            "output_to_port": "endpoint:out"
           }]
         },
         {
@@ -142,7 +142,7 @@
             "vlan_id": "288"
           },
           "actions": [{
-            "output": "vnf:Switch_prova2:L2Port:1"
+            "output_to_port": "vnf:Switch_prova2:L2Port:1"
           }]
         }
       ]

@@ -49,7 +49,7 @@
             "vlan_id": "288"
           },
           "actions": [{
-            "output": "endpoint:007"
+            "output_to_port": "endpoint:007"
           }]
         },
         {
@@ -60,7 +60,7 @@
             "vlan_id": "288"
           },
           "actions": [{
-            "output": "vnf:endpoint_switch:L2Port:0"
+            "output_to_port": "vnf:endpoint_switch:L2Port:0"
           }]
         },
         
@@ -72,7 +72,7 @@
             "vlan_id": "296"
           },
           "actions": [{
-            "output": "vnf:dhcp_ISP:inout:0"
+            "output_to_port": "vnf:dhcp_ISP:inout:0"
           }]
         },
         {
@@ -83,7 +83,7 @@
             "vlan_id": "296"
           },
           "actions": [{
-            "output": "vnf:endpoint_switch:L2Port:1"
+            "output_to_port": "vnf:endpoint_switch:L2Port:1"
           }]
         }
       ]

@@ -125,15 +125,15 @@ class MatchModel(Base):
 
 class ActionModel(Base):
     __tablename__ = 'action'
-    attributes = ['id', 'flow_rule_id', 'output_type', 'output', 'controller', '_drop', 'set_vlan_id','set_vlan_priority','pop_vlan', 'set_ethernet_src_address',
+    attributes = ['id', 'flow_rule_id', 'output_type', 'output_to_port', 'output_to_controller', '_drop', 'set_vlan_id','set_vlan_priority','pop_vlan', 'set_ethernet_src_address',
                   'set_ethernet_dst_address','set_ip_src_address','set_ip_dst_address', 'set_ip_tos','set_l4_src_port','set_l4_dst_port', 'output_to_queue']    
     id = Column(Integer, primary_key=True)
     flow_rule_id = Column(Integer)      # = FlowRuleModel.id
     output_type = Column(VARCHAR(64))   # = ( port | endpoint )
     
     # action characteristics
-    output = Column(VARCHAR(64))        # es. output port, endpoint interface
-    controller = Column(Boolean)        # if 'true' it sends packets to controller (es. CONTROLLER:65535) 
+    output_to_port = Column(VARCHAR(64))        # es. output port, endpoint interface
+    output_to_controller = Column(Boolean)        # if 'true' it sends packets to controller (es. CONTROLLER:65535) 
     _drop = Column(Boolean)
     set_vlan_id = Column(VARCHAR(64))
     set_vlan_priority = Column(VARCHAR(64))
@@ -343,7 +343,7 @@ class GraphSession(object):
                     output_type = 'endpoint'
                     output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
                     self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
-                self.dbStoreAction(action, flow_rule_db_id, None, output=output_port, output_type=output_type)
+                self.dbStoreAction(action, flow_rule_db_id, None, output_to_port=output_port, output_type=output_type)
 
         return flow_rule_db_id
     
@@ -462,7 +462,7 @@ class GraphSession(object):
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
     
-    def dbStoreAction(self, action, flow_rule_db_id, action_db_id=None, output=None, output_type=None):    
+    def dbStoreAction(self, action, flow_rule_db_id, action_db_id=None, output_to_port=None, output_type=None):    
         session = get_session()
         
         if action_db_id is None:
@@ -472,13 +472,13 @@ class GraphSession(object):
             else:
                 action_db_id = int(action_db_id) + 1
         
-        if output is None:
-            output=action.output
+        if output_to_port is None:
+            output_to_port=action.output
             
         with session.begin():
             action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
-                                     output_type=output_type, output=output,
-                                     controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
+                                     output_type=output_type, output_to_port=output_to_port,
+                                     output_to_controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
                                      set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
                                      set_ethernet_src_address=action.set_ethernet_src_address, 
                                      set_ethernet_dst_address=action.set_ethernet_dst_address,
@@ -724,14 +724,14 @@ class GraphSession(object):
                 logging.debug("Found flowrule without actions")
                 
             for action_ref in actions_ref:
-                output = None
+                output_to_port = None
                 # Retrieve endpoint data
                 if action_ref.output_type == 'endpoint':
                     end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output).first()
-                    output = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
+                    output_to_port = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
                 
                 # Add action to this flow rule
-                action = Action(output=output, controller=action_ref.controller, drop=action_ref._drop, set_vlan_id=action_ref.set_vlan_id,
+                action = Action(output=output_to_port, controller=action_ref.controller, drop=action_ref._drop, set_vlan_id=action_ref.set_vlan_id,
                                 set_vlan_priority=action_ref.set_vlan_priority, pop_vlan=action_ref.pop_vlan, 
                                 set_ethernet_src_address=action_ref.set_ethernet_src_address, 
                                 set_ethernet_dst_address=action_ref.set_ethernet_dst_address, 

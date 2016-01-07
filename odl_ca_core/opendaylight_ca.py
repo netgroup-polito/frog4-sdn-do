@@ -263,7 +263,7 @@ class OpenDayLightCA(object):
                     flowrule.status = 'new'
                 else:
                     for a in  flowrule.actions:
-                        ep_out = self.__getEndpointIdFromString(a.output)
+                        ep_out = self.__getEndpointIdFromString(a)
                         if ep_out is not None and ep_out in updated_endpoints:
                             flowrule.status = 'new'
 
@@ -378,7 +378,7 @@ class OpenDayLightCA(object):
                 single_efr.append_action(no_output)
                 continue
             
-            # If this action is an output action (a.output is not None),
+            # If this action is an output action (a is not None),
             # we check that the output is an endpoint and manage the main cases.
 
             # Is the 'output' destination an endpoint?
@@ -474,7 +474,7 @@ class OpenDayLightCA(object):
                 continue
             
             # Filter non OUTPUT actions 
-            if a.output is None:
+            if a is None:
                 no_output = Action(a)
                 base_actions.append(no_output)
         
@@ -934,8 +934,8 @@ class OpenDayLightCA(object):
             
         def getNffgAction(self):
             
-            output = None
-            controller = False
+            output_to_port = None
+            output_to_controller = False
             drop = False
             set_vlan_id = None
             pop_vlan = False
@@ -955,9 +955,9 @@ class OpenDayLightCA(object):
             # Multiple output not allowed
             for a in self.__actions:
                 if a.is_output_port_action():
-                    output = a.output_port
+                    output_to_port = a.output_port
                 elif a.is_output_controller_action():
-                    controller = True
+                    output_to_controller = True
                 elif a.is_drop_action():
                     drop = True
                 elif a.is_set_vlan_action():
@@ -969,7 +969,7 @@ class OpenDayLightCA(object):
                 elif a.is_eth_dst_action():
                     set_ethernet_dst_address = a.address
 
-            return NffgAction(output = output, controller = controller, drop = drop, 
+            return NffgAction(output = output_to_port, controller = output_to_controller, drop = drop, 
                               set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, pop_vlan = pop_vlan,
                               set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
                               set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
