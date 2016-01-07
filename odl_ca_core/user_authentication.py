@@ -157,7 +157,6 @@ class UserAuthentication(object):
             return self.authenticateUserFromToken(token, user_id)
             
         elif username is not None and password is not None and tenant is not None:
-            print("dd")
             return self.authenticateUserFromCredentials(username, password, tenant)
         
         raise wrongRequest('Wrong authentication request: send user/password/tenant or token/userid')

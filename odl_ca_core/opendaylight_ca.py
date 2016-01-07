@@ -678,7 +678,6 @@ class OpenDayLightCA(object):
                 else:
                     logging.debug("Exception while deleting external flow "+flow_rule_ref.internal_id+" in the switch "+flow_rule_ref.switch_id+". ")
                     raise ex
-                
         GraphSession().deleteFlowruleByID(flow_rule_ref.id)
 
     def __deletePortByID(self, port_id):

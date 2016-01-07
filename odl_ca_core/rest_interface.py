@@ -22,14 +22,29 @@ from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotF
 
 
 
-
 class OpenDayLightCA_REST_Base(object):
     '''
     All the classess "OpenDayLightCA_REST_*" must inherit this class.
     This class contains:
-        - common exception handlers "_except_*"
+        - common json response creator "_json_response"
+        - common exception handlers "__except_*"
     '''
     
+    def _json_response(self, http_status, message=None, status=None, nffg=None, userdata=None):
+        response_json = {}
+        response_json['http_status'] = http_status
+        
+        if message is not None:
+            response_json['message'] = message
+        if status is not None:
+            response_json['status'] = status
+        if nffg is not None:
+            response_json['nf-fg'] = nffg
+        if userdata is not None:
+            response_json['user-data'] = userdata
+
+        return json.dumps(response_json)
+        
     
     '''
     Section: "Common Exception Handlers"
@@ -39,8 +54,8 @@ class OpenDayLightCA_REST_Base(object):
         logging.exception(ex.response.text)
         if ex.response.status_code is not None:
             msg = ex.response.status_code+" - "
-            if ex.message is not None:
-                msg += ex.message
+            if ex.arg[0] is not None:
+                msg += ex.arg[0]
             raise falcon.HTTPInternalServerError('Falcon: Internal Server Error',msg)
         raise ex
     
@@ -49,14 +64,14 @@ class OpenDayLightCA_REST_Base(object):
         if(request.get_header("X-Auth-User") is not None):
             username_string = " from user "+request.get_header("X-Auth-User")
         logging.debug("Unauthorized access attempt"+username_string+".")
-        raise falcon.HTTPUnauthorized("Unauthorized", ex.message)
+        raise falcon.HTTPUnauthorized("Unauthorized", ex)
 
     def _except_standardException(self,ex,title=None):
         logging.exception(ex)
         if title is None:
             title = 'Contact the admin'
         title = title+'. '
-        raise falcon.HTTPInternalServerError(title,ex.message)
+        raise falcon.HTTPInternalServerError(title,ex)
 
 
 
@@ -69,7 +84,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            nffg_dict = json.load(request.stream, 'utf-8')
+            nffg_dict = json.loads(request.stream.read().decode('utf-8'), 'utf-8')
             ValidateNF_FG().validate(nffg_dict)
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
@@ -78,19 +93,18 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             odlCA.NFFG_Validate(nffg)
             odlCA.NFFG_Put(nffg)
     
-            # TODO: write a json response
-            response.body = "Graph "+nffg.id+" succesfully processed."
+            response.body = self._json_response(falcon.HTTP_202, message="Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
             
         # JSON format error
-        except jsonschema.ValidationError as err:
-            logging.exception(err.message)
-            raise falcon.HTTPBadRequest('Bad Request',err.message)
+        except jsonschema.exceptions.ValidationError as err:
+            logging.exception(err.arg[0])
+            raise falcon.HTTPBadRequest('Bad Request',err.arg[0])
         
         # NFFG useless informations
         except NffgUselessInformations as err:
-            logging.exception(err.message)
-            raise falcon.HTTPBadRequest('Bad Request',err.message)
+            logging.exception(err.arg[0])
+            raise falcon.HTTPBadRequest('Bad Request',err.arg[0])
         
         # Wrong request
         except wrongRequest as err:
@@ -125,8 +139,8 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             
             odlCA.NFFG_Delete(nffg_id)
             
-            # TODO: write a json response
-            response.body = "Graph "+nffg_id+" succesfully deleted."
+            response.body = self._json_response(falcon.HTTP_200, message="Graph "+nffg_id+" succesfully deleted.")
+            response.status = falcon.HTTP_200
             
         # JSON format error
         except jsonschema.ValidationError as err:
@@ -158,8 +172,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
             
-            # TODO: write a json response
-            response.body = odlCA.NFFG_Get(nffg_id)
+            response.body = self._json_response(falcon.HTTP_200, nffg=odlCA.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
         # JSON format error
@@ -194,12 +207,8 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
-            
-            # Writting a json response
-            status_json = {}
-            status_json['status'] = odlCA.NFFG_Status(nffg_id)
-            
-            response.body = json.dumps(status_json)
+
+            response.body = self._json_response(falcon.HTTP_200, status=odlCA.NFFG_Status(nffg_id))
             response.status = falcon.HTTP_200
         
         # JSON format error
@@ -232,9 +241,10 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
 class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
     def on_post(self, request, response):
         try :
+            print(request.uri)
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            response.body = userdata.getResponseJSON()
+            response.body = self._json_response(falcon.HTTP_200, userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
         
         # Authorization

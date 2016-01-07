@@ -100,11 +100,6 @@ print("End update")
 
 '''
 
-AUTENTICAZIONE
-    1a) richiesta di auth separata con user/pass/tenant per generare un token;
-    1b) richieste simili successive alla prima non restituiranno risposta, se il token e' gia' stato generato;
-    2a) in tutte le richieste ci deve essere X-Auth-Token.
-
 DOUBLE DECKER
     1) clonare DD da gitlab;
     2) introdurre fix di Stefano;
@@ -114,6 +109,26 @@ DOUBLE DECKER
 FLOW RULES "simili"
     Gestire flow rules con match uguale!
 
+
+TODO
+ 
+[ 1 ]
+- eliminare tabella endpoint_resource (verificare a che serve)
+- cambiare nomi dei campi di tabelle nel db in nomi piu' esplicativi
+- sistemare i *Model in graph_session.py
+- creare un db.sql aggiornato
+
+
+- definire interfaccia DOUBLEDECKER
+- pulire ulteriormente il database
+
+- check TODO: remove
+
+
+[ DOMANDE ]
+- campi tabelle db
+- eccezioni manifest, validator, ecc.
+- quali eccezioni gestire in rest_interface.py ?
 
 '''
 
