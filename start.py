@@ -4,7 +4,7 @@ Created on Dic 7, 2015
 @author: fabiomignini
 @author: giacomoratta
 
-This script test has to be called via gunicorn.
+This script starts the web server and has to be called via gunicorn.
 Write in the shell:
     $ gunicorn -b 0.0.0.0:9000 -t 500 start:app
 
