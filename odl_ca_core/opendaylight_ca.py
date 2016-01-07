@@ -13,6 +13,7 @@ from odl_ca_core.sql.graph_session import GraphSession
 
 from odl_ca_core.config import Configuration
 from odl_ca_core.odl_rest import ODL_Rest
+from requests.exceptions import HTTPError
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
 from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations, NffgInvalidActions
@@ -668,8 +669,16 @@ class OpenDayLightCA(object):
     
     def __deleteFlowRule(self, flow_rule_ref):
         # flow_rule_ref is a FlowRuleModel object
-        if flow_rule_ref.type == 'external': #and flow.status == "complete" 
-            ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule_ref.switch_id, flow_rule_ref.internal_id)
+        if flow_rule_ref.type == 'external': #and flow.status == "complete"
+            try:
+                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule_ref.switch_id, flow_rule_ref.internal_id)
+            except Exception as ex:
+                if type(ex) is HTTPError and ex.response.status_code==404:
+                    logging.debug("External flow "+flow_rule_ref.internal_id+" does not exist in the switch "+flow_rule_ref.switch_id+".")
+                else:
+                    logging.debug("Exception while deleting external flow "+flow_rule_ref.internal_id+" in the switch "+flow_rule_ref.switch_id+". ")
+                    raise ex
+                
         GraphSession().deleteFlowruleByID(flow_rule_ref.id)
 
     def __deletePortByID(self, port_id):
