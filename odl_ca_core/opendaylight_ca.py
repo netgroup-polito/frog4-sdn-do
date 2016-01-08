@@ -373,13 +373,14 @@ class OpenDayLightCA(object):
         if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
             raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same port in (ingress endpoint "+in_endpoint.id+")")
         
-        single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
         out_endpoint = None
         
-        # Add "Drop" flow rules only, and return.
-        # If a flow rule has a drop action, we don't care other actions!
+        # Search for a "drop" action.
+        # Install immediately the flow rule, and return.
+        # If a flow rule has a drop action, we don't care of other actions!
         for a in flowrule.actions:
             if a.drop is True:
+                single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
                 single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
                 self.__Push_externalFlowrule(single_efr)
                 return
@@ -399,23 +400,8 @@ class OpenDayLightCA(object):
             if in_endpoint.interface == out_endpoint.interface:
                 raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
             
+            # 'Single-switch' path
             self.__ODL_LinkEndpointsByVlanID([in_endpoint.switch_id], in_endpoint, out_endpoint, flowrule)
-            return
-        
-            # Search for non-output actions
-            for a in flowrule.actions:
-                if a.output is None:
-                    no_output = Action(a)
-                    single_efr.append_action(no_output)
-                    if a.push_vlan is not None:
-                        no_output = Action()
-                        no_output.setSwapVlanAction(a.push_vlan)
-                        single_efr.append_action(no_output)
-                    continue
-            
-            # Install a flow between two ports of the switch
-            single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
-            self.__Push_externalFlowrule(single_efr)
             return
 
         # [ 2 ] Endpoints are on different switches...search for a path!
