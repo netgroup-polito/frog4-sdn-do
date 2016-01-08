@@ -168,26 +168,41 @@ class OpenDayLightCA(object):
         could contain useless objects and fields for this CA.
         If this happens, we have to raise exceptions to stop the request processing.  
         '''
+        
+        def raise_useless_info(msg):
+            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of informations.")
+            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of informations.")
+        
+        def raise_invalid_actions(msg):
+            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
+            raise NffgInvalidActions("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
+        
+        
         # VNFs inspections
         if len(nffg.vnfs)>0:
-            msg = "NFFG Validation: presence of 'VNFs'. This CA does not process this information."
-            logging.debug(msg)
-            raise NffgUselessInformations(msg)
+            raise_useless_info("presence of 'VNFs'")
         
         # END POINTs inspections
         for ep in nffg.end_points:
+            if(ep.type is not None and ep.type != "interface"):
+                raise_useless_info("'end-points.type' must be 'interface' not '"+ep.type+"'")
+            if ep.node_id is not None:
+                raise_useless_info("presence of 'node-id'")
             if(ep.remote_endpoint_id is not None):
-                msg = "NFFG Validation: presence of 'end-points.remote_endpoint_id'. This CA does not process this information."
-                logging.debug(msg)
-                raise NffgUselessInformations(msg)
+                raise_useless_info("presence of 'end-points.remote_endpoint_id'")
             if(ep.remote_ip is not None):
-                msg = "NFFG Validation: presence of 'end-points.remote-ip'. This CA does not process this information."
-                logging.debug(msg)
-                raise NffgUselessInformations(msg)
-            if(ep.type != "interface"):
-                msg = "NFFG Validation: 'end-points.type' must be 'interface'."
-                logging.debug(msg)
-                raise NffgUselessInformations(msg)
+                raise_useless_info("presence of 'end-points.remote-ip'")
+            if(ep.local_ip is not None):
+                raise_useless_info("presence of 'end-points.local-ip'")
+            if ep.gre_key is not None:
+                raise_useless_info("presence of 'gre-key'")
+            if ep.ttl is not None:
+                raise_useless_info("presence of 'ttl'")
+            if ep.prepare_connection_to_remote_endpoint_id is not None:
+                raise_useless_info("presence of connection to remote endpoint")
+            if ep.prepare_connection_to_remote_endpoint_ids is not None and len(ep.prepare_connection_to_remote_endpoint_ids)>0:
+                raise_useless_info("presence of connection to remote endpoints")
+                
 
         # FLOW RULEs inspection
         for flowrule in nffg.flow_rules:
@@ -199,9 +214,7 @@ class OpenDayLightCA(object):
             for a in flowrule.actions:
                 if a.output is not None:
                     if output_action_counter > 0:
-                        msg = "NFFG Validation: not allowed 'multiple output' (flow rule "+flowrule.id+")."
-                        logging.debug(msg)
-                        raise NffgInvalidActions(msg)
+                        raise_invalid_actions("not allowed 'multiple output port' (flow rule "+flowrule.id+")")
                     output_action_counter = output_action_counter+1
 
                 
@@ -315,8 +328,6 @@ class OpenDayLightCA(object):
         
         # Create and push the flowrules
         for flowrule in profile_graph.flowrules.values():
-            
-            #TODO: check priority
 
             # Flow rule checks
             if flowrule.status !='new':
@@ -327,10 +338,8 @@ class OpenDayLightCA(object):
                 continue
             
             # Endpoint checks
-            tmp1 = flowrule.match.port_in.split(':')
-            port1_type = tmp1[0]
-            port1_id = tmp1[1]
-            if port1_type != 'endpoint':
+            port1_id = self.__getEndpointIdFromString(flowrule.match.port_in)
+            if port1_id is None:
                 continue
             endp1 = profile_graph.endpoints[port1_id]
             if endp1.type != 'interface':
@@ -352,7 +361,7 @@ class OpenDayLightCA(object):
             2) endpoints are on different switches, so search for a path.
         '''
         
-        # TODO: check "vlan in" match on in_endpoint
+        # Check "vlan in" match on in_endpoint
         if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
             raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same port in (ingress endpoint "+in_endpoint.id+")")
         
@@ -720,13 +729,10 @@ class OpenDayLightCA(object):
         '''
         
         '''
-        TODO: check if a "similar" flow rule already exists in the specified switch;
-            if it exists, raise an exception!
+        TODO: check if exists a flowrule with the same match criteria in the same switch
+            (very rare event); if it exists, raise an exception!
             Similar flow rules are replaced by ovs switch, so one of them disappear!
             def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action).
-        
-        TODO: check if the flow name already exists in the database ("internal_id");
-            if it exists change the name automatically.
         '''
         
         # If the flow name already exists, get new one

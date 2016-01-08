@@ -236,11 +236,9 @@ class GraphSession(object):
 
     def getFreeIngressVlanID(self, port_in, switch_id):
         # return a free vlan_in [2,4094] for port_in@switch_id
-        
         vlan_ids = self.getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
         
         # Search an ingress vlan id suitable for the switch
-        # TODO: improve the search algorithm
         if len(vlan_ids)>0:
             prev_vlan_in = 1
             for q in vlan_ids:
