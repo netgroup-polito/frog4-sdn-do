@@ -125,8 +125,11 @@ class MatchModel(Base):
 
 class ActionModel(Base):
     __tablename__ = 'action'
-    attributes = ['id', 'flow_rule_id', 'output_type', 'output_to_port', 'output_to_controller', '_drop', 'set_vlan_id','set_vlan_priority','pop_vlan', 'set_ethernet_src_address',
-                  'set_ethernet_dst_address','set_ip_src_address','set_ip_dst_address', 'set_ip_tos','set_l4_src_port','set_l4_dst_port', 'output_to_queue']    
+    attributes = ['id', 'flow_rule_id', 'output_type', 'output_to_port', 'output_to_controller', '_drop', 
+                  'set_vlan_id','set_vlan_priority', 'push_vlan', 'pop_vlan', 
+                  'set_ethernet_src_address', 'set_ethernet_dst_address',
+                  'set_ip_src_address','set_ip_dst_address', 'set_ip_tos',
+                  'set_l4_src_port','set_l4_dst_port', 'output_to_queue']    
     id = Column(Integer, primary_key=True)
     flow_rule_id = Column(Integer)      # = FlowRuleModel.id
     output_type = Column(VARCHAR(64))   # = ( port | endpoint )
@@ -137,6 +140,7 @@ class ActionModel(Base):
     _drop = Column(Boolean)
     set_vlan_id = Column(VARCHAR(64))
     set_vlan_priority = Column(VARCHAR(64))
+    push_vlan = Column(VARCHAR(64))
     pop_vlan = Column(Boolean)
     set_ethernet_src_address = Column(VARCHAR(64))
     set_ethernet_dst_address = Column(VARCHAR(64))
@@ -238,24 +242,29 @@ class GraphSession(object):
         # return a free vlan_in [2,4094] for port_in@switch_id
         vlan_ids = self.getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
         
+        # Return the smaller vlan id
+        if len(vlan_ids)<=0:
+            return 2
+        
         # Search an ingress vlan id suitable for the switch
-        if len(vlan_ids)>0:
-            prev_vlan_in = 1
-            for q in vlan_ids:
-                if(q.vlan_in is None):
-                    continue
-                this_vlan_in = int(q.vlan_in)
-                
-                if (this_vlan_in-prev_vlan_in)<2 :
-                    prev_vlan_in = this_vlan_in
-                    continue
-                break
+        prev_vlan_in = 1
+        for q in vlan_ids:
+            if(q.vlan_in is None):
+                continue
+            this_vlan_in = int(q.vlan_in)
             
-            new_vlan_in = prev_vlan_in+1
-            if new_vlan_in<=1 or new_vlan_in>=4095:
-                new_vlan_in=None
-                logging.debug("Invalid ingress vlan ID: "+new_vlan_in+" [port:"+port_in+" on "+switch_id+"]")                   
-        return new_vlan_in
+            if (this_vlan_in-prev_vlan_in)<2 :
+                prev_vlan_in = this_vlan_in
+                continue
+            break
+        
+        # Latest checks
+        if prev_vlan_in<=1 or prev_vlan_in>=4094:
+            logging.debug("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
+            return
+        
+        # Valid VLAN ID
+        return (prev_vlan_in+1)
     
     
     def getNewUnivocalSessionID(self):
@@ -477,7 +486,7 @@ class GraphSession(object):
             action_ref = ActionModel(id=action_db_id, flow_rule_id=flow_rule_db_id,
                                      output_type=output_type, output_to_port=output_to_port,
                                      output_to_controller=action.controller, _drop=action.drop, set_vlan_id=action.set_vlan_id,
-                                     set_vlan_priority=action.set_vlan_priority, pop_vlan=action.pop_vlan,
+                                     set_vlan_priority=action.set_vlan_priority, push_vlan=action.push_vlan, pop_vlan=action.pop_vlan,
                                      set_ethernet_src_address=action.set_ethernet_src_address, 
                                      set_ethernet_dst_address=action.set_ethernet_dst_address,
                                      set_ip_src_address=action.set_ip_src_address, set_ip_dst_address=action.set_ip_dst_address,
@@ -725,12 +734,13 @@ class GraphSession(object):
                 output_to_port = None
                 # Retrieve endpoint data
                 if action_ref.output_type == 'endpoint':
-                    end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output).first()
+                    end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output_to_port).first()
                     output_to_port = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
                 
                 # Add action to this flow rule
-                action = Action(output=output_to_port, controller=action_ref.controller, drop=action_ref._drop, set_vlan_id=action_ref.set_vlan_id,
-                                set_vlan_priority=action_ref.set_vlan_priority, pop_vlan=action_ref.pop_vlan, 
+                action = Action(output=output_to_port, controller=action_ref.output_to_controller, drop=action_ref._drop, 
+                                set_vlan_id=action_ref.set_vlan_id, set_vlan_priority=action_ref.set_vlan_priority, 
+                                push_vlan=action_ref.push_vlan, pop_vlan=action_ref.pop_vlan, 
                                 set_ethernet_src_address=action_ref.set_ethernet_src_address, 
                                 set_ethernet_dst_address=action_ref.set_ethernet_dst_address, 
                                 set_ip_src_address=action_ref.set_ip_src_address, set_ip_dst_address=action_ref.set_ip_dst_address, 

@@ -5,12 +5,21 @@
     
     "end-points": [
       {
-        "id": "End21",
+        "id": "End211",
         "name": "INGRESS",
         "type": "interface",
         "interface": {
           "switch-id": "openflow:261693184597067",
-          "interface": "1"
+          "interface": "111"
+        }
+      },
+      {
+        "id": "End212",
+        "name": "INGRESS",
+        "type": "interface",
+        "interface": {
+          "switch-id": "openflow:261693184597067",
+          "interface": "222"
         }
       },      
       {
@@ -41,11 +50,15 @@
           "id": "8771",
           "priority": 101,
           "match": {
-            "port_in": "endpoint:End21"
+            "port_in": "endpoint:End211"
           },
           "actions": [
           	{
-          		"output_to_port": "endpoint:End41"
+          		"output_to_port": "endpoint:End212"
+          	},
+
+			{
+          		"push_vlan": "43"
           	}
           ]
         },
@@ -54,13 +67,15 @@
           "id": "8772",
           "priority": 101,
           "match": {
-            "port_in": "endpoint:End31",
-            "vlan_id": "677"
+            "port_in": "endpoint:End211",
+            "vlan_id": "876"
           },
           "actions": [
           	{
-            	"output_to_port": "endpoint:End21"
+          		"output_to_port": "endpoint:End212"
           	}
+
+			
           ]
         }
         

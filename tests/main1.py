@@ -66,7 +66,7 @@ if deldel:
     #quit()
     
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1a.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_pushvlan1.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

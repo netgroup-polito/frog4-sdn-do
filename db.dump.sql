@@ -7,6 +7,7 @@ CREATE TABLE "action" (
   "_drop" tinyint(1) DEFAULT NULL,
   "set_vlan_id" varchar(64) DEFAULT NULL,
   "set_vlan_priority" varchar(64) DEFAULT NULL,
+  "push_vlan" varchar(64) DEFAULT NULL,
   "pop_vlan" tinyint(1) DEFAULT NULL,
   "set_ethernet_src_address" varchar(64) DEFAULT NULL,
   "set_ethernet_dst_address" varchar(64) DEFAULT NULL,

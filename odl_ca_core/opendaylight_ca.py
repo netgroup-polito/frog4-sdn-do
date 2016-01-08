@@ -212,6 +212,10 @@ class OpenDayLightCA(object):
             # in the nffg.json, with a different priorities!
             output_action_counter=0
             for a in flowrule.actions:
+                if a.controller is not None and a.controller==True:
+                    raise_useless_info("presence of 'output_to_controller'")
+                if a.output_to_queue is not None:
+                    raise_useless_info("presence of 'output_to_queue'")
                 if a.output is not None:
                     if output_action_counter > 0:
                         raise_invalid_actions("not allowed 'multiple output port' (flow rule "+flowrule.id+")")
@@ -353,6 +357,10 @@ class OpenDayLightCA(object):
 
     def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
         '''
+        in_endpoint = nffg.EndPoint
+        flowrule = nffg.FlowRule
+        profile_graph = resources.ProfileGraph
+        
         Process a flow rule written in the section "big switch" of a nffg json.
         Add a vlan match/mod/strip to every flowrule in order to distinguish it.
         After the verification that output is an endpoint, this function manages
@@ -367,7 +375,6 @@ class OpenDayLightCA(object):
         
         single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
         out_endpoint = None
-        nodes_path = None
         
         # Add "Drop" flow rules only, and return.
         # If a flow rule has a drop action, we don't care other actions!
@@ -375,60 +382,55 @@ class OpenDayLightCA(object):
             if a.drop is True:
                 single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
                 self.__Push_externalFlowrule(single_efr)
-                return  
+                return
         
-        # Split the action handling in output and non-output.
+        # Search for the output endpoint
         for a in flowrule.actions:
+            if a.output is not None:
+                port2_id = self.__getEndpointIdFromString(a.output) # Is the 'output' destination an endpoint?
+                if port2_id is not None:
+                    out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
+                    break
+
+        # [ 1 ] Endpoints are on the same switch
+        if in_endpoint.switch_id == out_endpoint.switch_id:
             
-            # If this action is not an output action,
-            # we just append it to the final actions list 'actions1'.
-            if a.output is None:
-                no_output = Action(a)
-                single_efr.append_action(no_output)
-                continue
+            # Error: endpoints are equal!
+            if in_endpoint.interface == out_endpoint.interface:
+                raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
             
-            # If this action is an output action (a is not None),
-            # we check that the output is an endpoint and manage the main cases.
-
-            # Is the 'output' destination an endpoint?
-            port2_id = self.__getEndpointIdFromString(a.output)
-            if port2_id is None:
-                continue
-            out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
-
-
-            # [ 1 ] Endpoints are on the same switch
-            if in_endpoint.switch_id == out_endpoint.switch_id:
-                
-                # Error: endpoints are equal!
-                if in_endpoint.interface == out_endpoint.interface:
-                    raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
-                
-                # Install a flow between two ports of the switch
-                single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
-                continue
-
-
-            # [ 2 ] Endpoints are on different switches...search for a path!
-            nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
-            if(nodes_path is not None):
-                logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
-                if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
-                    nodes_path = None
-            else:
-                logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
-        
-        # <-- End-for on "flowrule.actions" array 
-        
-        # There is a path between the two endpoint
-        if nodes_path is not None:
-            self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            self.__ODL_LinkEndpointsByVlanID([in_endpoint.switch_id], in_endpoint, out_endpoint, flowrule)
             return
         
-        # Push the single_efr, if it is ready                
-        if single_efr.isReady():
+            # Search for non-output actions
+            for a in flowrule.actions:
+                if a.output is None:
+                    no_output = Action(a)
+                    single_efr.append_action(no_output)
+                    if a.push_vlan is not None:
+                        no_output = Action()
+                        no_output.setSwapVlanAction(a.push_vlan)
+                        single_efr.append_action(no_output)
+                    continue
+            
+            # Install a flow between two ports of the switch
+            single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , out_endpoint.interface, "1")
             self.__Push_externalFlowrule(single_efr)
             return
+
+        # [ 2 ] Endpoints are on different switches...search for a path!
+        nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
+        if(nodes_path is None):
+            logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
+            return
+        
+        logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
+        if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
+            logging.debug("Invalid link between the endpoints")
+            return
+        
+        self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            
 
 
 
@@ -467,30 +469,48 @@ class OpenDayLightCA(object):
         vlan_out = None
         original_vlan_out = None
         vlan_in = None
+        pop_vlan_flag = False
         
         # Initialize vlan_id and save it
         if flowrule.match.vlan_id is not None:
             vlan_in = flowrule.match.vlan_id
             original_vlan_out = vlan_in
         
-        # Clean actions and search for an egress vlan id
+        # Clean actions, search for an egress vlan id and pop vlan action
         for a in flowrule.actions:
             
-            # Store the VLAN ID and remove the action
+            # [PUSH VLAN (ID)] Store the VLAN ID and remove the action
+            if a.push_vlan is not None:
+                vlan_out = a.push_vlan
+                original_vlan_out = a.push_vlan
+                continue
+            
+            # [SET VLAN ID] Store the VLAN ID and remove the action
             if a.set_vlan_id is not None:
                 vlan_out = a.set_vlan_id
                 original_vlan_out = a.set_vlan_id
                 continue
             
+            # [POP VLAN] Set the flag and remove the action
+            if a.pop_vlan is not None and a.pop_vlan==True:
+                pop_vlan_flag = True
+                continue
+            
             # Filter non OUTPUT actions 
-            if a is None:
+            if a.output is None:
                 no_output = Action(a)
                 base_actions.append(no_output)
         
-        # Detect if it is a mod/strip flow
-        is_mod_strip_flow = (vlan_in is None)
+        ''' Remember to pop vlan header by the last switch.
+            If vlan out is not None, a pushvlan/setvlan action is present, and popvlan action is incompatible.
+            Otherwise, if vlan in is None, a vlan header will be pushed by the first switch,
+            so it will have to be removed by the last switch.
+            This flag is also set to True when a "pop-vlan" action and a vlan match are present. 
+        '''
+        pop_vlan_flag = (vlan_out is None) and (pop_vlan_flag or vlan_in is None)
         
-        # Traverse the path and create the flow for each switch
+        
+        # [PATH] Traverse the path and create the flow for each switch
         for i in range(0, len(path)):
             hop = path[i]
             efr.set_flow_name(i)
@@ -498,7 +518,7 @@ class OpenDayLightCA(object):
             efr.set_actions(list(base_actions))
             
             # Switch position
-            pos = 0 # (-1:first, 0:middle, 1:last)
+            pos = 0 # (-2: 'single-switch' path, -1:first, 0:middle, 1:last)
             
             # Next switch and next ingress port
             next_switch_ID = None
@@ -513,6 +533,9 @@ class OpenDayLightCA(object):
                 efr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
+                if port_out is None and len(path)==1: #'single-switch' path
+                    pos = -2
+                    port_out = ep2.interface
             
             # Last switch
             elif i==len(path)-1:
@@ -521,7 +544,7 @@ class OpenDayLightCA(object):
                 port_in = self.netgraph.switchPortIn(hop, path[i-1])
                 port_out = ep2.interface
                 # Force the vlan out to be equal to the original
-                if is_mod_strip_flow == False and original_vlan_out is not None:
+                if pop_vlan_flag == False and original_vlan_out is not None:
                     vlan_out = original_vlan_out 
             
             # Middle way switch
@@ -536,6 +559,12 @@ class OpenDayLightCA(object):
             # Match
             if vlan_in is not None:
                 base_match.setVlanMatch(vlan_in)
+                
+                # Remove VLAN header
+                if pop_vlan_flag and ( pos==1 or pos==-2): #1=last switch; -2='single-switch' path
+                    action_stripvlan = Action()
+                    action_stripvlan.setPopVlanAction()
+                    efr.append_action(action_stripvlan)
 
             # Add/mod VLAN header
             if set_vlan_out is not None:
@@ -550,12 +579,6 @@ class OpenDayLightCA(object):
                 action_setvlan = Action()
                 action_setvlan.setSwapVlanAction(set_vlan_out)
                 efr.append_action(action_setvlan)
-            
-            # Remove VLAN header
-            elif is_mod_strip_flow and pos==1:
-                action_stripvlan = Action()
-                action_stripvlan.setPopVlanAction()
-                efr.append_action(action_stripvlan)
             
             # Set next ingress vlan
             vlan_in = vlan_out
@@ -591,12 +614,12 @@ class OpenDayLightCA(object):
         # Rectify vlan ids
         if vlan_in is not None:
             vlan_in = int(vlan_in)
+            if vlan_in<=0 or vlan_in>=4095:
+                vlan_in = None
         if vlan_out is not None:
             vlan_out = int(vlan_out)
-        if vlan_out is not None and ( vlan_out<=0 or vlan_out>=4095 ):
-            vlan_out = None
-        if vlan_in is not None and ( vlan_in<=0 or vlan_in>=4095 ):
-            vlan_in = None
+            if vlan_out<=0 or vlan_out>=4095:
+                vlan_out = None
             
         # Detect if a mod_vlan action is needed
         set_vlan_out = None
@@ -944,6 +967,7 @@ class OpenDayLightCA(object):
             output_to_controller = False
             drop = False
             set_vlan_id = None
+            push_vlan = None
             pop_vlan = False
             set_ethernet_src_address = None
             set_ethernet_dst_address = None
@@ -968,6 +992,12 @@ class OpenDayLightCA(object):
                     drop = True
                 elif a.is_set_vlan_action():
                     set_vlan_id = a.vlan_id
+                    if push_vlan is not None:
+                        push_vlan = set_vlan_id
+                elif a.is_push_vlan_action():
+                    push_vlan = -1
+                    if set_vlan_id is not None:
+                        push_vlan = set_vlan_id
                 elif a.is_pop_vlan_action():
                     pop_vlan = True
                 elif a.is_eth_src_action():
@@ -976,7 +1006,7 @@ class OpenDayLightCA(object):
                     set_ethernet_dst_address = a.address
 
             return NffgAction(output = output_to_port, controller = output_to_controller, drop = drop, 
-                              set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, pop_vlan = pop_vlan,
+                              set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, push_vlan = push_vlan, pop_vlan = pop_vlan,
                               set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
                               set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
                               set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
