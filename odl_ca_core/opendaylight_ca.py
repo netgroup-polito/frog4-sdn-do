@@ -16,7 +16,7 @@ from odl_ca_core.odl_rest import ODL_Rest
 from requests.exceptions import HTTPError
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
-from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations, NffgInvalidActions
+from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 
 
 class OpenDayLightCA(object):
@@ -67,13 +67,14 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
-            
+            return self.__session_id
+        
         except Exception as ex:
             logging.error(ex)
             self.__NFFG_ODL_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex                           
-        return self.__session_id
+        
 
     
     
@@ -170,12 +171,12 @@ class OpenDayLightCA(object):
         '''
         
         def raise_useless_info(msg):
-            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of informations.")
-            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of informations.")
+            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of data.")
+            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of data.")
         
         def raise_invalid_actions(msg):
             logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
-            raise NffgInvalidActions("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
+            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
         
         
         # VNFs inspections
@@ -275,12 +276,13 @@ class OpenDayLightCA(object):
             
             # Set flowrule as "new" when associated endpoint has been updated
             elif flowrule.status == 'already_deployed':
+                print("\n > "+flowrule.match.port_in+"\n")
                 ep_in = self.__getEndpointIdFromString(flowrule.match.port_in)
                 if ep_in is not None and ep_in in updated_endpoints:
                     flowrule.status = 'new'
                 else:
                     for a in  flowrule.actions:
-                        ep_out = self.__getEndpointIdFromString(a)
+                        ep_out = self.__getEndpointIdFromString(a.output)
                         if ep_out is not None and ep_out in updated_endpoints:
                             flowrule.status = 'new'
 

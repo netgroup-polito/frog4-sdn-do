@@ -6,7 +6,8 @@ Created on Oct 1, 2014
 '''
 
 import logging, json, jsonschema, requests, falcon
-
+from falcon.http_error import HTTPError as falconHTTPError
+import falcon.status_codes  as falconStatusCodes
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
@@ -16,9 +17,11 @@ from odl_ca_core.opendaylight_ca import OpenDayLightCA
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
 from nffg_library.nffg import NF_FG
+from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
-from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations
+from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
+    UserNotFound, TenantNotFound
 
 
 
@@ -50,38 +53,62 @@ class OpenDayLightCA_REST_Base(object):
     Section: "Common Exception Handlers"
     '''
     
-    def _except_requests_HTTPError(self,ex):
-        logging.exception(ex.response.text)
-        if ex.response.status_code is not None:
-            msg = ex.response.status_code+" - "
-            if ex.arg[0] is not None:
-                msg += ex.arg[0]
-            raise falcon.HTTPInternalServerError('Falcon: Internal Server Error',msg)
-        raise ex
+    def __get_exception_message(self,ex):
+        if hasattr(ex, "arg") and ex.arg[0] is not None:
+            return ex.arg[0]
+        elif hasattr(ex, "message") and ex.message is not None:
+            return ex.message
+        else:
+            return "Unknown exception message"
+        
+    
+    def _except_BadRequest(self, prefix, ex):
+        message = self.__get_exception_message(ex)
+        logging.error(prefix+": "+message)
+        #raise falcon.HTTPBadRequest('Bad Request',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_400,'Bad Request',message)
+    
+    def _except_NotAcceptable(self, prefix, ex):
+        message = self.__get_exception_message(ex)
+        logging.error(prefix+": "+message)
+        #raise falcon.HTTPBadRequest('Bad Request',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_406,'Not Acceptable',message)
+    
+    def _except_NotFound(self, prefix, ex):
+        message = self.__get_exception_message(ex)
+        logging.error(prefix+": "+message)
+        #raise falcon.HTTPBadRequest('Bad Request',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_404,'Not Found',message)
     
     def _except_unauthorizedRequest(self,ex,request):
         username_string = ""
         if(request.get_header("X-Auth-User") is not None):
             username_string = " from user "+request.get_header("X-Auth-User")
         logging.debug("Unauthorized access attempt"+username_string+".")
-        raise falcon.HTTPUnauthorized("Unauthorized", ex)
+        message = self.__get_exception_message(ex)
+        raise falcon.HTTPUnauthorized("Unauthorized", message)
+    
+    def _except_requests_HTTPError(self,ex):
+        logging.error(ex.response.text)
+        if ex.response.status_code is not None:
+            msg = ex.response.status_code+" - "
+            msg += self.__get_exception_message(ex)
+            raise falcon.HTTPInternalServerError('Falcon: Internal Server Error',msg)
+        raise ex
 
-    def _except_standardException(self,ex,title=None):
-        logging.exception(ex)
-        if title is None:
-            title = 'Contact the admin'
-        title = title+'. '
-        raise falcon.HTTPInternalServerError(title,ex)
+    def _except_standardException(self,ex):
+        message = self.__get_exception_message(ex)
+        logging.exception(ex) #unique case which uses logging.exception
+        raise falcon.HTTPInternalServerError('Unexpected Error - Contact the admin',message)
 
 
 
 
  
-class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
+class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
     
     def on_put(self, request, response):
-        try:
-            
+        try:            
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
             nffg_dict = json.loads(request.stream.read().decode('utf-8'), 'utf-8')
@@ -95,33 +122,32 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
     
             response.body = self._json_response(falcon.HTTP_202, message="Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
-            
-        # JSON format error
-        except jsonschema.exceptions.ValidationError as err:
-            logging.exception(err.arg[0])
-            raise falcon.HTTPBadRequest('Bad Request',err.arg[0])
         
-        # NFFG useless informations
-        except NffgUselessInformations as err:
-            logging.exception(err.arg[0])
-            raise falcon.HTTPBadRequest('Bad Request',err.arg[0])
-        
-        # Wrong request
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            logging.exception(err)
-            raise falcon.HTTPBadRequest("Bad Request", err.description)
+            self._except_BadRequest("wrongRequest",err)
         
-        # Authorization
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
-            
+        
+        # NFFG validation - raised by ValidateNF_FG().validate
+        except NF_FGValidationError as err:
+            self._except_NotAcceptable("NF_FGValidationError",err)
+        
+        # Custom NFFG sub-validation - raised by OpenDayLightCA().NFFG_Validate
+        except NffgUselessInformations as err:
+            self._except_NotAcceptable("NffgUselessInformations",err)
+        
         # No Results
-        except NoResultFound:
-            logging.exception('Result Not found.')
-            raise falcon.HTTPNotFound()
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
         except sessionNotFound as err:
-            logging.exception(err)
-            raise falcon.HTTPNotFound()
+            self._except_NotFound("sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
@@ -130,6 +156,10 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             self._except_standardException(ex)
     
     
+
+
+
+class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
     
     def on_delete(self, request, response, nffg_id):
         try :
@@ -141,23 +171,24 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             
             response.body = self._json_response(falcon.HTTP_200, message="Graph "+nffg_id+" succesfully deleted.")
             response.status = falcon.HTTP_200
-            
-        # JSON format error
-        except jsonschema.ValidationError as err:
-            logging.exception(err)
-            raise falcon.HTTPBadRequest('Bad Request',err)
+
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
         
-        # Authorization
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
-            
+        
         # No Results
-        except NoResultFound:
-            logging.exception('Result Not found.')
-            raise falcon.HTTPNotFound()
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
         except sessionNotFound as err:
-            logging.exception(err)
-            raise falcon.HTTPNotFound()
+            self._except_NotFound("sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
@@ -175,22 +206,23 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
             response.body = self._json_response(falcon.HTTP_200, nffg=odlCA.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
-        # JSON format error
-        except jsonschema.ValidationError as err:
-            logging.exception(err)
-            raise falcon.HTTPBadRequest('Bad Request',err)
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
         
-        # Authorization
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
-            
+        
         # No Results
-        except NoResultFound:
-            logging.exception('Result Not found.')
-            raise falcon.HTTPNotFound()
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
         except sessionNotFound as err:
-            logging.exception(err)
-            raise falcon.HTTPNotFound()
+            self._except_NotFound("sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
@@ -202,7 +234,7 @@ class OpenDayLightCA_REST_NFFG(OpenDayLightCA_REST_Base):
 
 
 
-class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
+class OpenDayLightCA_REST_NFFG_Status(OpenDayLightCA_REST_Base):
     def on_get(self, request, response, nffg_id):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
@@ -211,22 +243,23 @@ class OpenDayLightCA_REST_NFFGStatus(OpenDayLightCA_REST_Base):
             response.body = self._json_response(falcon.HTTP_200, status=odlCA.NFFG_Status(nffg_id))
             response.status = falcon.HTTP_200
         
-        # JSON format error
-        except jsonschema.ValidationError as err:
-            logging.exception(err)
-            raise falcon.HTTPBadRequest('Bad Request',err)
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
         
-        # Authorization
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
-            
+        
         # No Results
-        except NoResultFound:
-            logging.exception('Result Not found.')
-            raise falcon.HTTPNotFound()
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
         except sessionNotFound as err:
-            logging.exception(err)
-            raise falcon.HTTPNotFound()
+            self._except_NotFound("sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
@@ -247,19 +280,23 @@ class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
             response.body = self._json_response(falcon.HTTP_200, userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
         
-        # Authorization
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
-        except wrongRequest as err:
-            self._except_standardException(err,"Wrong authentication request")
         
         # No Results
-        except NoResultFound:
-            logging.exception('Result Not found.')
-            raise falcon.HTTPNotFound()
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
         except sessionNotFound as err:
-            logging.exception(err)
-            raise falcon.HTTPNotFound()
+            self._except_NotFound("sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
