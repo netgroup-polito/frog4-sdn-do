@@ -276,7 +276,6 @@ class OpenDayLightCA(object):
             
             # Set flowrule as "new" when associated endpoint has been updated
             elif flowrule.status == 'already_deployed':
-                print("\n > "+flowrule.match.port_in+"\n")
                 ep_in = self.__getEndpointIdFromString(flowrule.match.port_in)
                 if ep_in is not None and ep_in in updated_endpoints:
                     flowrule.status = 'new'
