@@ -36,19 +36,6 @@
     
     "big-switch": {
       "flow-rules": [
-      
-        {
-          "id": "8771",
-          "priority": 101,
-          "match": {
-            "port_in": "endpoint:End21"
-          },
-          "actions": [
-          	{
-          		"output_to_port": "endpoint:End41"
-          	}
-          ]
-        },
         
         {
           "id": "8772",

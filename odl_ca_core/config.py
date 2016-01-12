@@ -12,13 +12,9 @@ from odl_ca_core.exception import WrongConfigurationFile
 class Configuration(object):
     
     _instance = None
-    _AUTH_SERVER = None
-    
     def __new__(cls, *args, **kwargs):
-        
         if not cls._instance:
-            cls._instance = super(Configuration, cls).__new__(
-                                cls, *args, **kwargs)
+            cls._instance = super(Configuration, cls).__new__(cls, *args, **kwargs)
         return cls._instance 
     
     def __init__(self):
@@ -51,6 +47,11 @@ class Configuration(object):
             self.__ODL_PASSWORD = config.get('opendaylight','odl_password')
             self.__ODL_ENDPOINT = config.get('opendaylight','odl_endpoint')
             self.__ODL_VERSION = config.get('opendaylight','odl_version')
+            
+            # [messaging]
+            self.__DD_BROKER_ADDRESS = config.get('messaging','dd_broker_address')
+            self.__DD_TENANT_NAME = config.get('messaging','dd_tenant_name')
+            self.__DD_TENANT_KEY = config.get('messaging','dd_tenant_key')
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -123,6 +124,18 @@ class Configuration(object):
     @property
     def ODL_VERSION(self):
         return self.__ODL_VERSION
+    
+    @property
+    def DD_BROKER_ADDRESS(self):
+        return self.__DD_BROKER_ADDRESS
+    
+    @property
+    def DD_TENANT_NAME(self):
+        return self.__DD_TENANT_NAME
+    
+    @property
+    def DD_TENANT_KEY(self):
+        return self.__DD_TENANT_KEY
     
     
     

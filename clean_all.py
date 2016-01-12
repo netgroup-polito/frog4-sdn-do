@@ -10,6 +10,7 @@ from odl_ca_core.odl_rest import ODL_Rest
 from odl_ca_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 
+
 conf = Configuration()
 conf.log_configuration()
 

@@ -37,7 +37,7 @@ conf.log_configuration()
 # Test connection to database
 try_session()
 
-
+conf = Configuration()
 
 # START OPENDAYLIGHT CONTROL ADAPTER
 logging.debug("OpenDayLight Control Adapter Starting...")

@@ -56,7 +56,7 @@
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31",
-            "vlan_id": "677"
+            "vlan_id": "177"
           },
           "actions": [
           	{

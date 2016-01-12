@@ -16,6 +16,7 @@ from odl_ca_core.odl_rest import ODL_Rest
 from requests.exceptions import HTTPError
 from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_ca_core.netgraph import NetGraph
+from odl_ca_core.messaging import Messaging
 from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 
 
@@ -67,6 +68,11 @@ class OpenDayLightCA(object):
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
+            
+            #TODO:update domain configuration .json
+            
+            Messaging().PublishDomainConfig()
+            
             return self.__session_id
         
         except Exception as ex:
@@ -112,6 +118,10 @@ class OpenDayLightCA(object):
             
             GraphSession().updateStatus(self.__session_id, 'complete')
             
+            #TODO:update domain configuration .json
+            
+            Messaging().PublishDomainConfig()
+            
         except Exception as ex:
             logging.error("Update NF-FG: ",ex)
             self.__NFFG_ODL_deleteGraph()
@@ -133,6 +143,10 @@ class OpenDayLightCA(object):
             logging.debug("Delete NF-FG: [session="+str(self.__session_id)+"] we are going to delete: "+instantiated_nffg.getJSON())
             self.__NFFG_ODL_deleteGraph()
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
+            
+            #TODO:update domain configuration .json
+            
+            Messaging().PublishDomainConfig()
             
         except Exception as ex:
             logging.error("Delete NF-FG: ",ex)
