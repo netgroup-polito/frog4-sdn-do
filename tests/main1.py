@@ -52,7 +52,7 @@ odlCA = OpenDayLightCA(user)
 
 # Delete
 deldel=False
-deldel=True
+#deldel=True
 if deldel: 
     try:
         #print(odlCA.NFFG_Get(977))
@@ -67,7 +67,10 @@ if deldel:
     
 # NF-FG File
 in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/test1.json","r")
-nffg_file = json.loads(in_file.read())
+try:
+    nffg_file = json.loads(in_file.read())
+except ValueError as err:
+    raise err
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
 nffg.parseDict(nffg_file)
@@ -79,7 +82,7 @@ odlCA.NFFG_Put(nffg)
 quit()
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan1b.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan2a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()

@@ -135,8 +135,8 @@ class ActionModel(Base):
     output_type = Column(VARCHAR(64))   # = ( port | endpoint )
     
     # action characteristics
-    output_to_port = Column(VARCHAR(64))        # es. output port, endpoint interface
-    output_to_controller = Column(Boolean)        # if 'true' it sends packets to controller (es. CONTROLLER:65535) 
+    output_to_port = Column(VARCHAR(64))        # e.g. output port, endpoint interface
+    output_to_controller = Column(Boolean)        # if 'true' it sends packets to controller (e.g. CONTROLLER:65535) 
     _drop = Column(Boolean)
     set_vlan_id = Column(VARCHAR(64))
     set_vlan_priority = Column(VARCHAR(64))

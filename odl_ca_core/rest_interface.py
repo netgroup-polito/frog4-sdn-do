@@ -27,18 +27,23 @@ from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotF
 
 class OpenDayLightCA_REST_Base(object):
     '''
+    Every response must be in json format and must have the following fields:
+    - 'title' (e.g. "202 Accepted")
+    - 'message' (e.g. "Graph 977 succesfully processed.")
+    Additional fields should be used to send the requested data (e.g. nf-fg, status, user-data).
+    
     All the classess "OpenDayLightCA_REST_*" must inherit this class.
     This class contains:
         - common json response creator "_json_response"
         - common exception handlers "__except_*"
     '''
     
-    def _json_response(self, http_status, message=None, status=None, nffg=None, userdata=None):
+    def _json_response(self, http_status, message, status=None, nffg=None, userdata=None):
         response_json = {}
-        response_json['http_status'] = http_status
         
-        if message is not None:
-            response_json['message'] = message
+        response_json['title'] = http_status
+        response_json['message'] = message
+        
         if status is not None:
             response_json['status'] = status
         if nffg is not None:
@@ -54,8 +59,8 @@ class OpenDayLightCA_REST_Base(object):
     '''
     
     def __get_exception_message(self,ex):
-        if hasattr(ex, "arg") and ex.arg[0] is not None:
-            return ex.arg[0]
+        if hasattr(ex, "args") and ex.args[0] is not None:
+            return ex.args[0]
         elif hasattr(ex, "message") and ex.message is not None:
             return ex.message
         else:
@@ -66,40 +71,40 @@ class OpenDayLightCA_REST_Base(object):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_400,'Bad Request',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_400,falconStatusCodes.HTTP_400,message)
     
     def _except_NotAcceptable(self, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_406,'Not Acceptable',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_406,falconStatusCodes.HTTP_406,message)
     
     def _except_NotFound(self, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_404,'Not Found',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_404,falconStatusCodes.HTTP_404,message)
     
     def _except_unauthorizedRequest(self,ex,request):
         username_string = ""
         if(request.get_header("X-Auth-User") is not None):
             username_string = " from user "+request.get_header("X-Auth-User")
-        logging.debug("Unauthorized access attempt"+username_string+".")
+        logging.error("Unauthorized access attempt"+username_string+".")
         message = self.__get_exception_message(ex)
-        raise falcon.HTTPUnauthorized("Unauthorized", message)
+        raise falconHTTPError(falconStatusCodes.HTTP_403,falconStatusCodes.HTTP_403,message)
     
     def _except_requests_HTTPError(self,ex):
         logging.error(ex.response.text)
         if ex.response.status_code is not None:
-            msg = ex.response.status_code+" - "
-            msg += self.__get_exception_message(ex)
-            raise falcon.HTTPInternalServerError('Falcon: Internal Server Error',msg)
+            message = ex.response.status_code+" - "
+            message += self.__get_exception_message(ex)
+            raise falconHTTPError(falconStatusCodes.HTTP_500,falconStatusCodes.HTTP_500,message)
         raise ex
 
     def _except_standardException(self,ex):
         message = self.__get_exception_message(ex)
         logging.exception(ex) #unique case which uses logging.exception
-        raise falcon.HTTPInternalServerError('Unexpected Error - Contact the admin',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_500,'500 - Unexpected Internal Server Error',message)
 
 
 
@@ -120,7 +125,7 @@ class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
             odlCA.NFFG_Validate(nffg)
             odlCA.NFFG_Put(nffg)
     
-            response.body = self._json_response(falcon.HTTP_202, message="Graph "+nffg.id+" succesfully processed.")
+            response.body = self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -130,6 +135,10 @@ class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
+        
+        # NFFG validation - raised by json.loads()
+        except ValueError as err:
+            self._except_NotAcceptable("ValueError",err)
         
         # NFFG validation - raised by ValidateNF_FG().validate
         except NF_FGValidationError as err:
@@ -169,7 +178,7 @@ class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
             
             odlCA.NFFG_Delete(nffg_id)
             
-            response.body = self._json_response(falcon.HTTP_200, message="Graph "+nffg_id+" succesfully deleted.")
+            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
             response.status = falcon.HTTP_200
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -203,7 +212,7 @@ class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
             
-            response.body = self._json_response(falcon.HTTP_200, nffg=odlCA.NFFG_Get(nffg_id))
+            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlCA.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -240,7 +249,7 @@ class OpenDayLightCA_REST_NFFG_Status(OpenDayLightCA_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlCA = OpenDayLightCA(userdata)
 
-            response.body = self._json_response(falcon.HTTP_200, status=odlCA.NFFG_Status(nffg_id))
+            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=odlCA.NFFG_Status(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -277,7 +286,7 @@ class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
             print(request.uri)
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            response.body = self._json_response(falcon.HTTP_200, userdata=userdata.getResponseJSON())
+            response.body = self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
