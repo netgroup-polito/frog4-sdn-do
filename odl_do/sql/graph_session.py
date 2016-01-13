@@ -259,7 +259,7 @@ class GraphSession(object):
             break
         
         # Latest checks
-        if prev_vlan_in<=1 or prev_vlan_in>=4094:
+        if prev_vlan_in<1 or prev_vlan_in>=4094:
             logging.debug("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
             return
         

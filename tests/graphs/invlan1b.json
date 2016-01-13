@@ -1,6 +1,6 @@
 {
   "forwarding-graph": {
-    "id": "977",
+    "id": "988",
     "name": "GR Test1",
     
     "end-points": [
@@ -36,27 +36,13 @@
     
     "big-switch": {
       "flow-rules": [
-      
-        {
-          "id": "8771",
-          "priority": 101,
-          "match": {
-            "port_in": "endpoint:End21",
-            "vlan_id": "688"
-          },
-          "actions": [
-          	{
-          		"output_to_port": "endpoint:End41"
-          	}
-          ]
-        },
         
         {
-          "id": "8772",
+          "id": "8882",
           "priority": 101,
           "match": {
-            "port_in": "endpoint:End31",
-            "vlan_id": "177"
+            "port_in": "endpoint:End41",
+            "vlan_id": "677"
           },
           "actions": [
           	{

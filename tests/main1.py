@@ -30,6 +30,27 @@ from odl_do.opendaylight_do import OpenDayLightDO
 from nffg_library.validator import ValidateNF_FG
 from nffg_library.nffg import NF_FG
 
+# Clean All (starts automatically)
+import clean_all
+
+def put_json(odlDO, filename):
+    try:
+        # NF-FG File
+        in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/"+filename,"r")
+        nffg_file = json.loads(in_file.read())
+        ValidateNF_FG().validate(nffg_file)
+        nffg = NF_FG()
+        nffg.parseDict(nffg_file)
+        
+        # Validate and Put
+        odlDO.NFFG_Validate(nffg)
+        odlDO.NFFG_Put(nffg)
+        
+    except Exception as ex:
+        print(ex)
+
+
+
 # Configuration
 conf = Configuration()
 conf.log_configuration()
@@ -37,103 +58,23 @@ conf.log_configuration()
 # Test connection to database
 try_session()
 
-conf = Configuration()
-
 # START OPENDAYLIGHT DOMAIN ORCHESTRATOR
 logging.debug("OpenDayLight Domain Orchestrator Starting...")
 print("Welcome to 'OpenDayLight Domain Orchestrator'")
-
 
 # Instantiate the domain orchestrator
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlDO = OpenDayLightDO(user)
 
-
-
-# Delete
-deldel=False
-deldel=True
-if deldel: 
-    try:
-        #print(odlDO.NFFG_Get(977))
-        odlDO.NFFG_Delete(977)
-    except Exception as ex:
-        print(ex)
-    try:
-        odlDO.NFFG_Delete(988)
-    except Exception as ex:
-        print(ex)
-    #quit()
-    
-# NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/test1.json","r")
-try:
-    nffg_file = json.loads(in_file.read())
-except ValueError as err:
-    raise err
-ValidateNF_FG().validate(nffg_file)
-nffg = NF_FG()
-nffg.parseDict(nffg_file)
-
-# Validate and Put
-odlDO.NFFG_Validate(nffg)
-odlDO.NFFG_Put(nffg)
-
-quit()
-
-# NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/odlCA_invlan2a.json","r")
-nffg_file = json.loads(in_file.read())
-ValidateNF_FG().validate(nffg_file)
-nffg = NF_FG()
-nffg.parseDict(nffg_file)
-
-# Validate and Put
-odlDO.NFFG_Validate(nffg)
-odlDO.NFFG_Put(nffg)
-
-quit()
-
-# Validate and Put (update expected)
-print("Updating...")
-odlDO.NFFG_Validate(nffg)
-odlDO.NFFG_Put(nffg)
-print("End update")
-
-
-'''
-
-DOUBLE DECKER
-    1) clonare DD da gitlab;
-    2) introdurre fix di Stefano;
-    3) specificare la directory DD in gitignore 
-    3) usare dd_server.py
-
-FLOW RULES "simili"
-    Gestire flow rules con match uguale!
-
-
-TODO
- 
-[ 1 ]
-- eliminare tabella endpoint_resource (verificare a che serve)
-- cambiare nomi dei campi di tabelle nel db in nomi piu' esplicativi
-- sistemare i *Model in graph_session.py
-- creare un db.sql aggiornato
-
-
-- definire interfaccia DOUBLEDECKER
-- pulire ulteriormente il database
-
-- check TODO: remove
-
-
-[ DOMANDE ]
-- campi tabelle db
-- eccezioni manifest, validator, ecc.
-- quali eccezioni gestire in rest_interface.py ?
-
-'''
-
+put_json(odlDO,"prog1/invlan1a.json")
+put_json(odlDO,"prog1/invlan1b.json")
+put_json(odlDO,"prog1/invlan1c.json")
+put_json(odlDO,"prog1/invlan1d.json")
+put_json(odlDO,"prog1/invlan1e.json")
+put_json(odlDO,"prog1/invlan1f.json")
+put_json(odlDO,"prog1/invlan1g.json")
+put_json(odlDO,"prog1/invlan1h.json")
+put_json(odlDO,"prog1/invlan1i.json")
+put_json(odlDO,"prog1/invlan1l.json")
 
     

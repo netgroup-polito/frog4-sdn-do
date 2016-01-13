@@ -218,6 +218,8 @@ class OpenDayLightDO(object):
             if ep.prepare_connection_to_remote_endpoint_ids is not None and len(ep.prepare_connection_to_remote_endpoint_ids)>0:
                 raise_useless_info("presence of connection to remote endpoints")
                 
+            # TODO: check endpoints in bigswitch.json (switch/port)
+                
 
         # FLOW RULEs inspection
         for flowrule in nffg.flow_rules:
