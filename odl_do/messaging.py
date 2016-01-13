@@ -32,6 +32,8 @@ class DD_Publish(ClientSafe):
 class Messaging(object):
     
     _instance = None
+
+    __debug_exit = True # inhibit this class
     
     __publish_domain_config = None
     __thread_publish_domain_config = None
@@ -46,6 +48,9 @@ class Messaging(object):
         
     
     def PublishDomainConfig(self):
+        if self.__debug_exit:
+            return
+        
         try:
             if self.__publish_domain_config is None:
                 dd_publish = DD_Publish("DO_Pub", Configuration().DD_BROKER_ADDRESS,
