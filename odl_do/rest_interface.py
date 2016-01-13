@@ -5,14 +5,14 @@ Created on Oct 1, 2014
 @author: giacomoratta
 '''
 
-import logging, json, jsonschema, requests, falcon
+import logging, json, requests, falcon
 from falcon.http_error import HTTPError as falconHTTPError
 import falcon.status_codes  as falconStatusCodes
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
-from odl_ca_core.user_authentication import UserAuthentication
-from odl_ca_core.opendaylight_ca import OpenDayLightCA
+from odl_do.user_authentication import UserAuthentication
+from odl_do.opendaylight_do import OpenDayLightDO
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -20,19 +20,19 @@ from nffg_library.nffg import NF_FG
 from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
-from odl_ca_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
+from odl_do.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
     UserNotFound, TenantNotFound
 
 
 
-class OpenDayLightCA_REST_Base(object):
+class OpenDayLightDO_REST_Base(object):
     '''
     Every response must be in json format and must have the following fields:
     - 'title' (e.g. "202 Accepted")
     - 'message' (e.g. "Graph 977 succesfully processed.")
     Additional fields should be used to send the requested data (e.g. nf-fg, status, user-data).
     
-    All the classess "OpenDayLightCA_REST_*" must inherit this class.
+    All the classess "OpenDayLightDO_REST_*" must inherit this class.
     This class contains:
         - common json response creator "_json_response"
         - common exception handlers "__except_*"
@@ -110,7 +110,7 @@ class OpenDayLightCA_REST_Base(object):
 
 
  
-class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
+class OpenDayLightDO_REST_NFFG_Put(OpenDayLightDO_REST_Base):
     
     def on_put(self, request, response):
         try:            
@@ -121,9 +121,9 @@ class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
             
-            odlCA = OpenDayLightCA(userdata)
-            odlCA.NFFG_Validate(nffg)
-            odlCA.NFFG_Put(nffg)
+            odlDO = OpenDayLightDO(userdata)
+            odlDO.NFFG_Validate(nffg)
+            odlDO.NFFG_Put(nffg)
     
             response.body = self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
@@ -144,7 +144,7 @@ class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
         except NF_FGValidationError as err:
             self._except_NotAcceptable("NF_FGValidationError",err)
         
-        # Custom NFFG sub-validation - raised by OpenDayLightCA().NFFG_Validate
+        # Custom NFFG sub-validation - raised by OpenDayLightDO().NFFG_Validate
         except NffgUselessInformations as err:
             self._except_NotAcceptable("NffgUselessInformations",err)
         
@@ -168,15 +168,15 @@ class OpenDayLightCA_REST_NFFG_Put(OpenDayLightCA_REST_Base):
 
 
 
-class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
+class OpenDayLightDO_REST_NFFG_Get_Delete(OpenDayLightDO_REST_Base):
     
     def on_delete(self, request, response, nffg_id):
         try :
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlCA = OpenDayLightCA(userdata)
+            odlDO = OpenDayLightDO(userdata)
             
-            odlCA.NFFG_Delete(nffg_id)
+            odlDO.NFFG_Delete(nffg_id)
             
             response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
             response.status = falcon.HTTP_200
@@ -210,9 +210,9 @@ class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
     def on_get(self, request, response, nffg_id):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlCA = OpenDayLightCA(userdata)
+            odlDO = OpenDayLightDO(userdata)
             
-            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlCA.NFFG_Get(nffg_id))
+            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlDO.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -243,13 +243,13 @@ class OpenDayLightCA_REST_NFFG_Get_Delete(OpenDayLightCA_REST_Base):
 
 
 
-class OpenDayLightCA_REST_NFFG_Status(OpenDayLightCA_REST_Base):
+class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
     def on_get(self, request, response, nffg_id):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlCA = OpenDayLightCA(userdata)
+            odlDO = OpenDayLightDO(userdata)
 
-            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=odlCA.NFFG_Status(nffg_id))
+            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=odlDO.NFFG_Status(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -280,7 +280,7 @@ class OpenDayLightCA_REST_NFFG_Status(OpenDayLightCA_REST_Base):
 
 
 
-class OpenDayLightCA_UserAuthentication(OpenDayLightCA_REST_Base):
+class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
     def on_post(self, request, response):
         try :
             print(request.uri)

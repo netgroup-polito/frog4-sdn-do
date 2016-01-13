@@ -4,7 +4,7 @@ Created on Dic 7, 2015
 @author: fabiomignini
 @author: giacomoratta
 
-This script test the main functions of the OpenDayLight Control Adapter.
+This script test the main functions of the OpenDayLight Domain Orchestrator.
    1) Load configuration;
    2) load a json file with the NFFG to load;
    3) validate the NFFG;
@@ -17,14 +17,14 @@ This script test the main functions of the OpenDayLight Control Adapter.
 import logging, json
 
 # Configuration Parser
-from odl_ca_core.config import Configuration
+from odl_do.config import Configuration
 
 # SQL Session
-from odl_ca_core.sql.sql_server import try_session
+from odl_do.sql.sql_server import try_session
 
 # Orchestrator Core
-from odl_ca_core.user_authentication import UserAuthentication
-from odl_ca_core.opendaylight_ca import OpenDayLightCA
+from odl_do.user_authentication import UserAuthentication
+from odl_do.opendaylight_do import OpenDayLightDO
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -39,34 +39,34 @@ try_session()
 
 conf = Configuration()
 
-# START OPENDAYLIGHT CONTROL ADAPTER
-logging.debug("OpenDayLight Control Adapter Starting...")
-print("Welcome to 'OpenDayLight Control Adapter'")
+# START OPENDAYLIGHT DOMAIN ORCHESTRATOR
+logging.debug("OpenDayLight Domain Orchestrator Starting...")
+print("Welcome to 'OpenDayLight Domain Orchestrator'")
 
 
-# Instantiate the control adapter
+# Instantiate the domain orchestrator
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
-odlCA = OpenDayLightCA(user)
+odlDO = OpenDayLightDO(user)
 
 
 
 # Delete
 deldel=False
-#deldel=True
+deldel=True
 if deldel: 
     try:
-        #print(odlCA.NFFG_Get(977))
-        odlCA.NFFG_Delete(977)
+        #print(odlDO.NFFG_Get(977))
+        odlDO.NFFG_Delete(977)
     except Exception as ex:
         print(ex)
     try:
-        odlCA.NFFG_Delete(988)
+        odlDO.NFFG_Delete(988)
     except Exception as ex:
         print(ex)
     #quit()
     
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/test1.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/test1.json","r")
 try:
     nffg_file = json.loads(in_file.read())
 except ValueError as err:
@@ -76,28 +76,28 @@ nffg = NF_FG()
 nffg.parseDict(nffg_file)
 
 # Validate and Put
-odlCA.NFFG_Validate(nffg)
-odlCA.NFFG_Put(nffg)
+odlDO.NFFG_Validate(nffg)
+odlDO.NFFG_Put(nffg)
 
 quit()
 
 # NF-FG File
-in_file = open("/home/giacomo/eclipse_workspace/frog4-ODL-CA/tests/graphs/odlCA_invlan2a.json","r")
+in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/odlCA_invlan2a.json","r")
 nffg_file = json.loads(in_file.read())
 ValidateNF_FG().validate(nffg_file)
 nffg = NF_FG()
 nffg.parseDict(nffg_file)
 
 # Validate and Put
-odlCA.NFFG_Validate(nffg)
-odlCA.NFFG_Put(nffg)
+odlDO.NFFG_Validate(nffg)
+odlDO.NFFG_Put(nffg)
 
 quit()
 
 # Validate and Put (update expected)
 print("Updating...")
-odlCA.NFFG_Validate(nffg)
-odlCA.NFFG_Put(nffg)
+odlDO.NFFG_Validate(nffg)
+odlDO.NFFG_Put(nffg)
 print("End update")
 
 

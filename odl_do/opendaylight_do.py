@@ -9,18 +9,18 @@ import logging
 
 from nffg_library.nffg import FlowRule, Match as NffgMatch, Action as NffgAction
 
-from odl_ca_core.sql.graph_session import GraphSession
+from odl_do.sql.graph_session import GraphSession
 
-from odl_ca_core.config import Configuration
-from odl_ca_core.odl_rest import ODL_Rest
+from odl_do.config import Configuration
+from odl_do.odl_rest import ODL_Rest
 from requests.exceptions import HTTPError
-from odl_ca_core.resources import Action, Match, Flow, ProfileGraph, Endpoint
-from odl_ca_core.netgraph import NetGraph
-from odl_ca_core.messaging import Messaging
-from odl_ca_core.exception import sessionNotFound, GraphError, NffgUselessInformations
+from odl_do.resources import Action, Match, Flow, ProfileGraph, Endpoint
+from odl_do.netgraph import NetGraph
+from odl_do.messaging import Messaging
+from odl_do.exception import sessionNotFound, GraphError, NffgUselessInformations
 
 
-class OpenDayLightCA(object):
+class OpenDayLightDO(object):
 
     def __init__(self, user_data):
         
@@ -178,19 +178,19 @@ class OpenDayLightCA(object):
     
     def NFFG_Validate(self, nffg):
         '''
-        A validator for this specific control adapter.
+        A validator for this specific domain orchestrator.
         The original json, as specified in the extern NFFG library,
-        could contain useless objects and fields for this CA.
+        could contain useless objects and fields for this DO.
         If this happens, we have to raise exceptions to stop the request processing.  
         '''
         
         def raise_useless_info(msg):
-            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of data.")
-            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of data.")
+            logging.debug("NFFG Validation: "+msg+". This DO does not process this kind of data.")
+            raise NffgUselessInformations("NFFG Validation: "+msg+". This DO does not process this kind of data.")
         
         def raise_invalid_actions(msg):
-            logging.debug("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
-            raise NffgUselessInformations("NFFG Validation: "+msg+". This CA does not process this kind of flowrules.")
+            logging.debug("NFFG Validation: "+msg+". This DO does not process this kind of flowrules.")
+            raise NffgUselessInformations("NFFG Validation: "+msg+". This DO does not process this kind of flowrules.")
         
         
         # VNFs inspections
@@ -395,7 +395,7 @@ class OpenDayLightCA(object):
         # If a flow rule has a drop action, we don't care of other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                single_efr = OpenDayLightCA.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
+                single_efr = OpenDayLightDO.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
                 single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
                 self.__Push_externalFlowrule(single_efr)
                 return
@@ -464,7 +464,7 @@ class OpenDayLightCA(object):
         conflicts in the traversed switches.
         '''
 
-        efr = OpenDayLightCA.__externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
+        efr = OpenDayLightDO.__externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
         
         base_actions = []
         vlan_out = None
@@ -788,7 +788,7 @@ class OpenDayLightCA(object):
             return
         
         efr.set_flow_name(0)
-        this_efr = OpenDayLightCA.__externalFlowrule()
+        this_efr = OpenDayLightDO.__externalFlowrule()
         
         flow_rules_ref = GraphSession().getExternalFlowrulesByGraphFlowruleID(efr.get_switch_id(),efr.get_flow_id())
         for fr in flow_rules_ref:

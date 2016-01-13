@@ -6,9 +6,9 @@ Created on 18 set 2015
 '''
 
 import hashlib, time, logging, json, binascii
-from odl_ca_core.sql.user import User
-from odl_ca_core.exception import unauthorizedRequest, wrongRequest
-from odl_ca_core.config import Configuration
+from odl_do.sql.user import User
+from odl_do.exception import unauthorizedRequest, wrongRequest
+from odl_do.config import Configuration
 
 
 

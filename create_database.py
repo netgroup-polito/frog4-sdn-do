@@ -1,5 +1,5 @@
 import sqlite3, os
-from odl_ca_core.config import Configuration
+from odl_do.config import Configuration
 
 def session_create_database():
 

@@ -6,7 +6,7 @@ Created on Oct 1, 2014
 '''
 
 import configparser, os, inspect, logging
-from odl_ca_core.exception import WrongConfigurationFile 
+from odl_do.exception import WrongConfigurationFile 
 
 
 class Configuration(object):

@@ -5,9 +5,9 @@ Keep in the database user and tenant informations only.
 '''
 
 import logging
-from odl_ca_core.config import Configuration
-from odl_ca_core.odl_rest import ODL_Rest
-from odl_ca_core.sql.graph_session import GraphSession
+from odl_do.config import Configuration
+from odl_do.odl_rest import ODL_Rest
+from odl_do.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 
 
