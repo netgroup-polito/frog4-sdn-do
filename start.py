@@ -27,8 +27,7 @@ from odl_do.config import Configuration
 from odl_do.sql.sql_server import try_session
 
 # REST Interface
-from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Put
-from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Get_Delete
+from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_GPUD
 from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Status
 from odl_do.rest_interface import OpenDayLightDO_UserAuthentication
 from odl_do.rest_interface import OpenDayLightDO_NetworkTopology
@@ -49,13 +48,9 @@ app = falcon.API()
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-# [ PUT ]
-rest_interface_put = OpenDayLightDO_REST_NFFG_Put()
-app.add_route('/NF-FG', rest_interface_put)
-
-# [ DELETE, GET (id) ]
-rest_interface_get_delete = OpenDayLightDO_REST_NFFG_Get_Delete()
-app.add_route('/NF-FG/{nffg_id}', rest_interface_get_delete)
+# [ PUT, UPDATE, DELETE, GET (id) ]
+rest_interface_gpud = OpenDayLightDO_REST_NFFG_GPUD()
+app.add_route('/NF-FG/{nffg_id}', rest_interface_gpud)
 
 # [ STATUS (id) ]
 rest_nffg_status = OpenDayLightDO_REST_NFFG_Status()
@@ -63,7 +58,7 @@ app.add_route('/NF-FG/status/{nffg_id}', rest_nffg_status)
 
 # [ USER AUTH ]
 rest_user_auth = OpenDayLightDO_UserAuthentication()
-app.add_route('/authentication', rest_user_auth)
+app.add_route('/login', rest_user_auth)
 
 # [ NETWORK TOPOLOGY ]
 rest_net_topology = OpenDayLightDO_NetworkTopology()

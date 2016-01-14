@@ -118,11 +118,10 @@ class OpenDayLightDO_REST_Base(object):
 
 
 
-
- 
-class OpenDayLightDO_REST_NFFG_Put(OpenDayLightDO_REST_Base):
+class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
+    #GPUD = "Get Put Update Delete" 
     
-    def on_put(self, request, response):
+    def on_put(self, request, response, nffg_id):
         try:            
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
@@ -180,11 +179,7 @@ class OpenDayLightDO_REST_NFFG_Put(OpenDayLightDO_REST_Base):
         except Exception as ex:
             self._except_standardException(ex)
     
-    
 
-
-
-class OpenDayLightDO_REST_NFFG_Get_Delete(OpenDayLightDO_REST_Base):
     
     def on_delete(self, request, response, nffg_id):
         try :
@@ -352,6 +347,52 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
             self._except_requests_HTTPError(err)
         except Exception as ex:
             self._except_standardException(ex)
+    
+    
+    
+    def on_head(self, request, response):
+        try:
+            token = request.get_header("X-Auth-Token")
+        
+            if token is not None:
+                UserAuthentication().authenticateUserFromToken(token)
+            else:
+                raise wrongRequest('Wrong authentication request: expected X-Auth-Token in the request header')
+            
+            #response.body = self._json_response(falcon.HTTP_200, "User "+userdata.username+" found with a valid token.", userdata=userdata.getResponseJSON())
+            response.status = falcon.HTTP_200
+        
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except unauthorizedRequest as err:
+            self._except_unauthorizedRequest(err,request)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
+        
+        # NFFG validation - raised by json.loads()
+        except ValueError as err:
+            self._except_NotAcceptable("ValueError",err)
+        
+        # No Results
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
+        except sessionNotFound as err:
+            self._except_NotFound("sessionNotFound",err)
+        
+        # Other errors
+        except requests.HTTPError as err:
+            self._except_requests_HTTPError(err)
+        except Exception as ex:
+            self._except_standardException(ex)
 
 
 
@@ -362,7 +403,7 @@ class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
             conf = Configuration()
             conf.log_configuration()
 
-            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+            UserAuthentication().authenticateUserFromRESTRequest(request)
             
             ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
             
