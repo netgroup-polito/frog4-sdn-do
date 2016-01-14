@@ -47,7 +47,12 @@ def put_json(odlDO, filename):
         odlDO.NFFG_Put(nffg)
         
     except Exception as ex:
-        print(ex)
+        if hasattr(ex, 'message'):
+            print(ex.message)
+        elif hasattr(ex, 'args'):
+            print(ex)
+        else:
+            print("Unknown exception")
 
 
 
@@ -66,16 +71,11 @@ print("Welcome to 'OpenDayLight Domain Orchestrator'")
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlDO = OpenDayLightDO(user)
 
-from odl_do.netgraph import NetGraph
 
 
-ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
-ng.printTopologyGraph()
+put_json(odlDO,"hydrogen_invlan1a.json")
 
-
-
-put_json(odlDO,"invlan1a.json")
-
+'''
 put_json(odlDO,"prog1/invlan1a.json")
 put_json(odlDO,"prog1/invlan1b.json")
 put_json(odlDO,"prog1/invlan1c.json")
@@ -86,5 +86,5 @@ put_json(odlDO,"prog1/invlan1g.json")
 put_json(odlDO,"prog1/invlan1h.json")
 put_json(odlDO,"prog1/invlan1i.json")
 put_json(odlDO,"prog1/invlan1l.json")
-
+'''
     

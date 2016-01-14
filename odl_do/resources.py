@@ -291,9 +291,9 @@ class Action(object):
         '''
         j_action = None
         if self.action_type == "set-dl-src-action":
-            j_action = "SET_DL_SRC="+self.address
+            j_action = "SET_DL_SRC="+str(self.address)
         elif self.action_type == "set-dl-dst-action":
-            j_action = "SET_DL_DST="+self.address
+            j_action = "SET_DL_DST="+str(self.address)
         elif self.action_type == "push-vlan-action":
             j_action = "PUSH_VLAN"
         elif self.action_type == "pop-vlan-action":
@@ -304,9 +304,9 @@ class Action(object):
             if self.output_port == "CONTROLLER":
                 j_action = "CONTROLLER"
             else:
-                j_action = "OUTPUT="+self.output_port
+                j_action = "OUTPUT="+str(self.output_port)
         elif self.action_type == "vlan-match":
-            j_action = "SET_VLAN_ID="+self.vlan_id
+            j_action = "SET_VLAN_ID="+str(self.vlan_id)
         return j_action
     
     def getActions(self, order):
