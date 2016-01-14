@@ -62,7 +62,7 @@ app.add_route('/NF-FG/status/{nffg_id}', rest_nffg_status)
 
 # [ USER AUTH ]
 rest_user_auth = OpenDayLightDO_UserAuthentication()
-app.add_route('/auth', rest_user_auth)
+app.add_route('/authentication', rest_user_auth)
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 

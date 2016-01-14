@@ -112,6 +112,24 @@ class NetGraph():
                                     })
     
     
+    
+    def getNetworkTopology(self):
+        self.setTopologyGraph(reset=True)
+        array = []
+        
+        for node in self.topology.nodes():
+            sw_neighbours = []
+            edges = self.topology.edges(node)
+        
+            for edge in edges:
+                sw_neighbours.append(edge[1])
+
+            array.append({ "node":node, "neighbours":sw_neighbours  })
+        return array
+        
+    
+    
+    
     def getShortestPath(self,source_switch_id,target_switch_id):
         self.setTopologyGraph()
         try:

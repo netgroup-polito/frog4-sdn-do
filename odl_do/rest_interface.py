@@ -42,7 +42,7 @@ class OpenDayLightDO_REST_Base(object):
         response_json = {}
         
         response_json['title'] = http_status
-        response_json['message'] = message
+        response_json['description'] = message
         
         if status is not None:
             response_json['status'] = status

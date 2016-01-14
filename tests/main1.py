@@ -66,6 +66,16 @@ print("Welcome to 'OpenDayLight Domain Orchestrator'")
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlDO = OpenDayLightDO(user)
 
+from odl_do.netgraph import NetGraph
+
+
+ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
+ng.printTopologyGraph()
+
+
+
+put_json(odlDO,"invlan1a.json")
+
 put_json(odlDO,"prog1/invlan1a.json")
 put_json(odlDO,"prog1/invlan1b.json")
 put_json(odlDO,"prog1/invlan1c.json")

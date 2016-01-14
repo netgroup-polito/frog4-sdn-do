@@ -81,7 +81,7 @@ class UserAuthentication(object):
         '''
         exception1 = unauthorizedRequest('Invalid authentication credentials')
         
-        if token is None or user_id is None:
+        if token is None: # or user_id is None:
             raise exception1
         
         try:
@@ -153,7 +153,7 @@ class UserAuthentication(object):
         token = request.get_header("X-Auth-Token")
         user_id = request.get_header("X-Auth-UserId")
         
-        if token is not None and user_id is not None:
+        if token is not None: # and user_id is not None:
             return self.authenticateUserFromToken(token, user_id)
             
         elif username is not None and password is not None and tenant is not None:
