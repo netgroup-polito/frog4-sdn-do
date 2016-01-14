@@ -13,6 +13,8 @@ from sqlalchemy.orm.exc import NoResultFound
 # Orchestrator Core
 from odl_do.user_authentication import UserAuthentication
 from odl_do.opendaylight_do import OpenDayLightDO
+from odl_do.netgraph import NetGraph
+from odl_do.config import Configuration
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -21,7 +23,7 @@ from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
 from odl_do.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
-    UserNotFound, TenantNotFound
+    UserNotFound, TenantNotFound, UserTokenExpired
 
 
 
@@ -38,7 +40,7 @@ class OpenDayLightDO_REST_Base(object):
         - common exception handlers "__except_*"
     '''
     
-    def _json_response(self, http_status, message, status=None, nffg=None, userdata=None):
+    def _json_response(self, http_status, message, status=None, nffg=None, userdata=None, topology=None):
         response_json = {}
         
         response_json['title'] = http_status
@@ -50,6 +52,8 @@ class OpenDayLightDO_REST_Base(object):
             response_json['nf-fg'] = nffg
         if userdata is not None:
             response_json['user-data'] = userdata
+        if topology is not None:
+            response_json['topology'] = topology
 
         return json.dumps(response_json)
         
@@ -72,6 +76,12 @@ class OpenDayLightDO_REST_Base(object):
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
         raise falconHTTPError(falconStatusCodes.HTTP_400,falconStatusCodes.HTTP_400,message)
+
+    def _except_unauthenticatedRequest(self, prefix, ex):
+        message = self.__get_exception_message(ex)
+        logging.error(prefix+": "+message)
+        #raise falcon.HTTPBadRequest('Bad Request',message)
+        raise falconHTTPError(falconStatusCodes.HTTP_401,falconStatusCodes.HTTP_401,message)
     
     def _except_NotAcceptable(self, prefix, ex):
         message = self.__get_exception_message(ex)
@@ -116,7 +126,9 @@ class OpenDayLightDO_REST_NFFG_Put(OpenDayLightDO_REST_Base):
         try:            
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            nffg_dict = json.loads(request.stream.read().decode('utf-8'), 'utf-8')
+            request_body = request.stream.read().decode('utf-8')
+            nffg_dict = json.loads(request_body, 'utf-8')
+            
             ValidateNF_FG().validate(nffg_dict)
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
@@ -135,6 +147,10 @@ class OpenDayLightDO_REST_NFFG_Put(OpenDayLightDO_REST_Base):
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
@@ -189,6 +205,10 @@ class OpenDayLightDO_REST_NFFG_Get_Delete(OpenDayLightDO_REST_Base):
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
         
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
+        
         # No Results
         except UserNotFound as err:
             self._except_NotFound("UserNotFound",err)
@@ -222,6 +242,10 @@ class OpenDayLightDO_REST_NFFG_Get_Delete(OpenDayLightDO_REST_Base):
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:
@@ -260,6 +284,10 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
         
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
+        
         # No Results
         except UserNotFound as err:
             self._except_NotFound("UserNotFound",err)
@@ -282,9 +310,13 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
 
 class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
     def on_post(self, request, response):
-        try :
-            print(request.uri)
-            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+        try:
+            payload = None
+            request_body = request.stream.read().decode('utf-8')
+            if len(request_body)>0:
+                payload = json.loads(request_body, 'utf-8')
+            
+            userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
             
             response.body = self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
@@ -296,6 +328,58 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             self._except_unauthorizedRequest(err,request)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
+        
+        # NFFG validation - raised by json.loads()
+        except ValueError as err:
+            self._except_NotAcceptable("ValueError",err)
+        
+        # No Results
+        except UserNotFound as err:
+            self._except_NotFound("UserNotFound",err)
+        except TenantNotFound as err:
+            self._except_NotFound("TenantNotFound",err)
+        except NoResultFound as err:
+            self._except_NotFound("NoResultFound",err)
+        except sessionNotFound as err:
+            self._except_NotFound("sessionNotFound",err)
+        
+        # Other errors
+        except requests.HTTPError as err:
+            self._except_requests_HTTPError(err)
+        except Exception as ex:
+            self._except_standardException(ex)
+
+
+
+
+class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
+    def on_get(self, request, response):
+        try :
+            conf = Configuration()
+            conf.log_configuration()
+
+            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+            
+            ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
+            
+            response.body = self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
+            response.status = falcon.HTTP_200
+        
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            self._except_BadRequest("wrongRequest",err)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except unauthorizedRequest as err:
+            self._except_unauthorizedRequest(err,request)
+        
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            self._except_unauthenticatedRequest("UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:

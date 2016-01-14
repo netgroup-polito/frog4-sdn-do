@@ -7,7 +7,7 @@ This script print the network topology watched by OpenDayLight Domain Orchestrat
 
 '''
 
-import logging
+import logging, json
 
 # Configuration Parser
 from odl_do.config import Configuration
@@ -25,6 +25,8 @@ logging.debug("Printing the network topology watched by OpenDayLight Domain Orch
 print("OpenDayLight Domain Orchestrator - Network Topology")
 
 print("\nOpenDayLight version: "+conf.ODL_VERSION+"\n")
+
+payload = json.loads('{"username":"admin", "password":"admin"}', 'utf-8')
 
 ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
 nt = ng.getNetworkTopology()

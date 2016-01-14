@@ -7,7 +7,7 @@ Created on 18 set 2015
 
 import hashlib, time, logging, json, binascii
 from odl_do.sql.user import User
-from odl_do.exception import unauthorizedRequest, wrongRequest
+from odl_do.exception import unauthorizedRequest, wrongRequest, UserTokenExpired
 from odl_do.config import Configuration
 
 
@@ -75,7 +75,7 @@ class UserAuthentication(object):
 
 
 
-    def authenticateUserFromToken(self, token, user_id):
+    def authenticateUserFromTokenUserId(self, token, user_id):
         '''
         Checks the user authentication by token/user_id.
         '''
@@ -98,6 +98,38 @@ class UserAuthentication(object):
         except Exception:
             logging.debug("User "+str(user_id)+" not found.")
             raise exception1
+    
+    
+    
+    def authenticateUserFromToken(self, token):
+        '''
+        Checks the user authentication by token.
+        '''
+        exception1 = unauthorizedRequest('Invalid authentication credentials')
+        
+        if token is None:
+            raise exception1
+        
+        try:
+            logging.info("Get user credentials and check token.")
+            user = User().getUserByToken(token)
+            logging.debug("Search for the user token "+str(token)+".")
+            if user.token==token:
+                if self.__isAnExpiredToken(user.token_timestamp)==False:
+                    tenantName = User().getTenantName(user.tenant_id)
+                    userobj = UserData(user.id, user.username, tenantName, user.mail)
+                    userobj.setToken(user.token, user.token_timestamp)
+                    logging.debug("Found user token "+str(token)+" still valid.")
+                    return userobj
+                else:
+                    logging.debug("Found an expired user token "+str(token)+".")
+                    raise UserTokenExpired("Token expired. You must authenticate again with user/pass")
+            raise Exception
+        except UserTokenExpired as ex:
+            raise ex
+        except Exception:
+            logging.debug("User token "+str(token)+" not found.")
+            raise exception1
 
 
 
@@ -107,7 +139,7 @@ class UserAuthentication(object):
         '''
         exception1 = unauthorizedRequest('Invalid authentication credentials')
         
-        if username is None or password is None or tenant is None:
+        if username is None or password is None: # or tenant is None:
             raise exception1
         
         logging.info("Get user credentials and check password.")
@@ -121,7 +153,7 @@ class UserAuthentication(object):
             
         # Check tenant
         tenantName = User().getTenantName(user.tenant_id)
-        if tenantName != tenant:
+        if tenant is not None and tenantName != tenant:
             logging.debug("Wrong tenant.")
             raise exception1
         
@@ -140,7 +172,7 @@ class UserAuthentication(object):
 
 
 
-    def authenticateUserFromRESTRequest(self, request):
+    def authenticateUserFromRESTRequest(self, request, payload=None):
         '''
         Manages the authentication process via REST.
         Reads the header fields that starts with "X-Auth-" and 
@@ -148,16 +180,19 @@ class UserAuthentication(object):
         '''
         username = request.get_header("X-Auth-User")
         password = request.get_header("X-Auth-Pass")
-        tenant = request.get_header("X-Auth-Tenant")
+        #tenant = request.get_header("X-Auth-Tenant")
         
         token = request.get_header("X-Auth-Token")
-        user_id = request.get_header("X-Auth-UserId")
+        #user_id = request.get_header("X-Auth-UserId")
         
-        if token is not None: # and user_id is not None:
-            return self.authenticateUserFromToken(token, user_id)
-            
-        elif username is not None and password is not None and tenant is not None:
-            return self.authenticateUserFromCredentials(username, password, tenant)
+        if token is not None:
+            return self.authenticateUserFromToken(token)
+        
+        elif payload is not None and 'username' in payload.keys() and 'password' in payload.keys():
+            return self.authenticateUserFromCredentials(payload['username'], payload['password'], None)
+        
+        elif username is not None and password is not None: # and tenant is not None:
+            return self.authenticateUserFromCredentials(username, password, None)
         
         raise wrongRequest('Wrong authentication request: send user/password/tenant or token/userid')
 

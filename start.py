@@ -31,6 +31,7 @@ from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Put
 from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Get_Delete
 from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Status
 from odl_do.rest_interface import OpenDayLightDO_UserAuthentication
+from odl_do.rest_interface import OpenDayLightDO_NetworkTopology
 
 # Configuration
 conf = Configuration()
@@ -63,6 +64,10 @@ app.add_route('/NF-FG/status/{nffg_id}', rest_nffg_status)
 # [ USER AUTH ]
 rest_user_auth = OpenDayLightDO_UserAuthentication()
 app.add_route('/authentication', rest_user_auth)
+
+# [ NETWORK TOPOLOGY ]
+rest_net_topology = OpenDayLightDO_NetworkTopology()
+app.add_route('/topology', rest_net_topology)
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 

@@ -53,6 +53,14 @@ class User(object):
             logging.error(ex)
             raise UserNotFound("User not found: "+str(username)+" (username)")
     
+    def getUserByToken(self, token):
+        session = get_session()
+        try:
+            return session.query(UserModel).filter_by(token = token).one()
+        except Exception as ex:
+            logging.error(ex)
+            raise UserNotFound("Token not found: "+str(token))
+        
     def getUserByID(self, user_id):
         session = get_session()
         try:
