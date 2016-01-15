@@ -71,8 +71,6 @@ print("Welcome to 'OpenDayLight Domain Orchestrator'")
 user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
 odlDO = OpenDayLightDO(user)
 
-
-
 put_json(odlDO,"hydrogen_invlan1a.json")
 
 '''

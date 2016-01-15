@@ -30,6 +30,14 @@ class ODL_Rest(object):
             self.odl_flows_path = "/restconf/config/opendaylight-inventory:nodes"
             self.odl_node="/node"
             self.odl_flow="/table/0/flow/"
+    
+    
+    def __logging_debug(self, response, url, jsonFlow=None):
+        log_string = "response: "+str(response.status_code)+", "+response.reason
+        log_string = url+"\n"+log_string
+        if jsonFlow is not None:
+            log_string = log_string+"\n"+jsonFlow
+        logging.debug(log_string)
             
             
     
@@ -39,9 +47,11 @@ class ODL_Rest(object):
         '''
         headers = {'Accept': 'application/json'}
         url = odl_endpoint+self.odl_nodes_path
-        resp = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
-        resp.raise_for_status()
-        return resp.text
+        response = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
+        
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
     
     
     
@@ -52,10 +62,14 @@ class ODL_Rest(object):
         if(self.version=="Hydrogen"):
             headers = {'Accept': 'application/json'}
             url = odl_endpoint+self.odl_controller_nodes_path
-            resp = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
-            resp.raise_for_status()
-            return resp.text
+            response = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
+            
+            self.__logging_debug(response, url)
+            response.raise_for_status()
+            return response.text
         return None
+    
+    
     
     def getTopology(self, odl_endpoint, odl_user, odl_pass):
         '''
@@ -65,9 +79,13 @@ class ODL_Rest(object):
         '''
         headers = {'Accept': 'application/json'}
         url = odl_endpoint+self.odl_topology_path
-        resp = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
-        resp.raise_for_status()
-        return resp.text
+        response = requests.get(url, headers=headers, auth=(odl_user, odl_pass))
+        
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
+    
+    
     
     def createFlow(self, odl_endpoint, odl_user, odl_pass, jsonFlow, switch_id, flow_id):
         '''
@@ -84,12 +102,13 @@ class ODL_Rest(object):
         '''
         headers = {'Accept': 'application/json', 'Content-type':'application/json'}
         url = odl_endpoint+self.odl_flows_path+self.odl_node+"/"+str(switch_id)+self.odl_flow+str(flow_id)
-        #logging.debug(url+"\n"+jsonFlow)
-        resp = requests.put(url,jsonFlow,headers=headers, auth=(odl_user, odl_pass))
-        resp.raise_for_status()
-        txt = "response: "+str(resp.status_code)+", "+resp.reason
-        logging.debug(url+"\n"+jsonFlow+" - "+txt)
-        return resp.text
+        response = requests.put(url,jsonFlow,headers=headers, auth=(odl_user, odl_pass))
+        
+        self.__logging_debug(response, url, jsonFlow)
+        response.raise_for_status()
+        return response.text
+    
+    
     
     def deleteFlow(self, odl_endpoint, odl_user, odl_pass, switch_id, flow_id):
         '''
@@ -104,8 +123,9 @@ class ODL_Rest(object):
         '''
         headers = {'Accept': 'application/json', 'Content-type':'application/json'}
         url = odl_endpoint+self.odl_flows_path+self.odl_node+"/"+switch_id+self.odl_flow+str(flow_id)
-        logging.debug(url)
-        resp = requests.delete(url,headers=headers, auth=(odl_user, odl_pass))
-        resp.raise_for_status()
-        return resp.text
+        response = requests.delete(url,headers=headers, auth=(odl_user, odl_pass))
+        
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
 

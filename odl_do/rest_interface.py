@@ -41,21 +41,32 @@ class OpenDayLightDO_REST_Base(object):
     '''
     
     def _json_response(self, http_status, message, status=None, nffg=None, userdata=None, topology=None):
-        response_json = {}
-        
-        response_json['title'] = http_status
-        response_json['description'] = message
         
         if status is not None:
-            response_json['status'] = status
+            #response_json['status'] = status
+            return status
         if nffg is not None:
-            response_json['nf-fg'] = nffg
+            #response_json['nf-fg'] = nffg
+            return nffg
         if userdata is not None:
-            response_json['user-data'] = userdata
+            #response_json['user-data'] = userdata
+            return userdata
         if topology is not None:
-            response_json['topology'] = topology
-
+            #response_json['topology'] = topology
+            return topology
+        if message is None:
+            return None
+        
+        response_json = {}
+        response_json['title'] = http_status
+        response_json['description'] = message
         return json.dumps(response_json)
+    
+    
+    def _json_response_for_auth(self, http_status, message, userdata):
+        #response_json = {}
+
+        return userdata
         
     
     '''
@@ -63,8 +74,8 @@ class OpenDayLightDO_REST_Base(object):
     '''
     
     def __get_exception_message(self,ex):
-        if hasattr(ex, "args") and ex.args[0] is not None:
-            return ex.args[0]
+        if hasattr(ex, "args"): #and ex.args[0] is not None:
+            return str(ex) #ex.args[0]
         elif hasattr(ex, "message") and ex.message is not None:
             return ex.message
         else:
@@ -101,7 +112,7 @@ class OpenDayLightDO_REST_Base(object):
             username_string = " from user "+request.get_header("X-Auth-User")
         logging.error("Unauthorized access attempt"+username_string+".")
         message = self.__get_exception_message(ex)
-        raise falconHTTPError(falconStatusCodes.HTTP_403,falconStatusCodes.HTTP_403,message)
+        raise falconHTTPError(falconStatusCodes.HTTP_401,falconStatusCodes.HTTP_401,message)
     
     def _except_requests_HTTPError(self,ex):
         logging.error(ex.response.text)
@@ -136,7 +147,7 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
             odlDO.NFFG_Validate(nffg)
             odlDO.NFFG_Put(nffg)
     
-            response.body = self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
+            response.body = None #self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -189,7 +200,7 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
             
             odlDO.NFFG_Delete(nffg_id)
             
-            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
+            response.body = None #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
             response.status = falcon.HTTP_200
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -227,7 +238,7 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlDO = OpenDayLightDO(userdata)
             
-            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlDO.NFFG_Get(nffg_id))
+            response.body = odlDO.NFFG_Get(nffg_id) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlDO.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -267,8 +278,12 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlDO = OpenDayLightDO(userdata)
-
-            response.body = self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=odlDO.NFFG_Status(nffg_id))
+            
+            status = odlDO.NFFG_Status(nffg_id)
+            status_json = {}
+            status_json['status'] = status 
+            
+            response.body = json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -313,7 +328,7 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
             
-            response.body = self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
+            response.body = userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -359,7 +374,7 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
             else:
                 raise wrongRequest('Wrong authentication request: expected X-Auth-Token in the request header')
             
-            #response.body = self._json_response(falcon.HTTP_200, "User "+userdata.username+" found with a valid token.", userdata=userdata.getResponseJSON())
+            response.body = None
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -407,7 +422,7 @@ class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
             
             ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
             
-            response.body = self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
+            response.body = json.dumps(ng.getNetworkTopology()) #self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest

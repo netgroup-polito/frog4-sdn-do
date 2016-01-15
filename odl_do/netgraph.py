@@ -27,11 +27,7 @@ class NetGraph():
         self.WEIGHT_PROPERTY_NAME = 'weight'
         self.ACTIONS_SEPARATOR_CHARACTER = ','
         self.VLAN_BUSY_CODE = 1
-        self.VLAN_FREE_CODE = 0
-        
-        
-    def print_json(self,data):
-        print(json.dumps(data, sort_keys=True, indent=4, separators=(',', ': ')))        
+        self.VLAN_FREE_CODE = 0   
         
         
     def getSwitchList(self):
@@ -68,7 +64,7 @@ class NetGraph():
                 head = {'node_id':link["edge"]["headNodeConnector"]["node"]["id"],'port_id':link["edge"]["headNodeConnector"]["id"]}
                 tail = {'node_id':link["edge"]["tailNodeConnector"]["node"]["id"],'port_id':link["edge"]["tailNodeConnector"]["id"]}
                 lkList.append({'head':head,'tail':tail})
-
+    
         else:
             json_data = ODL_Rest(self.odlversion).getTopology(self.odlendpoint, self.odlusername, self.odlpassword)
             tp = json.loads(json_data)

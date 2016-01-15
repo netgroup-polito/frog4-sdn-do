@@ -47,19 +47,27 @@
       "flow-rules": [
         
         {
-          "id": "8742",
+          "id": "551",
           "priority": 101,
           "match": {
-            "port_in": "endpoint:End31",
-            "vlan_id": "233"
+            "port_in": "endpoint:End31"
           },
           "actions": [
-          	
-          	{
-            	"set_vlan_id": "334"
-          	},
           	{
             	"output_to_port": "endpoint:End21"
+          	}
+          ]
+        },
+        
+        {
+          "id": "552",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End21"
+          },
+          "actions": [
+          	{
+            	"output_to_port": "endpoint:End31"
           	}
           ]
         }
