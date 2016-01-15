@@ -32,6 +32,8 @@ from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Status
 from odl_do.rest_interface import OpenDayLightDO_UserAuthentication
 from odl_do.rest_interface import OpenDayLightDO_NetworkTopology
 
+from odl_do.messaging import Messaging
+
 # Configuration
 conf = Configuration()
 conf.log_configuration()
@@ -68,6 +70,8 @@ app.add_route('/topology', rest_net_topology)
 
 logging.info("Falcon Successfully started")
 print("Welcome to 'OpenDayLight Domain Orchestrator'")
+
+Messaging().PublishDomainConfig()
 
 
     

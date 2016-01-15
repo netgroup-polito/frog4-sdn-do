@@ -1,0 +1,39 @@
+{
+  "netgroup-domain:informations": {
+    "name": "odl",
+    "type": "odl",
+    
+    "netgroup-network-manager:informations": {
+      "openconfig-interfaces:interfaces": {
+        "openconfig-interfaces:interface": [
+          {
+            "name": "00:00:ee:02:31:4e:dc:4b/3",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "blablabla",
+              "enabled": true
+            },
+            "state": {
+              "admin-status": "UP",
+              "oper-status": "UP"
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": [2,3,5]
+                }
+              },
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain": "domain1",
+                  "interface": "eth3"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -49,10 +49,15 @@ class Configuration(object):
             self.__ODL_VERSION = config.get('opendaylight','odl_version')
             
             # [messaging]
+            self.__DD_NAME = config.get('messaging','dd_name')
             self.__DD_BROKER_ADDRESS = config.get('messaging','dd_broker_address')
             self.__DD_TENANT_NAME = config.get('messaging','dd_tenant_name')
             self.__DD_TENANT_KEY = config.get('messaging','dd_tenant_key')
-
+            
+            # [resource_description_topic]
+            self.__MSG_RESDESC_TOPIC = config.get('resource_description_topic','msg_resdesc_topic')
+            self.__MSG_RESDESC_FILE = config.get('resource_description_topic','msg_resdesc_file')
+            
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
         
@@ -124,6 +129,10 @@ class Configuration(object):
     @property
     def ODL_VERSION(self):
         return self.__ODL_VERSION
+    
+    @property
+    def DD_NAME(self):
+        return self.__DD_NAME
     
     @property
     def DD_BROKER_ADDRESS(self):

@@ -52,17 +52,22 @@ class Messaging(object):
             return
         
         try:
+            in_file = open(Configuration().MSG_RESDESC_FILE,"r")
+            msg_resdesc_file = in_file.read()
+        
             if self.__publish_domain_config is None:
-                dd_publish = DD_Publish("DO_Pub", Configuration().DD_BROKER_ADDRESS,
+                dd_publish = DD_Publish(Configuration().DD_NAME,
+                                        Configuration().DD_BROKER_ADDRESS,
                                         Configuration().DD_TENANT_NAME,
                                         Configuration().DD_TENANT_KEY,
-                                        "NF-FG", "newjson")
+                                        Configuration().MSG_RESDESC_TOPIC, 
+                                        msg_resdesc_file)
                 thread = Thread(target=dd_publish.start)
                 thread.start()
                 self.__publish_domain_config = dd_publish
                 self.__thread_publish_domain_config = thread
             else:    
-                self.__publish_domain_config.publish("NF-FG", "newjson")
+                self.__publish_domain_config.publish(Configuration().MSG_RESDESC_TOPIC, msg_resdesc_file)
             
         except Exception as ex:
             logging.error(ex)
