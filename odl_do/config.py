@@ -146,5 +146,13 @@ class Configuration(object):
     def DD_TENANT_KEY(self):
         return self.__DD_TENANT_KEY
     
+    @property
+    def MSG_RESDESC_TOPIC(self):
+        return self.__MSG_RESDESC_TOPIC
+    
+    @property
+    def MSG_RESDESC_FILE(self):
+        return self.__MSG_RESDESC_FILE
+    
     
     

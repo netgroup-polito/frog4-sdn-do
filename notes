@@ -1,4 +1,4 @@
-PYTHON: requirements and instructions
+PYTHON - Requirements and Instructions
 
 1) Python 3.4
 2) DoubleDecker
@@ -12,7 +12,11 @@ PYTHON: requirements and instructions
 - sqlalchemy 1.0.11
 - networkx 1.10
 
-Installations
+
+
+
+INSTALLATION NOTES
+
 $ sudo apt-get install python3
 $ sudo apt-get install python3-setuptools
 $ sudo easy_install3 pip
@@ -25,10 +29,22 @@ $ pip3 freeze
 
 
 
+
+UTILITY SCRIPTS
+
+1)	$ python3 ./clean_all.py
+	Reset database and clean all switches.
+
+2)	$ python3 ./network_topology.py
+	Print the network topology detected by OpenDayLight Domain Orchestrator.
+
+
+
+
 INSTRUCTIONS
 
-1)	Set full permissions on the main directory:
-	$ chmod 777 <directory>
+1)	Set full permissions on the database file:
+	$ chmod 777 db.sqlite3
 
 2)	Check ./configuration.conf and write your own configuration;
 	pay attention to all the paths (they must be absolute path).
@@ -37,9 +53,6 @@ INSTRUCTIONS
 	$ python3 ./create_database.py
 	The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
 	All the tables are empty, except "user" and "tenant".
-
-	N.B. Use the clean_all.py script to reset database and switches.
-	$ python3 ./create_database.py
 
 4)	Start the OpenDayLight Component Adapter with start.py.
 	$ gunicorn -b 0.0.0.0:9000 -t 500 start:app

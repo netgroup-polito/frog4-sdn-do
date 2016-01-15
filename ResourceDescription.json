@@ -1,7 +1,7 @@
 {
   "netgroup-domain:informations": {
     "name": "odl",
-    "type": "odl",
+    "type": "ODL",
     
     "netgroup-network-manager:informations": {
       "openconfig-interfaces:interfaces": {

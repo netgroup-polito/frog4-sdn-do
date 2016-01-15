@@ -3,7 +3,7 @@ Created on Gen 14, 2015
 
 @author: giacomoratta
 
-This script print the network topology watched by OpenDayLight Domain Orchestrator.
+This script print the network topology detected by OpenDayLight Domain Orchestrator.
 
 '''
 
