@@ -1,6 +1,6 @@
 {
   "netgroup-domain:informations": {
-    "name": "odl",
+    "name": "odl_do",
     "type": "ODL",
     
     "netgroup-network-manager:informations": {
@@ -10,7 +10,7 @@
             "name": "00:00:ee:02:31:4e:dc:4b/3",
             "config": {
               "type": "ethernetCsmacd",
-              "description": "blablabla",
+              "description": "endpoint123",
               "enabled": true
             },
             "state": {

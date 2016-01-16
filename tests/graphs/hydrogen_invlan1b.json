@@ -9,7 +9,7 @@
         "name": "INGRESS",
         "type": "vlan",
         "vlan": {
-          "vlan-id": "222",
+          "vlan-id": "288",
           "switch-id": "00:00:ee:02:31:4e:dc:4b",
           "interface": "1"
         }
@@ -17,13 +17,12 @@
       {
         "id": "End31",
         "name": "EGRESS",
-        "type": "vlan",
-        "vlan": {
-          "vlan-id": "333",
+        "type": "interface",
+        "interface": {
           "switch-id": "00:00:ae:f5:5c:f0:0a:47",
           "interface": "1"
         }
-      },       
+      },      
       {
         "id": "End41",
         "name": "EGRESS",
@@ -31,6 +30,15 @@
         "interface": {
           "switch-id": "00:00:0e:c5:60:be:80:4b",
           "interface": "3"
+        }
+      },      
+      {
+        "id": "End51",
+        "name": "EGRESS",
+        "type": "interface",
+        "interface": {
+          "switch-id": "00:00:06:17:86:e9:0d:44",
+          "interface": "17"
         }
       }
     ],
@@ -40,7 +48,7 @@
       "flow-rules": [
         
         {
-          "id": "552",
+          "id": "551",
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31"
@@ -48,6 +56,19 @@
           "actions": [
           	{
             	"output_to_port": "endpoint:End21"
+          	}
+          ]
+        },
+        
+        {
+          "id": "552",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End21"
+          },
+          "actions": [
+          	{
+            	"output_to_port": "endpoint:End31"
           	}
           ]
         }

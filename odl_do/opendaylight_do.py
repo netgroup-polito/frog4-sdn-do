@@ -199,8 +199,8 @@ class OpenDayLightDO(object):
         
         # END POINTs inspections
         for ep in nffg.end_points:
-            if(ep.type is not None and ep.type != "interface"):
-                raise_useless_info("'end-points.type' must be 'interface' not '"+ep.type+"'")
+            if(ep.type is not None and ep.type != "interface" and ep.type != "vlan"):
+                raise_useless_info("'end-points.type' must be 'interface' or 'vlan' (not '"+ep.type+"')")
             if ep.node_id is not None:
                 raise_useless_info("presence of 'node-id'")
             if(ep.remote_endpoint_id is not None):
@@ -363,8 +363,12 @@ class OpenDayLightDO(object):
             if port1_id is None:
                 continue
             endp1 = profile_graph.endpoints[port1_id]
-            if endp1.type != 'interface':
+            if endp1.type != 'interface' and endp1.type != 'vlan':
                 continue
+            
+            # Out Endpoint not valid
+            if endp1 is None:
+                raise GraphError("Flowrule "+flowrule.id+" has an invalid ingress endpoint")
             
             # Process flow rule with VLAN
             self.__ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
@@ -385,6 +389,10 @@ class OpenDayLightDO(object):
             1) endpoints are on the same switch;
             2) endpoints are on different switches, so search for a path.
         '''
+        
+        # Endpoint.type = VLAN ...overwrites the match on vlan_id
+        if in_endpoint.type == "vlan":
+            flowrule.match.vlan_id = in_endpoint.vlan_id
         
         # Check "vlan in" match on in_endpoint
         if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
@@ -409,6 +417,10 @@ class OpenDayLightDO(object):
                 if port2_id is not None:
                     out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
                     break
+        
+        # Out Endpoint not valid
+        if out_endpoint is None:
+            raise GraphError("Flowrule "+flowrule.id+" has an invalid egress endpoint")
 
         # [ 1 ] Endpoints are on the same switch
         if in_endpoint.switch_id == out_endpoint.switch_id:
@@ -423,17 +435,17 @@ class OpenDayLightDO(object):
 
         # [ 2 ] Endpoints are on different switches...search for a path!
         nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
-        if(nodes_path is None):
-            logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
-            return
-        
-        logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
-        if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
-            logging.debug("Invalid link between the endpoints")
-            return
-        
-        self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+        if(nodes_path is not None):
             
+            logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
+            if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
+                logging.debug("Invalid link between the endpoints")
+                return
+            self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            
+        # [ 3 ] No paths between the endpoints 
+        logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
+        return
 
 
 
@@ -546,9 +558,15 @@ class OpenDayLightDO(object):
                 efr.set_switch_id(ep2.switch_id)
                 port_in = self.netgraph.switchPortIn(hop, path[i-1])
                 port_out = ep2.interface
+                
                 # Force the vlan out to be equal to the original
                 if pop_vlan_flag == False and original_vlan_out is not None:
-                    vlan_out = original_vlan_out 
+                    vlan_out = original_vlan_out
+                    
+                # Vlan egress endpoint ...set the vlan_id
+                if ep2.type=='vlan':
+                    pop_vlan_flag = False
+                    vlan_out = ep2.vlan_id
             
             # Middle way switch
             else:
