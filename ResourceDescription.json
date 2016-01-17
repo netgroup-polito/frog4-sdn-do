@@ -2,15 +2,14 @@
   "netgroup-domain:informations": {
     "name": "odl_do",
     "type": "ODL",
-    
     "netgroup-network-manager:informations": {
       "openconfig-interfaces:interfaces": {
         "openconfig-interfaces:interface": [
           {
-            "name": "00:00:ee:02:31:4e:dc:4b/3",
+            "name": "00:00:ee:02:31:4e:dc:4b/1",
             "config": {
               "type": "ethernetCsmacd",
-              "description": "endpoint123",
+              "description": "endpoint on br21",
               "enabled": true
             },
             "state": {
@@ -21,7 +20,63 @@
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
                   "interface-mode": "TRUNK",
-                  "trunk-vlans": [2,3,5]
+                  "trunk-vlans": [
+                    222
+                  ]
+                }
+              },
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain": "domain1",
+                  "interface": "eth3"
+                }
+              ]
+            }
+          },
+          {
+            "name": "00:00:ae:f5:5c:f0:0a:47/1",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on br31",
+              "enabled": true
+            },
+            "state": {
+              "admin-status": "UP",
+              "oper-status": "UP"
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": [
+                    333
+                  ]
+                }
+              },
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain": "domain1",
+                  "interface": "eth3"
+                }
+              ]
+            }
+          },
+          {
+            "name": "00:00:0e:c5:60:be:80:4b/3",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on br41",
+              "enabled": true
+            },
+            "state": {
+              "admin-status": "UP",
+              "oper-status": "UP"
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
                 }
               },
               "netgroup-neighbor:neighbor": [

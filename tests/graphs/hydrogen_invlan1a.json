@@ -40,7 +40,7 @@
       "flow-rules": [
         
         {
-          "id": "552",
+          "id": "551",
           "priority": 101,
           "match": {
             "port_in": "endpoint:End31"
@@ -48,6 +48,18 @@
           "actions": [
           	{
             	"output_to_port": "endpoint:End21"
+          	}
+          ]
+        },
+        {
+          "id": "552",
+          "priority": 101,
+          "match": {
+            "port_in": "endpoint:End21"
+          },
+          "actions": [
+          	{
+            	"output_to_port": "endpoint:End41"
           	}
           ]
         }

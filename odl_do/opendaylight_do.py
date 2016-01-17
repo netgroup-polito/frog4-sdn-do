@@ -12,6 +12,7 @@ from nffg_library.nffg import FlowRule, Match as NffgMatch, Action as NffgAction
 from odl_do.sql.graph_session import GraphSession
 
 from odl_do.config import Configuration
+from odl_do.resource_description import ResourceDescription
 from odl_do.odl_rest import ODL_Rest
 from requests.exceptions import HTTPError
 from odl_do.resources import Action, Match, Flow, ProfileGraph, Endpoint
@@ -45,6 +46,10 @@ class OpenDayLightDO(object):
         
         # NetGraph
         self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
+        
+        # Resource Description
+        self.resource_description = ResourceDescription()
+        self.resource_description.loadFile(conf.MSG_RESDESC_FILE)
 
 
     
@@ -69,7 +74,8 @@ class OpenDayLightDO(object):
 
             GraphSession().updateStatus(self.__session_id, 'complete')
             
-            #TODO:update domain configuration .json
+            # Update the resource description .json
+            self.__ResourceDescription_updateBusyVlanIDs()
             
             Messaging().PublishDomainConfig()
             
@@ -118,7 +124,8 @@ class OpenDayLightDO(object):
             
             GraphSession().updateStatus(self.__session_id, 'complete')
             
-            #TODO:update domain configuration .json
+            # Update the resource description .json
+            self.__ResourceDescription_updateBusyVlanIDs()
             
             Messaging().PublishDomainConfig()
             
@@ -144,7 +151,8 @@ class OpenDayLightDO(object):
             self.__NFFG_ODL_deleteGraph()
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
-            #TODO:update domain configuration .json
+            # Update the resource description .json
+            self.__ResourceDescription_updateBusyVlanIDs()
             
             Messaging().PublishDomainConfig()
             
@@ -196,6 +204,13 @@ class OpenDayLightDO(object):
         # VNFs inspections
         if len(nffg.vnfs)>0:
             raise_useless_info("presence of 'VNFs'")
+            
+        '''
+        Busy VLAN ID: the control on the required vlan id(s) must wait for
+        the graph instantiation into the database in order to clarify the situation.
+        Finally, the the control on the required vlan id(s) is always made before
+        processing a flowrule (see the first rows of "__ODL_ProcessFlowrule").
+        '''
         
         # END POINTs inspections
         for ep in nffg.end_points:
@@ -218,7 +233,9 @@ class OpenDayLightDO(object):
             if ep.prepare_connection_to_remote_endpoint_ids is not None and len(ep.prepare_connection_to_remote_endpoint_ids)>0:
                 raise_useless_info("presence of connection to remote endpoints")
                 
-            # TODO: check endpoints in bigswitch.json (switch/port)
+            # Check endpoints in ResourceDescription.json (switch/port)
+            if self.resource_description.checkEndpoint(ep.switch_id, ep.interface)==False:
+                raise GraphError("Endpoint "+ep.id+" not found")
                 
 
         # FLOW RULEs inspection
@@ -394,9 +411,9 @@ class OpenDayLightDO(object):
         if in_endpoint.type == "vlan":
             flowrule.match.vlan_id = in_endpoint.vlan_id
         
-        # Check "vlan in" match on in_endpoint
         if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
-            raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same port in (ingress endpoint "+in_endpoint.id+")")
+            raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
+                    
         
         out_endpoint = None
         
@@ -751,6 +768,21 @@ class OpenDayLightDO(object):
             elif eprs.resource_type == 'port':
                 self.__deletePortByID(eprs.resource_id)
         GraphSession().deleteEndpointByID(endpoint_id)
+    
+    
+    def __ResourceDescription_updateBusyVlanIDs(self):
+        
+        endpoints = self.resource_description.getEndpoints()
+        
+        for ep in endpoints:
+            query = GraphSession().getVlanInIDs(ep['interface'], ep['switch_id'])
+            busy_vlans = []
+            for q in query:
+                busy_vlans.append(q.vlan_in)
+            self.resource_description.setBusyVlan(ep['switch_id'], ep['interface'], busy_vlans)
+        
+        # Update the resource description .json
+        self.resource_description.saveFile()
     
     
     
