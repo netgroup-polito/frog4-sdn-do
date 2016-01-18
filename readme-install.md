@@ -1,13 +1,13 @@
-## FROG4 OpenDayLight Domain Orchestrator - Installation Guide
+# FROG4 OpenDayLight Domain Orchestrator - Installation Guide
 
-# Install Python 3
+## Install Python 3
 
 ```sh
 		$ sudo apt-get install python3.4-dev python3-setuptools
 		$ sudo easy_install3 pip
 ```
 
-# Install Python libraries
+## Install Python libraries
 
 * [doubledecker](https://github.com/Acreo/DoubleDecker)
 * gunicorn 19.4.1
