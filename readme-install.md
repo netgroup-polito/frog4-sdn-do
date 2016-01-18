@@ -1,13 +1,13 @@
 # FROG4 OpenDayLight Domain Orchestrator - Installation Guide
 
-## Install Python 3
+### Install Python 3
 
 ```sh
 		$ sudo apt-get install python3.4-dev python3-setuptools
 		$ sudo easy_install3 pip
 ```
 
-## Install Python libraries
+### Install Python libraries
 
 * [doubledecker](https://github.com/Acreo/DoubleDecker)
 * gunicorn 19.4.1
@@ -29,23 +29,39 @@ To check if a module is already installed and its version:
 		$ pip3 freeze
 ```
 
-## INSTRUCTIONS
+### Clone the code
 
-1)	Set full permissions on the database file:
-	$ chmod 777 db.sqlite3
+```sh
+	git clone https://github.com/netgroup-polito/frog4-odl-do.git
+    cd frog4-odl-do
+    git submodule init && git submodule update
+```
 
-2)	Check ./configuration.conf and write your own configuration;
-	pay attention to all the paths (they must be absolute path).
+### Write your own configuration
 
-3)	Create the database.
-	$ python3 ./create_database.py
-	The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
-	All the tables are empty, except "user" and "tenant".
+Edit [./default-config.ini](/config/default-config.ini).
 
-4)	Start the OpenDayLight Component Adapter with start.py.
-	$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+Pay attention to all paths: they must be relative paths (respect of 'frog4-odl-do' directory).
 
-## Utility scripts
+
+### Create the database
+```sh
+		$ python3 ./scripts/create_database.py
+```
+Set full permissions on the database file:
+```sh
+		$ chmod 777 db.sqlite3
+```
+The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
+All the tables will be empty, except "user" and "tenant".
+
+
+### Start the Domain Orchestrator
+```sh
+		$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+```
+
+### Utility scripts
 
 * Reset database and clean all switches.
 ```sh
