@@ -1,6 +1,6 @@
-# FROG4 OpenDayLight Domain Orchestrator - Installation Guide
+## FROG4 OpenDayLight Domain Orchestrator - Installation Guide
 
-## Install Python 3
+### Install Python 3
 
 ```sh
 		$ sudo apt-get install python3.4-dev python3-setuptools
