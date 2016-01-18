@@ -1,4 +1,4 @@
-## FROG4 OpenDayLight Domain Orchestrator - Installation Guide
+# FROG4 OpenDayLight Domain Orchestrator - Installation Guide
 
 ### Install Python 3
 
@@ -7,7 +7,7 @@
 		$ sudo easy_install3 pip
 ```
 
-## Install Python libraries
+### Install Python libraries
 
 * [doubledecker](https://github.com/Acreo/DoubleDecker)
 * gunicorn 19.4.1
@@ -29,3 +29,14 @@ To check if a module is already installed and its version:
 		$ pip3 freeze
 ```
 
+## Utility scripts
+
+* Reset database and clean all switches.
+```sh
+		$ python3 ./scripts/clean_all.py
+```
+
+* Print the network topology detected by OpenDayLight Domain Orchestrator.
+```sh
+		$ python3 ./scripts/network_topology.py
+```
