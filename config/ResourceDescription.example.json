@@ -13,7 +13,7 @@ with several endpoints and their details.
 	Do not change this value. 
 
 "openconfig-interfaces:interface"
-	List all endpoints.	Every object rappresent a specific endpoint.
+	List all endpoints. Every object rappresent a specific endpoint.
 	
 	"name":"00:00:ee:02:31:4e:dc:4b/1"
 		Follows the format "switch/port".
