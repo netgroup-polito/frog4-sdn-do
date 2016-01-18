@@ -26,7 +26,7 @@ To install a python3 module:
 
 To check if a module is already installed and its version:
 ```sh
-		$ pip3 freeze
+	$ pip3 freeze
 ```
 
 ### Clone the code
