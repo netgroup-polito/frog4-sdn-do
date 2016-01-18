@@ -29,7 +29,7 @@ class DD_Publish(ClientSafe):
     
 
 
-class Messaging(object):
+class Messaging(object): # Singleton Class
     
     _instance = None
 

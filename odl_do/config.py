@@ -3,6 +3,10 @@ Created on Oct 1, 2014
 
 @author: fabiomignini
 @author: giacomoratta
+
+Singleton Class.
+A the end of this file the 'initialize' method is called
+in order to create the unique instance.
 '''
 
 import configparser, os, inspect, logging
@@ -13,18 +17,26 @@ class Configuration(object):
     
     _instance = None
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
+        if cls._instance is None:
             cls._instance = super(Configuration, cls).__new__(cls, *args, **kwargs)
         return cls._instance 
     
     def __init__(self):
-        self.inizialize()
+        return      
+        
     
-    def inizialize(self): 
+    def initialize(self): 
         config = configparser.RawConfigParser()
-        base_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])).rpartition('/')[0]
+        
+        self.__abs_path = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])).rpartition('/')[0]
+        '''
+        The absolute path of the main directory (it ends without '/')
+        will be added to every 'path-like' configuration string.
+        Using absolute paths avoids a lot of kinds of problems.
+        '''
+        
         try:
-            config.read(base_folder+'/configuration.conf')
+            config.read(self.__abs_path+'/config/default-config.ini')
             
             # [basic_config]
             self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
@@ -35,12 +47,14 @@ class Configuration(object):
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
             
             # [log]
-            self.__LOG_FILE = config.get('log', 'file')
+            self.__LOG_FILE = self.__abs_path+"/"+config.get('log', 'file')
             self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
             self.__LOG_DEBUG = config.getboolean('log', 'debug')
             
             # [database]
             self.__DATABASE_CONNECTION = config.get('database','connection')
+            db_file = os.path.basename(self.__DATABASE_CONNECTION)
+            self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file,self.__abs_path+"/"+db_file)
             
             # [opendaylight]
             self.__ODL_USERNAME = config.get('opendaylight','odl_username')
@@ -52,12 +66,14 @@ class Configuration(object):
             self.__DD_NAME = config.get('messaging','dd_name')
             self.__DD_BROKER_ADDRESS = config.get('messaging','dd_broker_address')
             self.__DD_TENANT_NAME = config.get('messaging','dd_tenant_name')
-            self.__DD_TENANT_KEY = config.get('messaging','dd_tenant_key')
+            self.__DD_TENANT_KEY = self.__abs_path+"/"+config.get('messaging','dd_tenant_key')
             
             # [resource_description_topic]
             self.__MSG_RESDESC_TOPIC = config.get('resource_description_topic','msg_resdesc_topic')
-            self.__MSG_RESDESC_FILE = config.get('resource_description_topic','msg_resdesc_file')
-            
+            self.__MSG_RESDESC_FILE = self.__abs_path+"/"+config.get('resource_description_topic','msg_resdesc_file')
+
+            # Start logging
+            self.log_configuration()
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
         
@@ -153,6 +169,6 @@ class Configuration(object):
     @property
     def MSG_RESDESC_FILE(self):
         return self.__MSG_RESDESC_FILE
-    
-    
-    
+
+conf = Configuration()
+conf.initialize()

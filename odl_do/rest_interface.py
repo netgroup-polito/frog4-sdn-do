@@ -415,12 +415,12 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
 class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
     def on_get(self, request, response):
         try :
-            conf = Configuration()
-            conf.log_configuration()
-
             UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
+            ng = NetGraph(Configuration().ODL_VERSION,
+                          Configuration().ODL_ENDPOINT, 
+                          Configuration().ODL_USERNAME, 
+                          Configuration().ODL_PASSWORD)
             
             response.body = json.dumps(ng.getNetworkTopology()) #self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
             response.status = falcon.HTTP_200

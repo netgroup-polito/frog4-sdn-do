@@ -1,7 +1,13 @@
 import json
 from collections import OrderedDict
+from odl_do.config import Configuration
+from odl_do.sql.graph_session import GraphSession
 
-class ResourceDescription(object):
+class ResourceDescription(object):  # Singleton Class
+    
+    __filename = None
+    __dict = None
+    __endpoint_name_separator = "/"
     
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -11,9 +17,7 @@ class ResourceDescription(object):
     
     
     def __init__(self):
-        self.__endpoint_name_separator = "/"
-        self.__filename = None
-        self.__dict = None
+        return
     
     
     def loadFile(self,filename):
@@ -28,7 +32,7 @@ class ResourceDescription(object):
         
         # TODO: validate json
         
-        self.__setEndpointsAndVlans()
+        self.__readEndpointsAndVlans()
     
     
     def saveFile(self):
@@ -43,7 +47,7 @@ class ResourceDescription(object):
         
         
     
-    def __setEndpointsAndVlans(self):
+    def __readEndpointsAndVlans(self):
         
         self.__endpoints = {}
         
@@ -70,89 +74,29 @@ class ResourceDescription(object):
     
     
     
-    def pushBusyVlan(self, switch, port, vlan_id):
-        
-        ep_name = switch+self.__endpoint_name_separator+port
-        
-        if ep_name not in self.__endpoints:
-            return False
-        
-        vlan_id = int(vlan_id)
-        if vlan_id in self.__endpoints[ep_name]['busy_vlans']:
-            return True
-
-        self.__endpoints[ep_name]['busy_vlans'].append(vlan_id)
-        ''' 
-            ep['busy_vlans'] has the reference to list object "trunk-vlans" inside self.__dict.
-            Every modification on ep['busy_vlans'] will affect the list object "trunk-vlans".
-        '''
-        return True
-    
-    
-    
-    def popBusyVlan(self, switch, port, vlan_id):
-        
-        ep_name = switch+self.__endpoint_name_separator+port
-        
-        if ep_name not in self.__endpoints:
-            return False
-        
-        vlan_id = int(vlan_id)
-        if vlan_id not in self.__endpoints[ep_name]['busy_vlans']:
-            return True
-        
-        self.__endpoints[ep_name]['busy_vlans'].remove(vlan_id)
-        ''' 
-            ep['busy_vlans'] has the reference to list object "trunk-vlans" inside self.__dict.
-            Every modification on ep['busy_vlans'] will affect the list object "trunk-vlans".
-        '''
-        return True
-    
-    
-    
-    def setBusyVlan(self, switch, port, busy_vlans):
-        
-        ep_name = switch+self.__endpoint_name_separator+port
-        
-        if ep_name not in self.__endpoints:
-            return False
-        
-        #self.__endpoints[ep_name]['busy_vlans'] = self.__endpoints[ep_name]['busy_vlans']+busy_vlans
-        self.__endpoints[ep_name]['busy_vlans'].clear()
-        for bv in busy_vlans:
-            self.__endpoints[ep_name]['busy_vlans'].append(int(bv))
-        ''' 
-            ep['busy_vlans'] has the reference to list object "trunk-vlans" inside self.__dict.
-            Every modification on ep['busy_vlans'] will affect the list object "trunk-vlans".
-        '''
-        return True
-    
-    
-    def getEndpoints(self):
-        ep_list = []
+    def updateTrunkVlanIDs(self):
         for endpoint_name in self.__endpoints:
-            ep = {}
-            ep['switch_id'] = self.__endpoints[endpoint_name]['switch']
-            ep['interface'] = self.__endpoints[endpoint_name]['port']
-            ep_list.append(ep)
-        return ep_list
-    
-    
+            
+            query = GraphSession().getVlanInIDs(self.__endpoints[endpoint_name]['port'], 
+                                                self.__endpoints[endpoint_name]['switch'])
+            
+            self.__endpoints[endpoint_name]['busy_vlans'].clear()
+            
+            for q in query:
+                self.__endpoints[endpoint_name]['busy_vlans'].append(int(q.vlan_in))
 
+            ''' 
+                ep['busy_vlans'] has the reference to list object "trunk-vlans" inside self.__dict.
+                Every modification on ep['busy_vlans'] will affect the list object "trunk-vlans".
+            '''
+    
+    
     def checkEndpoint(self, switch, port):
         ep_name = switch+self.__endpoint_name_separator+port
         if ep_name not in self.__endpoints:
             return False
         return True
     
-    def checkEndpoint_VlanIsBusy(self, switch, port, vlan_id):
-        ep_name = switch+self.__endpoint_name_separator+port
-        if ep_name not in self.__endpoints:
-            return True
-        if int(vlan_id) in self.__endpoints[ep_name]['busy_vlans']:
-            return True
-        return False
     
-    
-    
-    
+
+ResourceDescription().loadFile(Configuration().MSG_RESDESC_FILE)

@@ -42,9 +42,7 @@ class UserData(object):
 class UserAuthentication(object):
     
     def __init__(self):
-        conf = Configuration()
-        conf.log_configuration()
-        self.token_expiration_time = int(conf.AUTH_TOKEN_EXPIRATION)
+        self.token_expiration_time = int(Configuration().AUTH_TOKEN_EXPIRATION)
     
     def __getPasswordHash(self, password):
         pwdsha = hashlib.sha256() # sha512...len=64; sha256...len=32

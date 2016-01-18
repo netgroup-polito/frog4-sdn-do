@@ -34,10 +34,6 @@ from odl_do.rest_interface import OpenDayLightDO_NetworkTopology
 
 from odl_do.messaging import Messaging
 
-# Configuration
-conf = Configuration()
-conf.log_configuration()
-
 # Database connection test
 try_session()
 

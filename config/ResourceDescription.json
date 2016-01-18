@@ -20,9 +20,7 @@
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
                   "interface-mode": "TRUNK",
-                  "trunk-vlans": [
-                    222
-                  ]
+                  "trunk-vlans": []
                 }
               },
               "netgroup-neighbor:neighbor": [
@@ -48,9 +46,7 @@
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
                   "interface-mode": "TRUNK",
-                  "trunk-vlans": [
-                    333
-                  ]
+                  "trunk-vlans": []
                 }
               },
               "netgroup-neighbor:neighbor": [

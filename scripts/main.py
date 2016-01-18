@@ -1,7 +1,6 @@
 '''
 Created on Dic 7, 2015
 
-@author: fabiomignini
 @author: giacomoratta
 
 This script test the main functions of the OpenDayLight Domain Orchestrator.
@@ -31,12 +30,12 @@ from nffg_library.validator import ValidateNF_FG
 from nffg_library.nffg import NF_FG
 
 # Clean All (starts automatically)
-import clean_all
+from scripts import clean_all
 
 def put_json(odlDO, filename):
     try:
         # NF-FG File
-        in_file = open("/home/giacomo/eclipse_workspace/frog4-odl-do/tests/graphs/"+filename,"r")
+        in_file = open("/abs/path/graphs/folder/"+filename,"r")
         nffg_file = json.loads(in_file.read())
         ValidateNF_FG().validate(nffg_file)
         nffg = NF_FG()
@@ -55,11 +54,6 @@ def put_json(odlDO, filename):
             print("Unknown exception")
 
 
-
-# Configuration
-conf = Configuration()
-conf.log_configuration()
-
 # Test connection to database
 try_session()
 
@@ -73,16 +67,3 @@ odlDO = OpenDayLightDO(user)
 
 put_json(odlDO,"hydrogen_invlan1a.json")
 
-'''
-put_json(odlDO,"prog1/invlan1a.json")
-put_json(odlDO,"prog1/invlan1b.json")
-put_json(odlDO,"prog1/invlan1c.json")
-put_json(odlDO,"prog1/invlan1d.json")
-put_json(odlDO,"prog1/invlan1e.json")
-put_json(odlDO,"prog1/invlan1f.json")
-put_json(odlDO,"prog1/invlan1g.json")
-put_json(odlDO,"prog1/invlan1h.json")
-put_json(odlDO,"prog1/invlan1i.json")
-put_json(odlDO,"prog1/invlan1l.json")
-'''
-    

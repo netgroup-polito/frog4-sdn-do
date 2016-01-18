@@ -12,12 +12,9 @@ from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
-
-from odl_do.config import Configuration
 from odl_do.sql.sql_server import get_session
 
 Base = declarative_base()
-sqlserver = Configuration().DATABASE_CONNECTION
 
 
 class GraphSessionModel(Base):

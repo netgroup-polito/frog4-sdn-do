@@ -24,9 +24,9 @@ conf.log_configuration()
 logging.debug("Printing the network topology watched by OpenDayLight Domain Orchestrator")
 print("OpenDayLight Domain Orchestrator - Network Topology")
 
-print("\nOpenDayLight version: "+conf.ODL_VERSION+"\n")
+print("\nOpenDayLight version: "+Configuration().ODL_VERSION+"\n")
 
-ng = NetGraph(conf.ODL_VERSION, conf.ODL_ENDPOINT, conf.ODL_USERNAME, conf.ODL_PASSWORD)
+ng = NetGraph(Configuration().ODL_VERSION, Configuration().ODL_ENDPOINT, Configuration().ODL_USERNAME, Configuration().ODL_PASSWORD)
 nt = ng.getNetworkTopology()
 
 for node in nt:

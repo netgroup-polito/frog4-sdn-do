@@ -12,3 +12,4 @@ FrogOrchestrator.log
 PYTHONPATH
 db.sqlite3
 /tests
+/scripts/main1.py

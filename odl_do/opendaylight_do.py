@@ -24,9 +24,7 @@ from odl_do.exception import sessionNotFound, GraphError, NffgUselessInformation
 class OpenDayLightDO(object):
 
     def __init__(self, user_data):
-        
-        conf = Configuration()
-        
+
         self.__session_id = None
         
         self.nffg = None
@@ -39,17 +37,13 @@ class OpenDayLightDO(object):
         '''
         
         # Dati ODL
-        self.odlendpoint = conf.ODL_ENDPOINT
-        self.odlversion = conf.ODL_VERSION
-        self.odlusername = conf.ODL_USERNAME
-        self.odlpassword = conf.ODL_PASSWORD
+        self.odlendpoint = Configuration().ODL_ENDPOINT
+        self.odlversion = Configuration().ODL_VERSION
+        self.odlusername = Configuration().ODL_USERNAME
+        self.odlpassword = Configuration().ODL_PASSWORD
         
         # NetGraph
         self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
-        
-        # Resource Description
-        self.resource_description = ResourceDescription()
-        self.resource_description.loadFile(conf.MSG_RESDESC_FILE)
 
 
     
@@ -75,7 +69,8 @@ class OpenDayLightDO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            self.__ResourceDescription_updateBusyVlanIDs()
+            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -125,7 +120,8 @@ class OpenDayLightDO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            self.__ResourceDescription_updateBusyVlanIDs()
+            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -152,7 +148,8 @@ class OpenDayLightDO(object):
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
             # Update the resource description .json
-            self.__ResourceDescription_updateBusyVlanIDs()
+            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -234,7 +231,7 @@ class OpenDayLightDO(object):
                 raise_useless_info("presence of connection to remote endpoints")
                 
             # Check endpoints in ResourceDescription.json (switch/port)
-            if self.resource_description.checkEndpoint(ep.switch_id, ep.interface)==False:
+            if ResourceDescription().checkEndpoint(ep.switch_id, ep.interface)==False:
                 raise GraphError("Endpoint "+ep.id+" not found")
                 
 
@@ -768,21 +765,7 @@ class OpenDayLightDO(object):
             elif eprs.resource_type == 'port':
                 self.__deletePortByID(eprs.resource_id)
         GraphSession().deleteEndpointByID(endpoint_id)
-    
-    
-    def __ResourceDescription_updateBusyVlanIDs(self):
-        
-        endpoints = self.resource_description.getEndpoints()
-        
-        for ep in endpoints:
-            query = GraphSession().getVlanInIDs(ep['interface'], ep['switch_id'])
-            busy_vlans = []
-            for q in query:
-                busy_vlans.append(q.vlan_in)
-            self.resource_description.setBusyVlan(ep['switch_id'], ep['interface'], busy_vlans)
-        
-        # Update the resource description .json
-        self.resource_description.saveFile()
+
     
     
     
