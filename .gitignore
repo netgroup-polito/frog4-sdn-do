@@ -10,3 +10,5 @@ libreria.db
 orchestrator-core/.metadata/
 FrogOrchestrator.log
 PYTHONPATH
+db.sqlite3
+/tests
