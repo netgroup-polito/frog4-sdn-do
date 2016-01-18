@@ -43,7 +43,7 @@ def odl_do_clean_all():
     GraphSession().cleanAll()
     logging.info("Cleaning database and switches completed!")
     
-    ResourceDescription().updateTrunkVlanIDs()
+    ResourceDescription().updateAll()
     ResourceDescription().saveFile()
     logging.info("Resource description file updated!")
     

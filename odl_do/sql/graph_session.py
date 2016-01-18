@@ -288,6 +288,16 @@ class GraphSession(object):
         return session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(port_in=port_in).order_by(asc(VlanModel.vlan_in)).all()
     
     
+    def isDirectEndpoint(self, port_in, switch_id):
+        session = get_session()
+        if port_in is None or switch_id is None:
+            return False
+        query_ref = session.query(VlanModel.id).filter_by(vlan_in=None).filter_by(switch_id=switch_id).filter_by(port_in=port_in).all()
+        if len(query_ref)>0:
+            return True
+        return False
+    
+    
     def ingressVlanIsBusy(self, vlan_in, port_in, switch_id):
         session = get_session()
         if vlan_in is None or port_in is None or switch_id is None:

@@ -60,6 +60,7 @@ class ResourceDescription(object):  # Singleton Class
             ep['switch'] = name_split[0]
             ep['port'] = name_split[1]
             ep['busy_vlans'] = []
+            ep['config'] = interface["config"] #reference
             
             interface_vlan = interface["openconfig-if-ethernet:ethernet"]["openconfig-vlan:vlan"]["openconfig-vlan:config"]
             if interface_vlan["interface-mode"] == "TRUNK":
@@ -74,17 +75,29 @@ class ResourceDescription(object):  # Singleton Class
     
     
     
-    def updateTrunkVlanIDs(self):
+    def updateEnableStatus(self):
+        pass
+    
+    
+    
+    def updateAll(self):
         for endpoint_name in self.__endpoints:
             
             query = GraphSession().getVlanInIDs(self.__endpoints[endpoint_name]['port'], 
                                                 self.__endpoints[endpoint_name]['switch'])
             
+            self.__endpoints[endpoint_name]['config']['enabled'] = True
             self.__endpoints[endpoint_name]['busy_vlans'].clear()
             
             for q in query:
-                self.__endpoints[endpoint_name]['busy_vlans'].append(int(q.vlan_in))
-
+                
+                # If the endpoint has an ingress vlan, add the vlan id to the 'trunk-vlan' array
+                if q.vlan_in is not None:
+                    self.__endpoints[endpoint_name]['busy_vlans'].append(int(q.vlan_in))
+                    
+                # If the endpoint has not an ingress vlan, disable the endpoint
+                else:
+                    self.__endpoints[endpoint_name]['config']['enabled'] = False
             ''' 
                 ep['busy_vlans'] has the reference to list object "trunk-vlans" inside self.__dict.
                 Every modification on ep['busy_vlans'] will affect the list object "trunk-vlans".

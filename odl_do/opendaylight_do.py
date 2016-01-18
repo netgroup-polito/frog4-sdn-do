@@ -69,7 +69,7 @@ class OpenDayLightDO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().updateAll()
             ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
@@ -120,7 +120,7 @@ class OpenDayLightDO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().updateAll()
             ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
@@ -148,7 +148,7 @@ class OpenDayLightDO(object):
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
             # Update the resource description .json
-            ResourceDescription().updateTrunkVlanIDs()
+            ResourceDescription().updateAll()
             ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
@@ -389,6 +389,17 @@ class OpenDayLightDO(object):
     
     
     
+    def __ODL_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
+        
+        # Enabled endpoint?
+        if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
+            raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoind")
+        
+        # Busy vlan id?
+        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
+            raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
+    
+    
 
     def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
         '''
@@ -408,9 +419,7 @@ class OpenDayLightDO(object):
         if in_endpoint.type == "vlan":
             flowrule.match.vlan_id = in_endpoint.vlan_id
         
-        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
-            raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
-                    
+        self.__ODL_CheckFlowruleOnEndpoint(in_endpoint, flowrule)
         
         out_endpoint = None
         

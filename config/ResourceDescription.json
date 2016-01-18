@@ -26,7 +26,7 @@
               "netgroup-neighbor:neighbor": [
                 {
                   "domain": "domain1",
-                  "interface": "eth3"
+                  "interface": "10.0.0.1/eth3"
                 }
               ]
             }
@@ -46,13 +46,15 @@
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
                   "interface-mode": "TRUNK",
-                  "trunk-vlans": []
+                  "trunk-vlans": [
+                    333
+                  ]
                 }
               },
               "netgroup-neighbor:neighbor": [
                 {
                   "domain": "domain1",
-                  "interface": "eth3"
+                  "interface": "10.0.0.1/eth3"
                 }
               ]
             }
@@ -78,7 +80,33 @@
               "netgroup-neighbor:neighbor": [
                 {
                   "domain": "domain1",
-                  "interface": "eth3"
+                  "interface": "10.0.0.1/eth3"
+                }
+              ]
+            }
+          },
+          {
+            "name": "00:00:06:17:86:e9:0d:44/2",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on br51",
+              "enabled": false
+            },
+            "state": {
+              "admin-status": "UP",
+              "oper-status": "UP"
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              },
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain": "domain1",
+                  "interface": "10.0.0.1/eth3"
                 }
               ]
             }
