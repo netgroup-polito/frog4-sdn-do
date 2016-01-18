@@ -3,8 +3,8 @@
 ### Install Python 3
 
 ```sh
-		$ sudo apt-get install python3.4-dev python3-setuptools
-		$ sudo easy_install3 pip
+	$ sudo apt-get install python3.4-dev python3-setuptools
+	$ sudo easy_install3 pip
 ```
 
 ### Install Python libraries
@@ -21,7 +21,7 @@
 
 To install a python3 module:
 ```sh
-		$ sudo pip3 install <module>
+	$ sudo pip3 install <module>
 ```
 
 To check if a module is already installed and its version:
@@ -46,11 +46,11 @@ Pay attention to all paths: they must be relative paths (respect of 'frog4-odl-d
 
 ### Create the database
 ```sh
-		$ python3 ./scripts/create_database.py
+	$ python3 ./scripts/create_database.py
 ```
 Set full permissions on the database file:
 ```sh
-		$ chmod 777 db.sqlite3
+	$ chmod 777 db.sqlite3
 ```
 The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
 
@@ -59,17 +59,17 @@ All the tables will be empty, except "user" and "tenant".
 
 ### Start the Domain Orchestrator
 ```sh
-		$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+	$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
 ```
 
 ### Utility scripts
 
 * Reset database and clean all switches.
 ```sh
-		$ python3 ./scripts/clean_all.py
+	$ python3 ./scripts/clean_all.py
 ```
 
 * Print the network topology detected by OpenDayLight Domain Orchestrator.
 ```sh
-		$ python3 ./scripts/network_topology.py
+	$ python3 ./scripts/network_topology.py
 ```
