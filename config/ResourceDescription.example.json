@@ -1,157 +1,108 @@
+
+RESOURCE DESCRIPTION EXAMPLE
+
+This file describes an ODL Domain Orchestrator like a 'big switch', 
+with several endpoints and their details.
+
+"name":"my_odl_do"
+	The name of this domain orchestrator that will be used by all
+	global orchestrators to identify it between all the D.O.(s).
+
+"type":"ODL"
+	Identifies the type of this domain orchestrator.
+	Do not change this value. 
+
+"openconfig-interfaces:interface"
+	List all endpoints.	Every object rappresent a specific endpoint.
+	
+	"name":"00:00:ee:02:31:4e:dc:4b/1"
+		Follows the format "switch/port".
+	
+	"enabled":true
+		Could change dinamically due to the flowrules.
+		States if the endpoint can be used by a flowrule.
+		It becomes "false" when a flowrule that specifies a match on
+		"port_in" only is instantiated; so the endpoint can no longer 
+		be used by other flowrules.
+	
+	"trunk-vlans":[]
+		Could change dinamically due to the flowrules.
+		It list all the vlan id(s) specified in the match section of
+		the flowrule already instantiated. 
+	
+	"netgroup-neighbor:neighbor"
+		List all neighbours of this endpoint (usually only one).
+		
+		"domain":"domain1"
+			The domain name of the neighbor.
+		 
+		"interface":"10.0.0.1/eth3"
+			Follows the format "node/interface".
+
+
+--------------------------------------------------------------------------------
+
 {
   "netgroup-domain:informations": {
-    "name": "domain0",
+    "name": "my_odl_do",
+    "type": "ODL",
     "netgroup-network-manager:informations": {
       "openconfig-interfaces:interfaces": {
         "openconfig-interfaces:interface": [
           {
-            "name": "eth1",
+            "name": "00:00:ee:02:31:4e:dc:4b/1",
             "config": {
               "type": "ethernetCsmacd",
-              "description": "something",
+              "description": "endpoint on br21",
               "enabled": true
             },
             "state": {
               "admin-status": "UP",
               "oper-status": "UP"
             },
-            "openconfig-interfaces:subinterfaces": {
-              "openconfig-interfaces:subinterface": [
-                {
-                  "config": {
-                    "unnumbered": false,
-                    "name": "eth1",
-                    "description": "something",
-                    "enabled": true
-                  },
-                  "state": {
-                    "admin-status": "UP",
-                    "oper-status": "UP"
-                  },
-                  "capabilities": {
-                    "gre": "true"
-                  },
-                  "openconfig-if-ip:ipv4": {
-                    "openconfig-if-ip:address": [
-                      {
-                        "ip": "192.168.1.1",
-                        "config": {
-                          "ip": "192.168.1.1",
-                          "prefix-length": 24
-                        },
-                        "state": {
-                          "origin": "DHCP"
-                        }
-                      }
-                    ],
-                    "openconfig-if-ip:neighbor": [
-                      {
-                        "config": {
-                          "ip": "192.168.1.2",
-                          "link-layer-address": "00:00:00:00:00:11",
-                          "state": {
-                            "origin": "DYNAMIC"
-                          }
-                        }
-                      },
-                      {
-                        "ip": "192.168.1.3",
-                        "link-layer-address": "00:00:00:00:00:12",
-                        "state": {
-                          "origin": "DYNAMIC"
-                        }
-                      }
-                    ],
-                    "config": {
-                      "enabled": true
-                    },
-                    "state": {
-                      "enabled": true
-                    }
-                  },
-                  "openconfig-if-ip:ipv6": {
-                    "netgroup-polito-if-ip:address": [
-                      {
-                        "ip": "2001:cdba:0000:0000:0000:0000:3257:9652",
-                        "config": {
-                          "ip": "2001:cdba:0000:0000:0000:0000:3257:9652",
-                          "prefix-length": 0
-                        },
-                        "state": {
-                          "origin": "DHCP"
-                        }
-                      }
-                    ],
-                    "openconfig-if-ip:neighbor": [
-                      {
-                        "config": {
-                          "ip": "2001:cdba:0000:0000:0000:0000:3257:9653",
-                          "link-layer-address": "00:00:00:00:00:11",
-                          "state": {
-                            "origin": "DYNAMIC",
-                            "neighbor-state": "REACHABLE"
-                          }
-                        }
-                      },
-                      {
-                        "ip": "2001:cdba:0000:0000:0000:0000:3257:9654",
-                        "link-layer-address": "00:00:00:00:00:12",
-                        "state": {
-                          "origin": "DYNAMIC",
-                          "neighbor-state": "PROBE"
-                        }
-                      }
-                    ],
-                    "config": {
-                      "enabled": true
-                    },
-                    "state": {
-                      "enabled": true
-                    }
-                  },
-                  "netgroup-if-gre:gre": [
-                    {
-                      "name": "name1",
-                      "config": {
-                        "unnumbered": false,
-                        "name": "gre1",
-                        "description": "something",
-                        "enabled": true
-                      },
-                      "state": {
-                        "admin-status": "UP",
-                        "oper-status": "UP"
-                      },
-                      "options": {
-                        "local_ip": "192.168.12.3",
-                        "remote_ip": "192.168.0.123",
-                        "ip_key": "key1",
-                        "out_key": "key2",
-                        "key": "key"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
             "openconfig-if-ethernet:ethernet": {
-              "openconfig-if-ethernet:config": {
-                "mac-address": "00:00:00:00:00:00"
-              },
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
                   "interface-mode": "TRUNK",
-                  "trunk-vlans": [2,25,39,65]
+                  "trunk-vlans": []
                 }
               },
               "netgroup-neighbor:neighbor": [
                 {
                   "domain": "domain1",
-                  "interface": "eth3"
+                  "interface": "10.0.0.1/eth3"
+                }
+              ]
+            }
+          },
+          
+          {
+            "name": "00:00:ae:f5:5c:f0:0a:47/1",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on br31",
+              "enabled": true
+            },
+            "state": {
+              "admin-status": "UP",
+              "oper-status": "UP"
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              },
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain": "domain1",
+                  "interface": "10.0.0.1/eth3"
                 }
               ]
             }
           }
+          
         ]
       }
     }
