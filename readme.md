@@ -4,7 +4,7 @@ This orchestrator supervises an OpenDayLight domain - constituited only by sever
 and provides traffic steering capabilities between his endpoints.
 
 
-### Traffic Steering
+## Traffic Steering
 
 This domain expects to receive endpoint-to-endpoint flowules only, and these flowrules
 must be compliant with OpenFlow1.0.
@@ -16,7 +16,7 @@ Every flow will be distinguished by a vlan id, in order to avoid ambiguities, du
 similar troubles into the involved switches.
 
 
-### The "Big Switch"
+## The "Big Switch"
 
 This domain hides the internal details (switches and the links between them),
 so it advertises itself as a 'big switch' with several well-defined endpoints.
@@ -30,17 +30,31 @@ A domain administrator has to add and configure the endpoints editing the file
 [./config/ResourceDescription.json](/config/ResourceDescription.json).
 
 
-### DoubleDecker and ResourceDescription.json
+## DoubleDecker and ResourceDescription.json
 
 To advertise the features and the capabilities of this domain, we take advantage of [DoubleDecker messaging systems](https://github.com/Acreo/DoubleDecker).
 
 In particular, the file [./config/ResourceDescription.json](/config/ResourceDescription.json) is published
 under the topic "NF-FG", both at the start and when a database change occurs.
 
-N.B. set the appropriate broker address in [./config/default-config.ini](/config/default-config.ini).
+Note: set the appropriate broker address in [./config/default-config.ini](/config/default-config.ini).
 
 
-### REST API
+## NF-FG Library
+
+All the graphs sended via REST API must respect the NF-FG json schema.
+
+In particular, some informations are not supported by this domain:
+* VNFs;
+* Remote endpoints;
+* "TTL" field of the endpoints;
+* Endpoints with the "Type" field different to "interface" or "vlan";
+* Flowrule actions with multiple outputs, or "output_to_controller", or "output_to_queue".
+
+Note: the nf-fg library is a sub-module of this repository.
+
+
+## REST API
 
 A global orchestrator should communicate by the REST API provided by this domain orchestrator.
 
