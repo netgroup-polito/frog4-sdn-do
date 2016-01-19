@@ -47,13 +47,67 @@ A global orchestrator should communicate by the REST API provided by this domain
 REST interface provides several urls for the authentication, to send/get/delete a NFFG, to get the status of a graph.
 
 ##### Basic authentication
+This step is needed to retrieve a token which will be used into all the operative requests. 
 ```
-	[POST] '/login'
-``` 
-	Send usern	
+	[POST]
+	Url: '/login'
+	Content-Type: application/json
+	Data: { "username":"admin", "password":"admin" }
+```
+Response:
+```
+	{ 
+		"token": "797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d"
+		"user_id": "1"
+	}
+```
+
+##### Token authentication
+Check if the token is still valid.
+```
+	[POST]
+	Url: '/login'
+	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
+```
+Response:
+```
+	{ 
+		"token": "797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d"
+		"user_id": "1"
+	}
+```
 
 
+##### Send a new graph or update an existent graph.
+```
+	[PUT]
+	Url: '/NF-FG/12345'
+	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
+	Content-Type: application/json
+	Data: { "forwarding-graph": { "id": "12345", "name": "GraphName", ... }
+```
 
+##### Get a graph
+```
+	[GET]
+	Url: '/NF-FG/12345'
+	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
+```
+
+
+##### Delete a graph
+```
+	[DELETE]
+	Url: '/NF-FG/12345'
+	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
+```
+
+##### Get the status of a graph
+```
+	[GET]
+	Url: '/NF-FG/status/12345'
+	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
+```
 
 
 
