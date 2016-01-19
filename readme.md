@@ -46,8 +46,10 @@ A global orchestrator should communicate by the REST API provided by this domain
 
 REST interface provides several urls for the authentication, to send/get/delete a NFFG, to get the status of a graph.
 
-*	Basic authentication
-	[POST] '/login' 
+##### Basic authentication
+```
+	[POST] '/login'
+``` 
 	Send usern	
 
 
