@@ -36,7 +36,7 @@ class Configuration(object):
         '''
         
         try:
-            config.read(self.__abs_path+'/config/default-config.ini')
+            config.read(self.__abs_path+'/config/config.ini')
             
             # [basic_config]
             self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
