@@ -237,6 +237,13 @@ class OpenDayLightDO(object):
 
         # FLOW RULEs inspection
         for flowrule in nffg.flow_rules:
+         
+            if flowrule.match is None:
+                GraphError("Flowrule "+flowrule.id+" has not match section")
+            if flowrule.match.port_in is None:
+                GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
+            if self.__getEndpointIdFromString(flowrule.match.port_in) is None:
+                GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
 
             # Detect multiple output actions (they are not allowed).
             # If multiple output are needed, multiple flow rules should be written
@@ -251,6 +258,8 @@ class OpenDayLightDO(object):
                     if output_action_counter > 0:
                         raise_invalid_actions("not allowed 'multiple output port' (flow rule "+flowrule.id+")")
                     output_action_counter = output_action_counter+1
+                    if self.__getEndpointIdFromString(a.output) is None:
+                        GraphError("Flowrule "+flowrule.id+" has not an egress endpoint ('output_to_port' in 'action')")
 
                 
 
@@ -264,6 +273,11 @@ class OpenDayLightDO(object):
     '''
     
     def __NFFG_ODL_deleteGraph(self):
+        '''
+        Delete a whole graph, and set it as "ended".
+        Delete all endpoints, and releated resources.
+        Delete all flowrules from database and from opendaylight.
+        '''
         
         # Endpoints
         endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
@@ -284,7 +298,12 @@ class OpenDayLightDO(object):
 
 
     def __NFFG_ODL_DeleteAndUpdate(self, updated_nffg):
-        
+        '''
+        Remove all endpoints and all flowrules which is marked as 'to_be_deleted'.
+        For each flowrule marked as 'already_deployed' this function checks if the
+        releated endpoints are been updated: in this case the flowrule is deleted 
+        and it is set as 'new' in order that be installed again.   
+        '''
         # List of updated endpoints
         updated_endpoints = []
         
@@ -319,9 +338,10 @@ class OpenDayLightDO(object):
 
 
     def __ProfileGraph_BuildFromNFFG(self, nffg):
-        # Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        # Return a resources.ProfileGraph object.
-        
+        '''
+        Create a ProfileGraph with the flowrules and endpoints specified in nffg.
+        Return a resources.ProfileGraph object.
+        '''
         profile_graph = ProfileGraph()
         for endpoint in nffg.end_points:
             
@@ -359,39 +379,28 @@ class OpenDayLightDO(object):
 
     def __ODL_FlowsInstantiation(self, nffg):
         
+        # Build the Profile Graph
         profile_graph = self.__ProfileGraph_BuildFromNFFG(nffg)
         
-        # Create and push the flowrules
+        # [ FLOW RULEs ]
         for flowrule in profile_graph.flowrules.values():
-
-            # Flow rule checks
+            
+            # Check if this flowrule has to be installed
             if flowrule.status !='new':
-                continue                
-            if flowrule.match is None:
-                continue            
-            if flowrule.match.port_in is None:
-                continue
+                continue   
             
-            # Endpoint checks
+            # Get ingress endpoint
             port1_id = self.__getEndpointIdFromString(flowrule.match.port_in)
-            if port1_id is None:
-                continue
-            endp1 = profile_graph.endpoints[port1_id]
-            if endp1.type != 'interface' and endp1.type != 'vlan':
-                continue
-            
-            # Out Endpoint not valid
-            if endp1 is None:
-                raise GraphError("Flowrule "+flowrule.id+" has an invalid ingress endpoint")
+            in_endpoint = profile_graph.endpoints[port1_id]
             
             # Process flow rule with VLAN
-            self.__ODL_ProcessFlowrule(endp1, flowrule, profile_graph)
+            self.__ODL_ProcessFlowrule(in_endpoint, flowrule, profile_graph)
     
     
     
     def __ODL_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
         
-        # Enabled endpoint?
+        # Is the endpoint enabled?
         if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
             raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoind")
         
@@ -401,7 +410,7 @@ class OpenDayLightDO(object):
     
     
 
-    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
+    def __ODL_ProcessFlowrule(self, nffg, in_endpoint, flowrule, profile_graph):
         '''
         in_endpoint = nffg.EndPoint
         flowrule = nffg.FlowRule
@@ -650,7 +659,7 @@ class OpenDayLightDO(object):
     
     def __ODL_VlanTraking(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
         '''
-        Receives the main parameters of a "vlan based" flow rule.
+        Receives the main parameters for a "vlan based" flow rule.
         Check all vlan ids on the specified ports of current switch and the next switch.
         If a similar "vlan based" flow rule exists, new vlan in/out will be chosen.
         This function make other some checks to verify the correctness of all parameters.
