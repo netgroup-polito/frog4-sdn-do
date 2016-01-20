@@ -410,7 +410,7 @@ class OpenDayLightDO(object):
     
     
 
-    def __ODL_ProcessFlowrule(self, nffg, in_endpoint, flowrule, profile_graph):
+    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
         '''
         in_endpoint = nffg.EndPoint
         flowrule = nffg.FlowRule
