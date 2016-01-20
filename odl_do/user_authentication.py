@@ -21,8 +21,6 @@ class UserData(object):
         self.email = email
         self.token = None
         self.token_timestamp = None
-        self.token = None
-        self.token_timestamp = None
     
     def setToken(self, token, timestamp):
         self.token = token

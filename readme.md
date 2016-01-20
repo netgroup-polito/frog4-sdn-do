@@ -69,12 +69,9 @@ This step is needed to retrieve a token which will be used into all the operativ
 	Content-Type: application/json
 	Data: { "username":"admin", "password":"admin" }
 ```
-Response:
+Response is the token:
 ```
-	{ 
-		"token": "797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d"
-		"user_id": "1"
-	}
+	797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
 ```
 
 #### Token authentication
@@ -126,11 +123,9 @@ Response:
 	Url: '/NF-FG/status/12345'
 	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
 ```
-Response:
+Response is the status:
 ```
-	{
-		"status": "completed"
-	}
+	completed
 ```
 
 

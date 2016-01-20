@@ -465,6 +465,7 @@ class OpenDayLightDO(object):
                 logging.debug("Invalid link between the endpoints")
                 return
             self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            return
             
         # [ 3 ] No paths between the endpoints 
         logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)

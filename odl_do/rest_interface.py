@@ -6,7 +6,7 @@ Created on Oct 1, 2014
 '''
 
 import logging, json, requests, falcon
-from falcon.http_error import HTTPError as falconHTTPError
+#from falcon.http_error import HTTPError as falconHTTPError
 import falcon.status_codes  as falconStatusCodes
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -23,7 +23,7 @@ from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
 from odl_do.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
-    UserNotFound, TenantNotFound, UserTokenExpired
+    UserNotFound, TenantNotFound, UserTokenExpired, GraphError
 
 
 
@@ -63,10 +63,10 @@ class OpenDayLightDO_REST_Base(object):
         return json.dumps(response_json)
     
     
-    def _json_response_for_auth(self, http_status, message, userdata):
-        #response_json = {}
-
-        return userdata
+    def __http_error(self, response,falcon_status_code, message):
+        response.body = message
+        response.status = falcon_status_code
+        #raise falconHTTPError(falcon_status_code,falcon_status_code,message)
         
     
     '''
@@ -82,50 +82,50 @@ class OpenDayLightDO_REST_Base(object):
             return "Unknown exception message"
         
     
-    def _except_BadRequest(self, prefix, ex):
+    def _except_BadRequest(self, response, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_400,falconStatusCodes.HTTP_400,message)
+        self.__http_error(response,falconStatusCodes.HTTP_400,message)
 
-    def _except_unauthenticatedRequest(self, prefix, ex):
+    def _except_unauthenticatedRequest(self, response, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_401,falconStatusCodes.HTTP_401,message)
+        self.__http_error(response,falconStatusCodes.HTTP_401,message)
     
-    def _except_NotAcceptable(self, prefix, ex):
+    def _except_NotAcceptable(self, response, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_406,falconStatusCodes.HTTP_406,message)
+        self.__http_error(response,falconStatusCodes.HTTP_406,message)
     
-    def _except_NotFound(self, prefix, ex):
+    def _except_NotFound(self, response, prefix, ex):
         message = self.__get_exception_message(ex)
         logging.error(prefix+": "+message)
         #raise falcon.HTTPBadRequest('Bad Request',message)
-        raise falconHTTPError(falconStatusCodes.HTTP_404,falconStatusCodes.HTTP_404,message)
+        self.__http_error(response,falconStatusCodes.HTTP_404,message)
     
-    def _except_unauthorizedRequest(self,ex,request):
+    def _except_unauthorizedRequest(self,response,ex,request):
         username_string = ""
         if(request.get_header("X-Auth-User") is not None):
             username_string = " from user "+request.get_header("X-Auth-User")
         logging.error("Unauthorized access attempt"+username_string+".")
         message = self.__get_exception_message(ex)
-        raise falconHTTPError(falconStatusCodes.HTTP_401,falconStatusCodes.HTTP_401,message)
+        self.__http_error(response,falconStatusCodes.HTTP_401,message)
     
-    def _except_requests_HTTPError(self,ex):
+    def _except_requests_HTTPError(self,response,ex):
         logging.error(ex.response.text)
         if ex.response.status_code is not None:
             message = ex.response.status_code+" - "
             message += self.__get_exception_message(ex)
-            raise falconHTTPError(falconStatusCodes.HTTP_500,falconStatusCodes.HTTP_500,message)
+            self.__http_error(response,falconStatusCodes.HTTP_500,message)
         raise ex
 
-    def _except_standardException(self,ex):
+    def _except_standardException(self,response,ex):
         message = self.__get_exception_message(ex)
         logging.exception(ex) #unique case which uses logging.exception
-        raise falconHTTPError(falconStatusCodes.HTTP_500,'500 - Unexpected Internal Server Error',message)
+        self.__http_error(response,falconStatusCodes.HTTP_500,message)
 
 
 
@@ -152,43 +152,47 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable("ValueError",err)
+            self._except_NotAcceptable(response,"ValueError",err)
         
         # NFFG validation - raised by ValidateNF_FG().validate
         except NF_FGValidationError as err:
-            self._except_NotAcceptable("NF_FGValidationError",err)
+            self._except_NotAcceptable(response,"NF_FGValidationError",err)
+        
+        # NFFG validation - raised by the class OpenDayLightDO()
+        except GraphError as err:
+            self._except_NotAcceptable(response,"GraphError",err)
         
         # Custom NFFG sub-validation - raised by OpenDayLightDO().NFFG_Validate
         except NffgUselessInformations as err:
-            self._except_NotAcceptable("NffgUselessInformations",err)
+            self._except_NotAcceptable(response,"NffgUselessInformations",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
     
 
     
@@ -205,31 +209,31 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
 
     
     
@@ -243,31 +247,31 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
 
 
 
@@ -280,39 +284,39 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
             odlDO = OpenDayLightDO(userdata)
             
             status = odlDO.NFFG_Status(nffg_id)
-            status_json = {}
-            status_json['status'] = status 
+            #status_json = {}
+            #status_json['status'] = status 
             
-            response.body = json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
+            response.body = status #json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
 
 
 
@@ -328,40 +332,40 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
             
-            response.body = userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
+            response.body = userdata.token #userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable("ValueError",err)
+            self._except_NotAcceptable(response,"ValueError",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
     
     
     
@@ -379,35 +383,35 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable("ValueError",err)
+            self._except_NotAcceptable(response,"ValueError",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
 
 
 
@@ -427,31 +431,31 @@ class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest("wrongRequest",err)
+            self._except_BadRequest(response,"wrongRequest",err)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(err,request)
+            self._except_unauthorizedRequest(response,err,request)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest("UserTokenExpired",err)
+            self._except_unauthorizedRequest(response,"UserTokenExpired",err)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound("UserNotFound",err)
+            self._except_NotFound(response,"UserNotFound",err)
         except TenantNotFound as err:
-            self._except_NotFound("TenantNotFound",err)
+            self._except_NotFound(response,"TenantNotFound",err)
         except NoResultFound as err:
-            self._except_NotFound("NoResultFound",err)
+            self._except_NotFound(response,"NoResultFound",err)
         except sessionNotFound as err:
-            self._except_NotFound("sessionNotFound",err)
+            self._except_NotFound(response,"sessionNotFound",err)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(err)
+            self._except_requests_HTTPError(response,err)
         except Exception as ex:
-            self._except_standardException(ex)
+            self._except_standardException(response,ex)
 
 
 

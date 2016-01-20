@@ -10,6 +10,7 @@ from odl_do.odl_rest import ODL_Rest
 from odl_do.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 from odl_do.resource_description import ResourceDescription
+from odl_do.messaging import Messaging
 
 
 def odl_do_clean_all():
@@ -45,6 +46,7 @@ def odl_do_clean_all():
     
     ResourceDescription().updateAll()
     ResourceDescription().saveFile()
+    Messaging().PublishDomainConfig()
     logging.info("Resource description file updated!")
     
     print("Cleaning database and switches completed!")
