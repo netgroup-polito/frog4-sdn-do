@@ -13,3 +13,4 @@ PYTHONPATH
 db.sqlite3
 /tests
 /scripts/main1.py
+/config/config.ini

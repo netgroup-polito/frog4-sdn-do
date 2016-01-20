@@ -15,7 +15,10 @@ class DD_Publish(ClientSafe):
         self.publish(self.__dc_topic, self.__dc_message)
         #self.shutdown()
         return
+    
 
+    def on_error(self, code, msg):
+        pass
     def on_data(self, dest, msg):
         pass
     def on_pub(self, src, topic, msg):

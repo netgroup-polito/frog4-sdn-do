@@ -43,6 +43,10 @@ class Configuration(object):
             self.__BASIC_CONFIG_PORT = config.get('basic_config','port')
             self.__BASIC_CONFIG_TIMEOUT = config.get('basic_config','timeout')
             
+            # [vlan]
+            self.__VLAN_AVAILABLE_IDS = config.get('vlan','available_ids')
+            self.__set_available_vlan_ids_array()
+            
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
             
@@ -97,6 +101,10 @@ class Configuration(object):
                              format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
     
     
+    def __set_available_vlan_ids_array(self):
+        pass
+    
+    
     
     @property
     def BASIC_CONFIG_IP(self):
@@ -109,6 +117,10 @@ class Configuration(object):
     @property
     def BASIC_CONFIG_TIMEOUT(self):
         return self.__BASIC_CONFIG_TIMEOUT
+    
+    @property
+    def VLAN_AVAILABLE_IDS(self):
+        return self.__VLAN_AVAILABLE_IDS
     
     @property
     def AUTH_TOKEN_EXPIRATION(self):

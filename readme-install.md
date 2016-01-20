@@ -39,7 +39,7 @@ To check if a module is already installed and its version:
 
 ### Write your own configuration
 
-Edit [./default-config.ini](/config/default-config.ini)
+Edit [./default-config.ini](/config/default-config.ini) and rename it in "config.ini".
 
 Pay attention to all paths: they must be relative paths (respect of 'frog4-odl-do' directory).
 
