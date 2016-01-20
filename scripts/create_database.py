@@ -9,7 +9,7 @@ def session_create_database():
     db_filename = db_filename[10:]
     
     # Dump file
-    db_dumpfile = "../config/db.dump.sql"
+    db_dumpfile = "config/db.dump.sql"
 
     if os.path.exists(db_dumpfile) == False:
         print("'"+db_dumpfile+"' not exists!")
