@@ -4,11 +4,8 @@ Created on Nov 10, 2015
 @author: giacomo
 '''
 
-#TODO: import logging
-
 import json
 import networkx as nx
-#from networkx.readwrite import json_graph
 
 from odl_do.odl_rest import ODL_Rest
 

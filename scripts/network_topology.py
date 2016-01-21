@@ -30,7 +30,7 @@ ng = NetGraph(Configuration().ODL_VERSION, Configuration().ODL_ENDPOINT, Configu
 nt = ng.getNetworkTopology()
 
 for node in nt:
-    print("\n  Switch:      "+node['node'])
+    print("\n  Node:        "+node['node'])
     print("--------------------------------------------------")
     print("  neighbours:", end="")
     for nb in node['neighbours']:
