@@ -36,7 +36,7 @@ class Messaging(object): # Singleton Class
     
     _instance = None
 
-    __debug_exit = True # inhibit this class
+    __debug_exit = not (Configuration().DD_ACTIVATE) # inhibit this class
     
     __publish_domain_config = None
     __thread_publish_domain_config = None

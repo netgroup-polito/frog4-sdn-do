@@ -69,6 +69,7 @@ class Configuration(object):
             self.__ODL_VERSION = config.get('opendaylight','odl_version')
             
             # [messaging]
+            self.__DD_ACTIVATE = config.getboolean('messaging','dd_activate')
             self.__DD_NAME = config.get('messaging','dd_name')
             self.__DD_BROKER_ADDRESS = config.get('messaging','dd_broker_address')
             self.__DD_TENANT_NAME = config.get('messaging','dd_tenant_name')
@@ -87,13 +88,13 @@ class Configuration(object):
         
     def log_configuration(self):
         log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s'
-        if self.LOG_DEBUG is True:
+        if self.__LOG_DEBUG is True:
             log_level = logging.DEBUG
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
             sqlalchemy_log = logging.getLogger('sqlalchemy.engine')
             sqlalchemy_log.setLevel(logging.WARNING)
-        elif self.LOG_VERBOSE is True:
+        elif self.__LOG_DEBUG is True:
             log_level = logging.INFO
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
@@ -209,6 +210,10 @@ class Configuration(object):
     @property
     def ODL_VERSION(self):
         return self.__ODL_VERSION
+    
+    @property
+    def DD_ACTIVATE(self):
+        return self.__DD_ACTIVATE
     
     @property
     def DD_NAME(self):
