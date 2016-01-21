@@ -15,7 +15,7 @@ from odl_do.config import Configuration
 from odl_do.resource_description import ResourceDescription
 from odl_do.odl_rest import ODL_Rest
 from requests.exceptions import HTTPError
-from odl_do.resources import Action, Match, Flow, ProfileGraph, Endpoint
+from odl_do.odl_objects import Action, Match, Flow, ProfileGraph, Endpoint
 from odl_do.netgraph import NetGraph
 from odl_do.messaging import Messaging
 from odl_do.exception import sessionNotFound, GraphError, NffgUselessInformations
@@ -233,6 +233,12 @@ class OpenDayLightDO(object):
             # Check endpoints in ResourceDescription.json (switch/port)
             if ResourceDescription().checkEndpoint(ep.switch_id, ep.interface)==False:
                 raise GraphError("Endpoint "+ep.id+" not found")
+            
+            # Check vlan availability
+            if ep.type == "vlan" and ep.vlan_id is not None:
+                if Configuration().VlanID_isAvailable(int(ep.vlan_id))==False:
+                    vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
                 
 
         # FLOW RULEs inspection
@@ -244,6 +250,12 @@ class OpenDayLightDO(object):
                 GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
             if self.__getEndpointIdFromString(flowrule.match.port_in) is None:
                 GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
+            
+            # Check vlan availability
+            if flowrule.match.vlan_id is not None and Configuration().VlanID_isAvailable(int(flowrule.match.vlan_id))==False:
+                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
+                
 
             # Detect multiple output actions (they are not allowed).
             # If multiple output are needed, multiple flow rules should be written
@@ -256,13 +268,21 @@ class OpenDayLightDO(object):
                     raise_useless_info("presence of 'output_to_queue'")
                 if a.output is not None:
                     if output_action_counter > 0:
-                        raise_invalid_actions("not allowed 'multiple output port' (flow rule "+flowrule.id+")")
+                        raise_invalid_actions("Multiple 'output_to_port' not allowed (flow rule "+flowrule.id+")")
                     output_action_counter = output_action_counter+1
                     if self.__getEndpointIdFromString(a.output) is None:
                         GraphError("Flowrule "+flowrule.id+" has not an egress endpoint ('output_to_port' in 'action')")
+                
+                # Check vlan availability
+                if a.push_vlan is not None and Configuration().VlanID_isAvailable(int(a.push_vlan))==False:
+                    vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                    raise GraphError("Vlan ID "+str(a.push_vlan)+" not allowed! Valid vlan ids: "+vids_list)
+                if a.set_vlan_id is not None and Configuration().VlanID_isAvailable(int(a.set_vlan_id))==False:
+                    vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                    raise GraphError("Vlan ID "+str(a.set_vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
                 
-
+                
 
 
 
@@ -340,7 +360,7 @@ class OpenDayLightDO(object):
     def __ProfileGraph_BuildFromNFFG(self, nffg):
         '''
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        Return a resources.ProfileGraph object.
+        Return a odl_objects.ProfileGraph object.
         '''
         profile_graph = ProfileGraph()
         for endpoint in nffg.end_points:
@@ -414,7 +434,7 @@ class OpenDayLightDO(object):
         '''
         in_endpoint = nffg.EndPoint
         flowrule = nffg.FlowRule
-        profile_graph = resources.ProfileGraph
+        profile_graph = odl_objects.ProfileGraph
         
         Process a flow rule written in the section "big switch" of a nffg json.
         Add a vlan match/mod/strip to every flowrule in order to distinguish it.
@@ -670,10 +690,16 @@ class OpenDayLightDO(object):
             vlan_in = int(vlan_in)
             if vlan_in<=0 or vlan_in>=4095:
                 vlan_in = None
+            elif Configuration().VlanID_isAvailable(vlan_in)==False:
+                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                raise GraphError("Vlan ID "+str(vlan_in)+" not allowed! Valid vlan ids: "+vids_list)
         if vlan_out is not None:
             vlan_out = int(vlan_out)
             if vlan_out<=0 or vlan_out>=4095:
                 vlan_out = None
+            elif Configuration().VlanID_isAvailable(vlan_out)==False:
+                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+                raise GraphError("Vlan ID "+str(vlan_out)+" not allowed! Valid vlan ids: "+vids_list)
             
         # Detect if a mod_vlan action is needed
         set_vlan_out = None
@@ -695,7 +721,7 @@ class OpenDayLightDO(object):
                 2) when it is not compliant with the next switch port in.
         '''
         if vlan_out is None and next_switch_ID is not None:
-            vlan_out = GraphSession().getFreeIngressVlanID(next_switch_portIn,next_switch_ID) #return int or None
+            vlan_out = GraphSession().getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
             set_vlan_out = vlan_out
         
         return vlan_in, vlan_out, set_vlan_out
@@ -873,10 +899,10 @@ class OpenDayLightDO(object):
             self.set_flow_name(flowname_suffix)
             self.__priority = priority
             
-            # match = resources.Match object
+            # match = odl_resources.Match object
             self.__match = match
             
-            # actions = array of resources.Action object
+            # actions = array of odl_resources.Action object
             self.set_actions(actions)
             
             # nffg_flowrule = nffg.FlowRule object

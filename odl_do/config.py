@@ -38,6 +38,12 @@ class Configuration(object):
         try:
             config.read(self.__abs_path+'/config/config.ini')
             
+            # [log]
+            self.__LOG_FILE = self.__abs_path+"/"+config.get('log', 'file')
+            self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
+            self.__LOG_DEBUG = config.getboolean('log', 'debug')
+            self.log_configuration()
+            
             # [basic_config]
             self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
             self.__BASIC_CONFIG_PORT = config.get('basic_config','port')
@@ -49,16 +55,12 @@ class Configuration(object):
             
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
-            
-            # [log]
-            self.__LOG_FILE = self.__abs_path+"/"+config.get('log', 'file')
-            self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
-            self.__LOG_DEBUG = config.getboolean('log', 'debug')
-            
+
             # [database]
             self.__DATABASE_CONNECTION = config.get('database','connection')
             db_file = os.path.basename(self.__DATABASE_CONNECTION)
             self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file,self.__abs_path+"/"+db_file)
+            self.__DATABASE_DUMP_FILE = self.__abs_path+"/"+config.get('database','dump_file')
             
             # [opendaylight]
             self.__ODL_USERNAME = config.get('opendaylight','odl_username')
@@ -77,7 +79,7 @@ class Configuration(object):
             self.__MSG_RESDESC_FILE = self.__abs_path+"/"+config.get('resource_description_topic','msg_resdesc_file')
 
             # Start logging
-            self.log_configuration()
+            
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
         
@@ -99,10 +101,56 @@ class Configuration(object):
             log_level = logging.WARNING
         logging.basicConfig( filename=self.LOG_FILE, level=log_level, 
                              format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
+        logging.info("[CONFIG] Logging just starded!")
     
     
     def __set_available_vlan_ids_array(self):
-        pass
+        
+        def __getKey(item):
+            return item[0]
+
+        vi = self.__VLAN_AVAILABLE_IDS
+        self.__VLAN_AVAILABLE_IDS = []
+        
+        ranges = vi.split(";")
+        for r in ranges:
+            exs = r.split("-")
+            if len(exs)!=2:
+                continue
+            
+            min_vlan_id = int(exs[0])
+            max_vlan_id = int(exs[1])
+            if (min_vlan_id > max_vlan_id):
+                continue
+            
+            self.__VLAN_AVAILABLE_IDS.append([min_vlan_id,max_vlan_id])
+            logging.debug("[CONFIG] - Available VLAN ID - Range: '"+r+"'")
+        
+        if len(self.__VLAN_AVAILABLE_IDS)==0:
+            logging.error("[CONFIG] - VLAN ID - No available vlan id read from '"+vi+"'")
+        else:
+            self.__VLAN_AVAILABLE_IDS = sorted(self.__VLAN_AVAILABLE_IDS,key=__getKey)
+    
+    
+    def VlanID_isAvailable(self,vlan_id):
+        for r in self.__VLAN_AVAILABLE_IDS:
+            if vlan_id>=r[0] and vlan_id<=r[1]:
+                return True
+        return False
+    
+    def VlanID_getFirstAvailableID(self):
+        if len(self.__VLAN_AVAILABLE_IDS)==0 or len(self.__VLAN_AVAILABLE_IDS[0])<2:
+            return None
+        return self.__VLAN_AVAILABLE_IDS[0][0]
+    
+    def VlanID_getLastAvailableID(self):
+        if len(self.__VLAN_AVAILABLE_IDS)==0:
+            return None
+        last_index = len(self.__VLAN_AVAILABLE_IDS)-1
+        if len(self.__VLAN_AVAILABLE_IDS[last_index])<2:
+            return None
+        return self.__VLAN_AVAILABLE_IDS[last_index][1]
+            
     
     
     
@@ -141,6 +189,10 @@ class Configuration(object):
     @property
     def DATABASE_CONNECTION(self):
         return self.__DATABASE_CONNECTION
+    
+    @property
+    def DATABASE_DUMP_FILE(self):
+        return self.__DATABASE_DUMP_FILE
     
     @property
     def ODL_USERNAME(self):

@@ -73,16 +73,6 @@ CREATE TABLE "tenant" (
   PRIMARY KEY ("id")
 );
 INSERT INTO "tenant" ("id","name","description") VALUES ('1','admin_tenant','Admin Tenant');
-CREATE TABLE 'vlan' ( 
-  "id" int(64) NOT NULL, 
-  "switch_id" varchar(64) NOT NULL, 
-  "port_in" int(64) NOT NULL, 
-  "vlan_in" varchar(64), 
-  "port_out" int(64) NOT NULL, 
-  "vlan_out" varchar(64), 
-  "flow_rule_id" int(64), 
-  PRIMARY KEY ("id") 
-);
 CREATE TABLE 'user' (
   "id" varchar(64) NOT NULL,
   "tenant_id" varchar(64) NOT NULL,'username' varchar(64) NOT NULL,
@@ -117,4 +107,14 @@ CREATE TABLE 'flow_rule' (
   "creation_date" datetime NOT NULL,
   "last_update" datetime DEFAULT NULL, 'description'  varchar(128) DEFAULT NULL ,
   PRIMARY KEY ("id")
+);
+CREATE TABLE 'vlan' ( 
+  "id" int(64) NOT NULL, 
+  "switch_id" varchar(64) NOT NULL, 
+  "port_in" int(64) NOT NULL, 
+  "vlan_in" int(64), 
+  "port_out" int(64) NOT NULL, 
+  "vlan_out" int(64), 
+  "flow_rule_id" int(64), 
+  PRIMARY KEY ("id") 
 );

@@ -118,7 +118,9 @@ class NetGraph():
             edges = self.topology.edges(node)
         
             for edge in edges:
-                sw_neighbours.append(edge[1])
+                port = self.switchPortOut(edge[0], edge[1])
+                port_str = "[ "+str(port)+" ]"
+                sw_neighbours.append(port_str+" "+edge[1])
 
             array.append({ "node":node, "neighbours":sw_neighbours  })
         return array
