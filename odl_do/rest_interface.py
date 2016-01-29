@@ -283,11 +283,15 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             odlDO = OpenDayLightDO(userdata)
             
-            status = odlDO.NFFG_Status(nffg_id)
-            #status_json = {}
-            #status_json['status'] = status 
+            status,percentage = odlDO.NFFG_Status(nffg_id)
+            status_json = {}
+            status_json['status'] = status 
+            status_json['percentage_completed'] = percentage
             
-            response.body = status #json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
+            if status=='initialization' or status=='updating':
+                status_json['status'] = 'in_progress'
+            
+            response.body = json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest

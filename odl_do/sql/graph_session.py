@@ -15,7 +15,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from odl_do.sql.sql_server import get_session
 from odl_do.exception import GraphError
 
-import odl_do.config
 from odl_do.config import Configuration
 
 Base = declarative_base()
@@ -346,6 +345,24 @@ class GraphSession(object):
                 return session_id
     
     
+    def getFlowruleProgressionPercentage(self,session_id,nffg_id):
+        session = get_session()
+        percentage = 0
+        
+        flowrules = session.query(FlowRuleModel).filter_by(session_id=session_id).all()
+        count_flowrules = len(flowrules)
+        if count_flowrules<=0:
+            return 0
+        
+        for fr in flowrules:
+            internal_flowrules = session.query(FlowRuleModel).filter_by(session_id=session_id).filter_by(graph_flow_rule_id=fr.graph_flow_rule_id).filter_by(type='external').all()
+            if len(internal_flowrules)>0:
+                percentage = percentage+1
+        
+        return ( percentage / count_flowrules * 100 )
+        
+        
+        
     def getVlanInIDs(self, port_in, switch_id):
         session = get_session()
         return session.query(VlanModel).filter_by(switch_id=switch_id).filter_by(port_in=port_in).order_by(asc(VlanModel.vlan_in)).all()
@@ -459,13 +476,13 @@ class GraphSession(object):
     def updateEnded(self, session_id):
         session = get_session() 
         with session.begin():       
-            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now()}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"ended":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
 
 
     def updateError(self, session_id):
         session = get_session()
         with session.begin():
-            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"deleted"}, synchronize_session = False)
+            session.query(GraphSessionModel).filter_by(session_id=session_id).update({"error":datetime.datetime.now(),"status":"error"}, synchronize_session = False)
 
 
     def updateStatus(self, session_id, status, error=False):

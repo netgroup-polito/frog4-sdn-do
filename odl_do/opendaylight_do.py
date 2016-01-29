@@ -171,13 +171,18 @@ class OpenDayLightDO(object):
 
     
     def NFFG_Status(self, nffg_id):
-        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id,nffg_id,error_aware=True)
+        session = GraphSession().getActiveUserGraphSession(self.user_data.user_id,nffg_id,error_aware=False)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph "+str(nffg_id))
         
         self.__session_id = session.session_id
-        logging.debug("Status NF-FG: graph status: "+str(session.status))
-        return session.status
+        percentage = 0
+        
+        if session.status != 'error':
+            percentage = GraphSession().getFlowruleProgressionPercentage(self.__session_id,nffg_id)
+        
+        logging.debug("Status NF-FG: graph status: "+str(session.status)+" "+str(percentage)+"%")
+        return session.status,percentage
     
     
     
