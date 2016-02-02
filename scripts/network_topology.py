@@ -13,7 +13,7 @@ import logging
 from odl_do.config import Configuration
 
 # NetGraph
-from odl_do.netgraph import NetGraph
+from odl_do.netmanager import NetManager
 
 # Configuration
 conf = Configuration()
@@ -26,7 +26,7 @@ print("OpenDayLight Domain Orchestrator - Network Topology")
 
 print("\nOpenDayLight version: "+Configuration().ODL_VERSION+"\n")
 
-ng = NetGraph(Configuration().ODL_VERSION, Configuration().ODL_ENDPOINT, Configuration().ODL_USERNAME, Configuration().ODL_PASSWORD)
+ng = NetManager()
 nt = ng.getNetworkTopology()
 
 for node in nt:

@@ -7,18 +7,17 @@
 from __future__ import division
 import logging
 
-from nffg_library.nffg import FlowRule, Match as NffgMatch, Action as NffgAction
+from nffg_library.nffg import FlowRule as NffgFlowrule
 
 from odl_do.sql.graph_session import GraphSession
 
 from odl_do.config import Configuration
 from odl_do.resource_description import ResourceDescription
-from odl_do.odl_rest import ODL_Rest
-from requests.exceptions import HTTPError
-from odl_do.odl_objects import Action, Match, Flow, ProfileGraph, Endpoint
-from odl_do.netgraph import NetGraph
+from odl_do.netmanager import NetManager, Match ,Action
 from odl_do.messaging import Messaging
 from odl_do.exception import sessionNotFound, GraphError, NffgUselessInformations
+from requests.exceptions import HTTPError
+
 
 
 class OpenDayLightDO(object):
@@ -36,14 +35,8 @@ class OpenDayLightDO(object):
          - user_data.tenant
         '''
         
-        # Dati ODL
-        self.odlendpoint = Configuration().ODL_ENDPOINT
-        self.odlversion = Configuration().ODL_VERSION
-        self.odlusername = Configuration().ODL_USERNAME
-        self.odlpassword = Configuration().ODL_PASSWORD
-        
-        # NetGraph
-        self.netgraph = NetGraph(self.odlversion, self.odlendpoint, self.odlusername, self.odlpassword)
+        # NetManager
+        self.NetManager = NetManager()
 
 
     
@@ -367,23 +360,17 @@ class OpenDayLightDO(object):
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
         Return a odl_objects.ProfileGraph object.
         '''
-        profile_graph = ProfileGraph()
         for endpoint in nffg.end_points:
             
             if endpoint.status is None:
-                status = "new"
-            else:
-                status = endpoint.status
-
-            ep = Endpoint(endpoint.id, endpoint.name, endpoint.type, endpoint.vlan_id, endpoint.switch_id, endpoint.interface, status)
-            profile_graph.addEndpoint(ep)
+                endpoint.status = "new"
+                
+            self.NetManager.ProfileGraph.addEndpoint(endpoint)
         
         for flowrule in nffg.flow_rules:
             if flowrule.status is None:
                 flowrule.status = 'new'
-            profile_graph.addFlowrule(flowrule)
-                  
-        return profile_graph
+            self.NetManager.ProfileGraph.addFlowrule(flowrule)
     
     
     
@@ -405,10 +392,10 @@ class OpenDayLightDO(object):
     def __ODL_FlowsInstantiation(self, nffg):
         
         # Build the Profile Graph
-        profile_graph = self.__ProfileGraph_BuildFromNFFG(nffg)
+        self.__ProfileGraph_BuildFromNFFG(nffg)
         
         # [ FLOW RULEs ]
-        for flowrule in profile_graph.flowrules.values():
+        for flowrule in self.NetManager.ProfileGraph.getFlowrules():
             
             # Check if this flowrule has to be installed
             if flowrule.status !='new':
@@ -416,10 +403,10 @@ class OpenDayLightDO(object):
             
             # Get ingress endpoint
             port1_id = self.__getEndpointIdFromString(flowrule.match.port_in)
-            in_endpoint = profile_graph.endpoints[port1_id]
+            in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port1_id)
             
             # Process flow rule with VLAN
-            self.__ODL_ProcessFlowrule(in_endpoint, flowrule, profile_graph)
+            self.__ODL_ProcessFlowrule(in_endpoint, flowrule)
     
     
     
@@ -435,11 +422,10 @@ class OpenDayLightDO(object):
     
     
 
-    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule, profile_graph):
+    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule):
         '''
         in_endpoint = nffg.EndPoint
         flowrule = nffg.FlowRule
-        profile_graph = odl_objects.ProfileGraph
         
         Process a flow rule written in the section "big switch" of a nffg json.
         Add a vlan match/mod/strip to every flowrule in order to distinguish it.
@@ -472,7 +458,7 @@ class OpenDayLightDO(object):
             if a.output is not None:
                 port2_id = self.__getEndpointIdFromString(a.output) # Is the 'output' destination an endpoint?
                 if port2_id is not None:
-                    out_endpoint = profile_graph.endpoints[port2_id] #Endpoint object (declared in resources.py)
+                    out_endpoint = self.NetManager.ProfileGraph.getEndpoint(port2_id) #Endpoint object (declared in resources.py)
                     break
         
         # Out Endpoint not valid
@@ -491,7 +477,7 @@ class OpenDayLightDO(object):
             return
 
         # [ 2 ] Endpoints are on different switches...search for a path!
-        nodes_path = self.netgraph.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
+        nodes_path = self.NetManager.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
         if(nodes_path is not None):
             
             logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
@@ -512,12 +498,12 @@ class OpenDayLightDO(object):
         if len(path)<2:
             return None
         #check if ep1 stays on the link
-        if ep1.interface == self.netgraph.switchPortIn(path[0], path[1]):
+        if ep1.interface == self.NetManager.switchPortIn(path[0], path[1]):
             logging.debug("...path not valid: endpoint "+ep1.switch_id+" port:"+ep1.interface+" stay on the link!")
             return False
         #check if ep2 stays on the link
         path_last = len(path)-1
-        if ep2.interface == self.netgraph.switchPortIn(path[path_last], path[path_last-1]):
+        if ep2.interface == self.NetManager.switchPortIn(path[path_last], path[path_last-1]):
             logging.debug("...path not valid: endpoint "+ep2.switch_id+" port:"+ep2.interface+" stay on the link!")
             return False
         return True
@@ -598,14 +584,14 @@ class OpenDayLightDO(object):
             next_switch_portIn = None
             if i < (len(path)-1):
                 next_switch_ID = path[i+1]
-                next_switch_portIn = self.netgraph.switchPortIn(next_switch_ID, hop)
+                next_switch_portIn = self.NetManager.switchPortIn(next_switch_ID, hop)
             
             # First switch
             if i==0:
                 pos = -1
                 efr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
-                port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
+                port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
                 if port_out is None and len(path)==1: #'single-switch' path
                     pos = -2
                     port_out = ep2.interface
@@ -614,7 +600,7 @@ class OpenDayLightDO(object):
             elif i==len(path)-1:
                 pos = 1
                 efr.set_switch_id(ep2.switch_id)
-                port_in = self.netgraph.switchPortIn(hop, path[i-1])
+                port_in = self.NetManager.switchPortIn(hop, path[i-1])
                 port_out = ep2.interface
                 
                 # Force the vlan out to be equal to the original
@@ -629,8 +615,8 @@ class OpenDayLightDO(object):
             # Middle way switch
             else:
                 efr.set_switch_id(hop)
-                port_in = self.netgraph.switchPortIn(hop, path[i-1])
-                port_out = self.netgraph.switchPortOut(hop, next_switch_ID)
+                port_in = self.NetManager.switchPortIn(hop, path[i-1])
+                port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
             
             # Check, generate and set vlan ids
             vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
@@ -750,19 +736,19 @@ class OpenDayLightDO(object):
         port_out = None
         switch_id = efr.get_switch_id()
         
-        if(efr.get_match().input_port is not None):
-            port_in = efr.get_match().input_port
+        if(efr.get_match().InputPort is not None):
+            port_in = efr.get_match().InputPort
         
         if(efr.get_match().vlan_id is not None):
-            vlan_in = efr.get_match().vlan_id
+            vlan_in = efr.get_match().VlanID
             vlan_out = vlan_in
         
         for a in efr.get_actions():
-            if(a.action_type=="output-action"):
-                port_out = a.output_port
-            if(a.action_type=="vlan-match"):
-                vlan_out = a.vlan_id
-            elif(a.action_type=="pop-vlan-action"):
+            if(a.is_output_port_action()):
+                port_out = a.OutputPort
+            if(a.is_set_vlan_action()):
+                vlan_out = a.VlanID
+            elif(a.is_pop_vlan_action()):
                 vlan_out = None
         
         # DATABASE: Add vlan tracking
@@ -788,7 +774,7 @@ class OpenDayLightDO(object):
         # flow_rule_ref is a FlowRuleModel object
         if flow_rule_ref.type == 'external': #and flow.status == "complete"
             try:
-                ODL_Rest(self.odlversion).deleteFlow(self.odlendpoint, self.odlusername, self.odlpassword, flow_rule_ref.switch_id, flow_rule_ref.internal_id)
+                self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
             except Exception as ex:
                 if type(ex) is HTTPError and ex.response.status_code==404:
                     logging.debug("External flow "+flow_rule_ref.internal_id+" does not exist in the switch "+flow_rule_ref.switch_id+".")
@@ -848,13 +834,11 @@ class OpenDayLightDO(object):
         self.__checkFlowname_externalFlowrule(efr)
 
         # ODL/Switch: Add flow rule
-        flowj = Flow("flowrule", efr.get_flow_name(), 0, efr.get_priority(), True, 0, 0, efr.get_actions(), efr.get_match())
-        json_req = flowj.getJSON(self.odlversion, efr.get_switch_id())
-        ODL_Rest(self.odlversion).createFlow(self.odlendpoint, self.odlusername, self.odlpassword, json_req, efr.get_switch_id(), efr.get_flow_name())
+        sw_flow_name = self.NetManager.createFlow(efr) #efr.get_flow_name()
         
         # DATABASE: Add flow rule
-        flow_rule = FlowRule(_id=efr.get_flow_id(),node_id=efr.get_switch_id(), _type='external', status='complete',
-                             priority=efr.get_priority(), internal_id=efr.get_flow_name())
+        flow_rule = NffgFlowrule(_id=efr.get_flow_id(),node_id=efr.get_switch_id(), _type='external', status='complete',
+                                 priority=efr.get_priority(), internal_id=sw_flow_name)
         flow_rule_db_id = GraphSession().addFlowrule(self.__session_id, efr.get_switch_id(), flow_rule)
         GraphSession().dbStoreMatch(efr.getNffgMatch(), flow_rule_db_id, flow_rule_db_id)
         GraphSession().dbStoreAction(efr.getNffgAction(), flow_rule_db_id)
@@ -1022,6 +1006,8 @@ class OpenDayLightDO(object):
         
         def getNffgMatch(self):
             
+            return self.__match.getNffgMatch(self.__nffg_flowrule)
+            
             port_in = self.__match.input_port
             ether_type = self.__match.ethertype
             vlan_id = self.__match.vlan_id
@@ -1048,6 +1034,9 @@ class OpenDayLightDO(object):
             
             
         def getNffgAction(self):
+            
+            base_action = Action()
+            return base_action.getNffgAction(self.__actions, self.__nffg_flowrule)
             
             output_to_port = None
             output_to_controller = False

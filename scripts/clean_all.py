@@ -5,15 +5,17 @@ Keep in the database user and tenant informations only.
 '''
 
 import logging
-from odl_do.config import Configuration
-from odl_do.odl_rest import ODL_Rest
 from odl_do.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 from odl_do.resource_description import ResourceDescription
 from odl_do.messaging import Messaging
+from odl_do.netmanager import NetManager
 
 
 def odl_do_clean_all():
+    
+    netmanager = NetManager()
+    
     flowrules_separator = ", "
     deleted_flowrules = []
     notfound_flowrules = []
@@ -22,12 +24,10 @@ def odl_do_clean_all():
     external_flowrules = GraphSession().getAllExternalFlowrules()
     
     for ef in external_flowrules:
-        try:
-            ODL_Rest(Configuration().ODL_VERSION).deleteFlow(Configuration().ODL_ENDPOINT, 
-                                                             Configuration().ODL_USERNAME, 
-                                                             Configuration().ODL_PASSWORD, 
-                                                             ef.switch_id, ef.internal_id)
+        try:            
+            netmanager.deleteFlow(ef.switch_id, ef.internal_id)
             deleted_flowrules.append(ef.internal_id)
+        
         except Exception as ex:
             if type(ex) is HTTPError and ex.response.status_code==404:
                 #logging.debug("External flow "+ef.internal_id+" does not exist in the switch "+ef.switch_id+".")

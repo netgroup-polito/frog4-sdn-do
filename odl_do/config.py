@@ -62,11 +62,20 @@ class Configuration(object):
             self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file,self.__abs_path+"/"+db_file)
             self.__DATABASE_DUMP_FILE = self.__abs_path+"/"+config.get('database','dump_file')
             
+            # [network_controller]
+            self.__CONTROLLER_NAME = config.get('network_controller','controller_name')
+            
             # [opendaylight]
             self.__ODL_USERNAME = config.get('opendaylight','odl_username')
             self.__ODL_PASSWORD = config.get('opendaylight','odl_password')
             self.__ODL_ENDPOINT = config.get('opendaylight','odl_endpoint')
             self.__ODL_VERSION = config.get('opendaylight','odl_version')
+            
+            # [onos]
+            self.__ONOS_USERNAME = config.get('onos','onos_username')
+            self.__ONOS_PASSWORD = config.get('onos','onos_password')
+            self.__ONOS_ENDPOINT = config.get('onos','onos_endpoint')
+            self.__ONOS_VERSION = config.get('onos','onos_version')
             
             # [messaging]
             self.__DD_ACTIVATE = config.getboolean('messaging','dd_activate')
@@ -196,6 +205,10 @@ class Configuration(object):
         return self.__DATABASE_DUMP_FILE
     
     @property
+    def CONTROLLER_NAME(self):
+        return self.__CONTROLLER_NAME
+    
+    @property
     def ODL_USERNAME(self):
         return self.__ODL_USERNAME
     
@@ -210,6 +223,22 @@ class Configuration(object):
     @property
     def ODL_VERSION(self):
         return self.__ODL_VERSION
+    
+    @property
+    def ONOS_USERNAME(self):
+        return self.__ONOS_USERNAME
+    
+    @property
+    def ONOS_PASSWORD(self):
+        return self.__ONOS_PASSWORD
+    
+    @property
+    def ONOS_ENDPOINT(self):
+        return self.__ONOS_ENDPOINT
+    
+    @property
+    def ONOS_VERSION(self):
+        return self.__ONOS_VERSION
     
     @property
     def DD_ACTIVATE(self):
