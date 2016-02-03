@@ -7,16 +7,16 @@ Created on Nov 10, 2015
 import json
 import networkx as nx
 
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
-    from odl_do.odl.objects import Flow, Match ,Action
-    from odl_do.odl.rest import ODL_Rest
+    from do_core.odl.objects import Flow, Match ,Action
+    from do_core.odl.rest import ODL_Rest
     
 elif Configuration().CONTROLLER_NAME == "ONOS":
-    from odl_do.onos.objects import Flow, Selector as Match, Treatment as Action
-    from odl_do.onos.rest import ONOS_Rest
+    from do_core.onos.objects import Flow, Selector as Match, Treatment as Action
+    from do_core.onos.rest import ONOS_Rest
         
 
 

@@ -1,5 +1,5 @@
 from doubledecker.clientSafe import ClientSafe
-from odl_do.config import Configuration
+from do_core.config import Configuration
 from threading import Thread
 import logging
 

@@ -5,7 +5,7 @@ Created on 2/feb/2016
 '''
 
 import json
-from odl_do.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
+from do_core.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
 
 
 

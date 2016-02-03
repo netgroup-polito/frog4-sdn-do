@@ -5,14 +5,14 @@ Keep in the database user and tenant informations only.
 '''
 
 import logging
-from odl_do.sql.graph_session import GraphSession
+from do_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
-from odl_do.resource_description import ResourceDescription
-from odl_do.messaging import Messaging
-from odl_do.netmanager import NetManager
+from do_core.resource_description import ResourceDescription
+from do_core.messaging import Messaging
+from do_core.netmanager import NetManager
 
 
-def odl_do_clean_all():
+def do_core_clean_all():
     
     netmanager = NetManager()
     
@@ -52,4 +52,4 @@ def odl_do_clean_all():
     print("Cleaning database and switches completed!")
     
 
-odl_do_clean_all()
+do_core_clean_all()

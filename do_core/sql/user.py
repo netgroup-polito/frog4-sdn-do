@@ -8,8 +8,8 @@ from sqlalchemy import Column, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 import logging, random, time
 
-from odl_do.sql.sql_server import get_session
-from odl_do.exception import UserNotFound, TenantNotFound
+from do_core.sql.sql_server import get_session
+from do_core.exception import UserNotFound, TenantNotFound
 
 Base = declarative_base()
 

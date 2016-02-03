@@ -16,14 +16,14 @@ This script test the main functions of the OpenDayLight Domain Orchestrator.
 import logging, json
 
 # Configuration Parser
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
 # SQL Session
-from odl_do.sql.sql_server import try_session
+from do_core.sql.sql_server import try_session
 
 # Orchestrator Core
-from odl_do.user_authentication import UserAuthentication
-from odl_do.opendaylight_do import OpenDayLightDO
+from do_core.user_authentication import UserAuthentication
+from do_core.opendaylight_do import OpenDayLightDO
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG

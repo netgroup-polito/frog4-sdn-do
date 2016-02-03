@@ -12,10 +12,10 @@ from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
-from odl_do.sql.sql_server import get_session
-from odl_do.exception import GraphError
+from do_core.sql.sql_server import get_session
+from do_core.exception import GraphError
 
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
 Base = declarative_base()
 

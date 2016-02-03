@@ -1,7 +1,7 @@
 import json
 from collections import OrderedDict
-from odl_do.config import Configuration
-from odl_do.sql.graph_session import GraphSession
+from do_core.config import Configuration
+from do_core.sql.graph_session import GraphSession
 
 class ResourceDescription(object):  # Singleton Class
     

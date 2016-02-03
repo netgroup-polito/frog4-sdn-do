@@ -9,13 +9,13 @@ import logging
 
 from nffg_library.nffg import FlowRule as NffgFlowrule
 
-from odl_do.sql.graph_session import GraphSession
+from do_core.sql.graph_session import GraphSession
 
-from odl_do.config import Configuration
-from odl_do.resource_description import ResourceDescription
-from odl_do.netmanager import NetManager, Match ,Action
-from odl_do.messaging import Messaging
-from odl_do.exception import sessionNotFound, GraphError, NffgUselessInformations
+from do_core.config import Configuration
+from do_core.resource_description import ResourceDescription
+from do_core.netmanager import NetManager, Match ,Action
+from do_core.messaging import Messaging
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
 
 

@@ -10,7 +10,7 @@ in order to create the unique instance.
 '''
 
 import configparser, os, inspect, logging
-from odl_do.exception import WrongConfigurationFile 
+from do_core.exception import WrongConfigurationFile 
 
 
 class Configuration(object):

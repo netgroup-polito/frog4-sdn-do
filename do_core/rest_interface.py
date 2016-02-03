@@ -11,10 +11,10 @@ import falcon.status_codes  as falconStatusCodes
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
-from odl_do.user_authentication import UserAuthentication
-from odl_do.opendaylight_do import OpenDayLightDO
-from odl_do.netgraph import NetGraph
-from odl_do.config import Configuration
+from do_core.user_authentication import UserAuthentication
+from do_core.opendaylight_do import OpenDayLightDO
+from do_core.netmanager import NetManager
+from do_core.config import Configuration
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -22,7 +22,7 @@ from nffg_library.nffg import NF_FG
 from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
-from odl_do.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
+from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
     UserNotFound, TenantNotFound, UserTokenExpired, GraphError
 
 
@@ -425,10 +425,7 @@ class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
         try :
             UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            ng = NetGraph(Configuration().ODL_VERSION,
-                          Configuration().ODL_ENDPOINT, 
-                          Configuration().ODL_USERNAME, 
-                          Configuration().ODL_PASSWORD)
+            ng = NetManager()
             
             response.body = json.dumps(ng.getNetworkTopology()) #self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
             response.status = falcon.HTTP_200

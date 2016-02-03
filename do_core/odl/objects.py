@@ -6,7 +6,7 @@ Created on 13/mag/2015
 '''
 
 import json, logging
-from odl_do.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
+from do_core.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
 
 
 class Flow(Flow_Interface):

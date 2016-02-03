@@ -21,18 +21,18 @@ Script phases:
 import logging, falcon
 
 # Configuration Parser
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
 # SQL Session
-from odl_do.sql.sql_server import try_session
+from do_core.sql.sql_server import try_session
 
 # REST Interface
-from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_GPUD
-from odl_do.rest_interface import OpenDayLightDO_REST_NFFG_Status
-from odl_do.rest_interface import OpenDayLightDO_UserAuthentication
-from odl_do.rest_interface import OpenDayLightDO_NetworkTopology
+from do_core.rest_interface import OpenDayLightDO_REST_NFFG_GPUD
+from do_core.rest_interface import OpenDayLightDO_REST_NFFG_Status
+from do_core.rest_interface import OpenDayLightDO_UserAuthentication
+from do_core.rest_interface import OpenDayLightDO_NetworkTopology
 
-from odl_do.messaging import Messaging
+from do_core.messaging import Messaging
 
 # Database connection test
 try_session()

@@ -4,7 +4,7 @@ Created on 2/feb/2016
 @author: giacomoratta
 '''
 import requests, logging
-from odl_do.controller_interface.rest import Rest_Interface
+from do_core.controller_interface.rest import Rest_Interface
 
 
 class ONOS_Rest(Rest_Interface):

@@ -10,10 +10,10 @@ This script print the network topology detected by OpenDayLight Domain Orchestra
 import logging
 
 # Configuration Parser
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
-# NetGraph
-from odl_do.netmanager import NetManager
+# NetManager
+from do_core.netmanager import NetManager
 
 # Configuration
 conf = Configuration()

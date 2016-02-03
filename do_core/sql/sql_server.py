@@ -5,7 +5,7 @@ Created on Jun 22, 2015
 '''
 import sqlalchemy, os
 from sqlalchemy.orm import sessionmaker
-from odl_do.config import Configuration
+from do_core.config import Configuration
 
 
 def get_session():
