@@ -5,15 +5,11 @@ Created on 2/feb/2016
 '''
 
 import json
-from nffg_library.nffg import Match as NffgMatch, Action as NffgAction
+from odl_do.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
 
-'''
-######################################################################################################
-########################      Classes which represent ONOS objects        ############################
-######################################################################################################
-'''
 
-class Flow(object):
+
+class Flow(Flow_Interface):
     def __init__(self, deviceId, priority=100, isPermanent=True, timeout=0, treatments=None, selector=None):
         
         self.deviceId = deviceId
@@ -57,7 +53,8 @@ class Flow(object):
 
 
 
-class Treatment(object):
+
+class Treatment(Action_Interface):
     def __init__(self, action = None):
         '''
         Represents any OpenFlow 1.0 possible action on the outgoing traffic
@@ -244,11 +241,10 @@ class Treatment(object):
                           set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
                           output_to_queue = output_to_queue, db_id = db_id)
     
+
+ 
     
-    
-    
-    
-class Selector(object):
+class Selector(Match_Interface):
     def __init__(self, match = None):
         '''
         Represents any OpenFlow 1.0 possible matching rules for the incoming traffic

@@ -4,13 +4,10 @@ Created on 2/feb/2016
 @author: giacomoratta
 '''
 import requests, logging
+from odl_do.controller_interface.rest import Rest_Interface
 
-'''
-######################################################################################################
-###################################      ONOS REST calls      ########################################
-######################################################################################################
-'''
-class ONOS_Rest(object):
+
+class ONOS_Rest(Rest_Interface):
     
     version=""
     
