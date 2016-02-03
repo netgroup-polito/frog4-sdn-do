@@ -1005,85 +1005,10 @@ class OpenDayLightDO(object):
         
         
         def getNffgMatch(self):
-            
             return self.__match.getNffgMatch(self.__nffg_flowrule)
             
-            port_in = self.__match.input_port
-            ether_type = self.__match.ethertype
-            vlan_id = self.__match.vlan_id
-            source_mac = self.__match.eth_source
-            dest_mac = self.__match.eth_dest
-            source_ip = self.__match.ip_source
-            dest_ip = self.__match.ip_dest
-            source_port = self.__match.port_source
-            dest_port = self.__match.port_dest
-            protocol = self.__match.ip_protocol
-            
-            # Not directly supported fields
-            tos_bits = self.__nffg_flowrule.match.tos_bits
-            vlan_priority = self.__nffg_flowrule.match.vlan_priority
-            db_id = None
-            
-            return NffgMatch(port_in=port_in, ether_type=ether_type, 
-                             vlan_id=vlan_id, vlan_priority=vlan_priority,
-                             source_mac=source_mac, dest_mac=dest_mac, 
-                             source_ip=source_ip, dest_ip=dest_ip, 
-                             tos_bits=tos_bits,
-                             source_port=source_port, dest_port=dest_port,
-                             protocol=protocol, db_id=db_id)
-            
-            
+
         def getNffgAction(self):
-            
             base_action = Action()
             return base_action.getNffgAction(self.__actions, self.__nffg_flowrule)
-            
-            output_to_port = None
-            output_to_controller = False
-            drop = False
-            set_vlan_id = None
-            push_vlan = None
-            pop_vlan = False
-            set_ethernet_src_address = None
-            set_ethernet_dst_address = None
-            
-            # Not supported fields
-            set_vlan_priority = None
-            set_ip_src_address = None 
-            set_ip_dst_address= None
-            set_ip_tos = None
-            set_l4_src_port=None
-            set_l4_dst_port = None
-            output_to_queue= None
-            
-            # Compress all actions in a single NffgAction (for dbStoreAction)
-            # Multiple output not allowed
-            for a in self.__actions:
-                if a.is_output_port_action():
-                    output_to_port = a.output_port
-                elif a.is_output_controller_action():
-                    output_to_controller = True
-                elif a.is_drop_action():
-                    drop = True
-                elif a.is_set_vlan_action():
-                    set_vlan_id = a.vlan_id
-                    if push_vlan is not None:
-                        push_vlan = set_vlan_id
-                elif a.is_push_vlan_action():
-                    push_vlan = -1
-                    if set_vlan_id is not None:
-                        push_vlan = set_vlan_id
-                elif a.is_pop_vlan_action():
-                    pop_vlan = True
-                elif a.is_eth_src_action():
-                    set_ethernet_src_address = a.address
-                elif a.is_eth_dst_action():
-                    set_ethernet_dst_address = a.address
-
-            return NffgAction(output = output_to_port, controller = output_to_controller, drop = drop, 
-                              set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, push_vlan = push_vlan, pop_vlan = pop_vlan,
-                              set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
-                              set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
-                              set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
-                              output_to_queue = output_to_queue, db_id = None)
 

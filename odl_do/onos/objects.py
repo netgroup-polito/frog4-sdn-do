@@ -281,6 +281,7 @@ class Selector(Match_Interface):
         self.json_criteria['VlanID']['type'] = self.type
         self.json_criteria['VlanID']['vlanId'] = self.vlan_id
         
+        
     def setEtherTypeMatch(self, ethertype):
         self.type = 'ETH_TYPE'
         self.eth_type = ethertype

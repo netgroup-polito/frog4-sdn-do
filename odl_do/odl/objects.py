@@ -5,16 +5,11 @@ Created on 13/mag/2015
 @author: giacomoratta
 '''
 
-import json
-import logging
+import json, logging
+from odl_do.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
 
-'''
-######################################################################################################
-########################       Classes which represent ODL objects        ############################
-######################################################################################################
-'''
 
-class Flow(object):
+class Flow(Flow_Interface):
     def __init__(self, name, flow_id, table_id = 0, priority = 5, installHw = True, 
                  hard_timeout = 0, idle_timeout = 0, actions = None, match = None):
         '''
@@ -102,7 +97,7 @@ class Flow(object):
                     j_flow['tpDst'] = self.match.port_dest
                 else:
                     logging.warning('destPort discarded. You have to set also "protocol" and "ethertype" fields')                    
-            """        
+            '''        
             if self.match.tp_match is True and self.match.ethertype is None:
                 j_flow['etherType'] = "0x800"
                 logging.warning("Hydrogen requires ethertype set in order to perform transport protocol match: ethertype has been set to 0x800")
@@ -112,14 +107,14 @@ class Flow(object):
                 proto = self.match.port_source.split(":")[0]
                 j_flow['protocol'] = proto
                 logging.warning("Hydrogen requires protocol set in order to perform transport protocol match: protocol has been set to "+proto)
-            """
+            '''
                        
             if (self.match.ip_match is True and self.match.ethertype is None):
                 j_flow['etherType'] = "0x800"
                 logging.warning("Hydrogen requires ethertype set in order to perform ip match: ethertype has been set to 0x800")
             
             for action in self.actions:                
-                j_action = action.getActionsHydrogen()    
+                j_action = action.getAction_Hydrogen()    
                 j_list_action.append(j_action)
                 
             j_flow['actions'] = j_list_action;
@@ -144,7 +139,7 @@ class Flow(object):
             for action in self.actions:
                 
                 j_action = {}
-                j_action = action.getActions(i)
+                j_action = action.getAction(i)
                 j_list_action.append(j_action)
                 i = i + 1
             
@@ -205,18 +200,24 @@ class Flow(object):
         
         return json.dumps(j_flow)
 
-class Action(object):
+
+
+
+
+
+class Action(Action_Interface):
     def __init__(self, action = None):
         '''
         Represents any OpenFlow 1.0 possible action on the outgoing traffic
         '''
-        self.address = None
+        self.priority = 0 # priority used to sort actions list      
+        
         self.action_type = None
         self.output_port = None
         self.max_length = None
         self.vlan_id = None
         self.vlan_id_present = False
-        self.priority = 0 # priority used to sort actions list
+        
         if action is not None:
             #TODO: add remaining actions
             if action.drop is True:
@@ -229,11 +230,52 @@ class Action(object):
                 self.setPushVlanAction()
             elif action.pop_vlan is True:
                 self.setPopVlanAction()
-            elif action.set_ethernet_src_address is not None:
-                self.setEthernetAddressAction("source", action.set_ethernet_src_address)
-            elif action.set_ethernet_dst_address is not None:
-                self.setEthernetAddressAction("destination", action.set_ethernet_dst_address)                
 
+    
+    @property
+    def OutputPort(self):
+        return self.output_port
+    
+    @property
+    def VlanID(self):
+        return self.vlan_id
+    
+    
+    def setControllerAction(self):
+        self.action_type = "output-action"
+        self.output_port = "CONTROLLER"
+        self.max_length = 65535
+        self.priority = 9
+        
+    
+    def setOutputAction(self, out_port, max_length):
+        self.action_type = "output-action"
+        self.output_port = out_port
+        self.max_length = max_length
+        self.priority = 10
+    
+    
+    def setDropAction(self):
+        self.action_type = "drop-action"
+        
+    
+    def setPushVlanAction(self):
+        self.action_type="push-vlan-action"
+        self.priority = 2
+
+
+    def setSwapVlanAction(self, vlan_id):
+        self.action_type = "vlan-match"
+        self.vlan_id = vlan_id
+        self.vlan_id_present = True
+        self.priority = 8
+
+
+    def setPopVlanAction(self):
+        self.action_type="pop-vlan-action"
+        self.priority = 2
+    
+    '''
     def setEthernetAddressAction(self, _type, address):
         self.priority = 4
         self.address = address
@@ -241,60 +283,66 @@ class Action(object):
             self.action_type = "set-dl-src-action"
         elif _type=="destination":
             self.action_type = "set-dl-dst-action"
+    '''
 
-    def setDropAction(self):
-        self.action_type = "drop-action"
+
+    def getNffgAction(self, actions, nffg_flowrule):
+        # actions = [] , list
         
-    def setPopVlanAction(self):
-        self.action_type="pop-vlan-action"
-        self.priority = 2
-    
-    def setPushVlanAction(self):
-        self.action_type="push-vlan-action"
-        self.priority = 2
+        output_to_port = None
+        output_to_controller = False
+        drop = False
+        set_vlan_id = None
+        push_vlan = None
+        pop_vlan = False
         
-    def setControllerAction(self):
-        self.action_type = "output-action"
-        self.output_port = "CONTROLLER"
-        self.max_length = 65535
-        self.priority = 9
-    
-    def setOutputAction(self, out_port, max_length):
-        '''
-        Define this action as an output port action
-        Args:
-            out_port:
-                id of the output port where to send out the traffic
-            max_lenght:
-                max length of the packets
-        '''
-        self.action_type = "output-action"
-        self.output_port = out_port
-        self.max_length = max_length
-        self.priority = 10
-    
-    def setSwapVlanAction(self, vlan_id):
-        '''
-        Define this action as a vlan tag swapping action
-        Args:
-            vlan_id:
-                vlan id for the new tag
-        '''
-        self.action_type = "vlan-match"
-        self.vlan_id = vlan_id
-        self.vlan_id_present = True
-        self.priority = 8
+        # Not supported fields
+        set_ethernet_src_address = None
+        set_ethernet_dst_address = None
+        set_vlan_priority = None
+        set_ip_src_address = None 
+        set_ip_dst_address= None
+        set_ip_tos = None
+        set_l4_src_port=None
+        set_l4_dst_port = None
+        output_to_queue= None
+        db_id = None
         
-    def getActionsHydrogen(self):
+        # Compress all actions in a single NffgAction (for dbStoreAction)
+        # Multiple output not allowed
+        for a in actions:
+            if a.is_output_port_action():
+                output_to_port = a.output_port
+            elif a.is_output_controller_action():
+                output_to_controller = True
+            elif a.is_drop_action():
+                drop = True
+            elif a.is_set_vlan_action():
+                set_vlan_id = a.vlan_id
+                if push_vlan is not None:
+                    push_vlan = set_vlan_id
+            elif a.is_push_vlan_action():
+                push_vlan = -1
+                if set_vlan_id is not None:
+                    push_vlan = set_vlan_id
+            elif a.is_pop_vlan_action():
+                pop_vlan = True
+
+        return NffgAction(output = output_to_port, controller = output_to_controller, drop = drop, 
+                          set_vlan_id = set_vlan_id, set_vlan_priority = set_vlan_priority, push_vlan = push_vlan, pop_vlan = pop_vlan,
+                          set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
+                          set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
+                          set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
+                          output_to_queue = output_to_queue, db_id = None)
+    
+    
+        
+    def getAction_Hydrogen(self):
         '''
         Returns actions formatted for Hydrogen
         '''
         j_action = None
-        if self.action_type == "set-dl-src-action":
-            j_action = "SET_DL_SRC="+str(self.address)
-        elif self.action_type == "set-dl-dst-action":
-            j_action = "SET_DL_DST="+str(self.address)
-        elif self.action_type == "push-vlan-action":
+        if self.action_type == "push-vlan-action":
             j_action = "PUSH_VLAN"
         elif self.action_type == "pop-vlan-action":
             j_action = "POP_VLAN"
@@ -307,9 +355,18 @@ class Action(object):
                 j_action = "OUTPUT="+str(self.output_port)
         elif self.action_type == "vlan-match":
             j_action = "SET_VLAN_ID="+str(self.vlan_id)
+
+        '''
+        elif self.action_type == "set-dl-src-action":
+            j_action = "SET_DL_SRC="+str(self.address)
+        elif self.action_type == "set-dl-dst-action":
+            j_action = "SET_DL_DST="+str(self.address)
+        '''
         return j_action
-    
-    def getActions(self, order):
+
+
+
+    def getAction(self, order):
         '''
         Gets the Action as an object (to be inserted in Flow actions list)
         Args:
@@ -319,13 +376,7 @@ class Action(object):
         j_action = {}
         j_action['order'] = order
         
-        if self.action_type == "set-dl-src-action":
-            j_action['set-dl-src-action'] = {}
-            j_action['set-dl-src-action']['address'] = self.address
-        elif self.action_type == "set-dl-dst-action":
-            j_action['set-dl-dst-action'] = {}
-            j_action['set-dl-dst-action']['address'] = self.address
-        elif self.action_type == "push-vlan-action":
+        if self.action_type == "push-vlan-action":
             j_action['push-vlan-action'] = {}
             j_action['push-vlan-action']['ethernet-type'] = 33024
         elif self.action_type == "pop-vlan-action":
@@ -343,14 +394,16 @@ class Action(object):
             j_action['set-field']['vlan-match']['vlan-id']['vlan-id'] = self.vlan_id
             j_action['set-field']['vlan-match']['vlan-id']['vlan-id-present'] = self.vlan_id_present
         
+        '''
+        elif self.action_type == "set-dl-src-action":
+            j_action['set-dl-src-action'] = {}
+            j_action['set-dl-src-action']['address'] = self.address
+        elif self.action_type == "set-dl-dst-action":
+            j_action['set-dl-dst-action'] = {}
+            j_action['set-dl-dst-action']['address'] = self.address
+        '''
         return j_action
     
-    
-    def is_eth_src_action(self):
-        return self.action_type == "set-dl-src-action"
-    
-    def is_eth_dst_action(self):
-        return self.action_type == "set-dl-dst-action"
     
     def is_push_vlan_action(self):
         return self.action_type == "push-vlan-action"
@@ -370,8 +423,19 @@ class Action(object):
     def is_set_vlan_action(self):
         return self.action_type == "vlan-match"
     
+    '''
+    def is_eth_src_action(self):
+        return self.action_type == "set-dl-src-action"
     
-class Match(object):
+    def is_eth_dst_action(self):
+        return self.action_type == "set-dl-dst-action"
+    
+    '''
+
+
+
+
+class Match(Match_Interface):
     def __init__(self, match = None):
         '''
         Represents any OpenFlow 1.0 possible matching rules for the incoming traffic
@@ -381,6 +445,8 @@ class Match(object):
         self.vlan_id_present = None
         self.eth_match = False
         self.ethertype = None
+        
+        '''
         self.eth_source = None
         self.eth_dest = None
         self.ip_protocol = None
@@ -390,47 +456,67 @@ class Match(object):
         self.tp_match = None
         self.port_source = None
         self.port_dest = None
+        '''
+        
         if match is not None:
+            #TODO: add remaining match
             if match.vlan_id is not None:
                 self.setVlanMatch(match.vlan_id)
-            #if match.vlan_priority is not None:
-                #self.VlanPriority(match.vlan_priority)
             if match.ether_type is not None:
                 self.setEtherTypeMatch(match.ether_type)
-            if match.source_mac is not None or match.dest_mac is not None:
-                self.setEthernetMatch(match.source_mac, match.dest_mac)
-            if match.source_ip is not None or match.dest_ip is not None:
-                self.setIPMatch(match.source_ip, match.dest_ip)
-            if match.protocol is not None:
-                self.setIPProtocol(match.protocol)
-            if match.source_port is not None or match.dest_port is not None:
-                self.setTpMatch(match.source_port, match.dest_port)                
-                
-                #Tos Bits
+
         
     def setInputMatch(self, in_port):
-        '''
-        Define this Match as an input port matching
-        Args:
-            in_port:
-                the input port identifier
-        '''
         self.input_port = in_port
     
     def setVlanMatch(self, vlan_id):
-        '''
-        Define this Match as an input port matching
-        Args:
-            vlan_id:
-                the vlan identifier
-        '''
         self.vlan_id = vlan_id
         self.vlan_id_present = True
         
     def setEtherTypeMatch(self, ethertype):
         self.eth_match = True
         self.ethertype = ethertype
+    
+    
+    @property
+    def InputPort(self):
+        return self.input_port
+    
+    @property
+    def VlanID(self):
+        return self.vlan_id
+    
+    
+    
+    def getNffgMatch(self, nffg_flowrule):
         
+        port_in = self.input_port
+        ether_type = self.ethertype
+        vlan_id = self.vlan_id
+        
+        # Not supported
+        source_mac = None
+        dest_mac = None
+        source_ip = None
+        dest_ip = None
+        source_port = None
+        dest_port = None
+        protocol = None
+        
+        # Not directly supported fields
+        tos_bits = self.nffg_flowrule.match.tos_bits
+        vlan_priority = self.nffg_flowrule.match.vlan_priority
+        db_id = None
+        
+        return NffgMatch(port_in=port_in, ether_type=ether_type, 
+                         vlan_id=vlan_id, vlan_priority=vlan_priority,
+                         source_mac=source_mac, dest_mac=dest_mac, 
+                         source_ip=source_ip, dest_ip=dest_ip, 
+                         tos_bits=tos_bits,
+                         source_port=source_port, dest_port=dest_port,
+                         protocol=protocol, db_id=db_id)
+
+    '''        
     def setEthernetMatch(self, eth_source = None, eth_dest = None):
         self.eth_match = True
         self.eth_source = eth_source
@@ -445,9 +531,8 @@ class Match(object):
         self.ip_dest = ip_dest
         
     def setTpMatch(self, port_source = None, port_dest = None):
-        '''
-        Sets a transport protocol match
-        '''
+        #Sets a transport protocol match
         self.tp_match = True
         self.port_source = port_source
         self.port_dest = port_dest
+    '''
