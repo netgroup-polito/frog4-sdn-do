@@ -5,7 +5,7 @@ Created on 13/mag/2015
 @author: giacomoratta
 '''
 
-import json, logging
+import json
 from do_core.controller_interface.objects import Flow_Interface, Action_Interface, Match_Interface, NffgAction, NffgMatch
 
 
@@ -46,159 +46,175 @@ class Flow(Flow_Interface):
         self.actions = actions or []
         self.match = match
     
-    def getJSON(self, odl_version, node = None):
+    
+    def getJSON_Hydrogen(self, node):
+        
+        j_flow = {}        
+        j_flow['name'] = self.flow_id
+        j_flow['node'] = {}
+        j_flow['node']['id']= node
+        j_flow['node']['type']="OF"
+        j_flow['priority'] = self.priority
+        j_flow['installInHw'] = self.installHw
+        j_flow['hardTimeout'] = self.hard_timeout
+        j_flow['idleTimeout'] = self.idle_timeout
+        
+        # ACTIONS
+        j_flow['actions'] = []
+        for a in self.actions:                
+            j_flow['actions'].append(a.getAction_Hydrogen())
+
+        # MATCH
+        if (self.match.input_port is not None):
+            j_flow['ingressPort'] = self.match.input_port
+        if (self.match.vlan_id is not None):
+            j_flow['vlanId'] = self.match.vlan_id
+        if (self.match.ethertype is not None):
+            j_flow['etherType'] = self.match.ethertype
+        
+        return json.dumps(j_flow)
+        
+        '''                                    
+        if (self.match.ip_source is not None):
+            j_flow['nwSrc'] = self.match.ip_source
+        if (self.match.ip_dest is not None):
+            j_flow['nwDst'] = self.match.ip_dest
+        if (self.match.eth_source is not None):
+            j_flow['dlSrc'] = self.match.eth_source
+        if (self.match.eth_dest is not None):
+            j_flow['dlDst'] = self.match.eth_dest
+        if (self.match.ip_protocol is not None):
+            j_flow['protocol'] = self.match.ip_protocol               
+        if (self.match.port_source is not None):
+            if (self.match.ip_protocol is not None and self.match.ethertype is not None):
+                j_flow['tpSrc'] = self.match.port_source
+            else:
+                logging.warning('sourcePort discarded. You have to set also "protocol" and "ethertype" fields')
+        if (self.match.port_dest is not None):
+            if (self.match.ip_protocol is not None and self.match.ethertype is not None):
+                j_flow['tpDst'] = self.match.port_dest
+            else:
+                logging.warning('destPort discarded. You have to set also "protocol" and "ethertype" fields')                    
+                
+        if self.match.tp_match is True and self.match.ethertype is None:
+            j_flow['etherType'] = "0x800"
+            logging.warning("Hydrogen requires ethertype set in order to perform transport protocol match: ethertype has been set to 0x800")
+        if self.match.tp_match is True and self.match.protocol is None:
+            proto = self.match.port_source.split(":")[0]
+            j_flow['protocol'] = proto
+            logging.warning("Hydrogen requires protocol set in order to perform transport protocol match: protocol has been set to "+proto)
+            
+        if (self.match.ip_match is True and self.match.ethertype is None):
+            j_flow['etherType'] = "0x800"
+            logging.warning("Hydrogen requires ethertype set in order to perform ip match: ethertype has been set to 0x800")
+        '''
+        
+        
+    def getJSON_HeliumLithium(self):
+        
+        j_flow = {}
+        j_flow['flow'] = {}
+        j_flow['flow']['strict'] = self.strict
+        j_flow['flow']['flow-name'] = self.name
+        j_flow['flow']['id'] = self.flow_id
+        j_flow['flow']['table_id'] = self.table_id
+        j_flow['flow']['priority'] = self.priority
+        j_flow['flow']['installHw'] = self.installHw
+        j_flow['flow']['hard-timeout'] = self.hard_timeout
+        j_flow['flow']['idle-timeout'] = self.idle_timeout
+        
+        j_flow['flow']['instructions'] = {}
+        j_flow['flow']['instructions']['instruction'] = {}
+        j_flow['flow']['instructions']['instruction']['order'] = str(0)
+        j_flow['flow']['instructions']['instruction']['apply-actions'] = {}
+        
+        i = 0
+        j_list_action = []
+        for action in self.actions:
+            
+            j_action = {}
+            j_action = action.getAction_HeliumLithium(i)
+            j_list_action.append(j_action)
+            i = i + 1
+        
+        j_flow['flow']['instructions']['instruction']['apply-actions']['action'] = j_list_action
+        
+        
+        if self.match is not None:
+            j_flow['flow']['match'] = {}
+            
+            if (self.match.input_port is not None):
+                j_flow['flow']['match']['in-port'] = self.match.input_port
+            if (self.match.vlan_id is not None):
+                j_flow['flow']['match']['vlan-match'] = {}
+                j_flow['flow']['match']['vlan-match']['vlan-id'] = {}
+                j_flow['flow']['match']['vlan-match']['vlan-id']['vlan-id'] = self.match.vlan_id
+                j_flow['flow']['match']['vlan-match']['vlan-id']['vlan-id-present'] = self.match.vlan_id_present
+            if (self.match.eth_match is True):
+                j_flow['flow']['match']['ethernet-match'] = {}
+                if (self.match.ethertype is not None):
+                    j_flow['flow']['match']['ethernet-match']['ethernet-type'] = {}
+                    j_flow['flow']['match']['ethernet-match']['ethernet-type']['type'] = self.match.ethertype
+                '''
+                if (self.match.eth_source is not None):
+                    j_flow['flow']['match']['ethernet-match']['ethernet-source'] = {}
+                    j_flow['flow']['match']['ethernet-match']['ethernet-source']['address'] = self.match.eth_source
+                if (self.match.eth_dest is not None):
+                    j_flow['flow']['match']['ethernet-match']['ethernet-destination'] = {}
+                    j_flow['flow']['match']['ethernet-match']['ethernet-destination']['address'] = self.match.eth_dest
+                '''            
+            '''
+            if (self.match.ip_source is not None):
+                j_flow['flow']['match']['ipv4-source'] = self.match.ip_source
+            if (self.match.ip_dest is not None):
+                j_flow['flow']['match']['ipv4-destination'] = self.match.ip_dest
+            if (self.match.ip_protocol is not None):
+                j_flow['flow']['match']['ip-match'] = {}
+                j_flow['flow']['match']['ip-match']['ip-protocol'] = self.match.ip_protocol
+        
+            if (self.match.port_source is not None):
+                if (self.match.ip_protocol is not None):
+                    protocol = self.match.ip_protocol
+                    if protocol == "6":
+                        protocol = "tcp"
+                    elif protocol == "17":
+                        protocol = "udp"
+                    j_flow['flow']['match'][protocol+'-source-port'] = self.match.port_source
+                else:
+                    logging.warning('sourcePort discarded. You have to set also the "protocol" field')
+        
+            if (self.match.port_dest is not None):
+                if (self.match.ip_protocol is not None):
+                    protocol = self.match.ip_protocol
+                    if protocol == "6":
+                        protocol = "tcp"
+                    elif protocol == "17":
+                        protocol = "udp"
+                    j_flow['flow']['match'][protocol+'-destination-port'] = self.match.port_dest
+                else:
+                    logging.warning('destPort discarded. You have to set also the "protocol" field')
+            '''
+        return json.dumps(j_flow)
+        
+
+    
+    def getJSON(self, odl_version, node=None):
         '''
         Gets the JSON. In Hydrogen returns the JSON associated to the given node
         Args:
             node:
                 The id of the node related to this JSON (only Hydrogen)
         '''
-        j_flow = {}
-        j_list_action = []
         
         #Sort actions
         self.actions.sort(key=lambda x: x.priority)
         
         if odl_version == "Hydrogen":
-            j_flow['name'] = self.flow_id
-            j_flow['node'] = {}
-            j_flow['node']['id']= node
-            j_flow['node']['type']="OF"
-            j_flow['priority'] = self.priority
-            j_flow['installInHw'] = self.installHw
-            j_flow['hardTimeout'] = self.hard_timeout
-            j_flow['idleTimeout'] = self.idle_timeout
+            return self.getJSON_Hydrogen(node)
 
-            if (self.match.input_port is not None):
-                j_flow['ingressPort'] = self.match.input_port                                    
-            if (self.match.ip_source is not None):
-                j_flow['nwSrc'] = self.match.ip_source
-            if (self.match.ip_dest is not None):
-                j_flow['nwDst'] = self.match.ip_dest
-            if (self.match.vlan_id is not None):
-                j_flow['vlanId'] = self.match.vlan_id
-            if (self.match.ethertype is not None):
-                j_flow['etherType'] = self.match.ethertype
-            if (self.match.eth_source is not None):
-                j_flow['dlSrc'] = self.match.eth_source
-            if (self.match.eth_dest is not None):
-                j_flow['dlDst'] = self.match.eth_dest
-            if (self.match.ip_protocol is not None):
-                j_flow['protocol'] = self.match.ip_protocol               
-                
-            if (self.match.port_source is not None):
-                if (self.match.ip_protocol is not None and self.match.ethertype is not None):
-                    j_flow['tpSrc'] = self.match.port_source
-                else:
-                    logging.warning('sourcePort discarded. You have to set also "protocol" and "ethertype" fields')
-                    
-            if (self.match.port_dest is not None):
-                if (self.match.ip_protocol is not None and self.match.ethertype is not None):
-                    j_flow['tpDst'] = self.match.port_dest
-                else:
-                    logging.warning('destPort discarded. You have to set also "protocol" and "ethertype" fields')                    
-            '''        
-            if self.match.tp_match is True and self.match.ethertype is None:
-                j_flow['etherType'] = "0x800"
-                logging.warning("Hydrogen requires ethertype set in order to perform transport protocol match: ethertype has been set to 0x800")
-
-                
-            if self.match.tp_match is True and self.match.protocol is None:
-                proto = self.match.port_source.split(":")[0]
-                j_flow['protocol'] = proto
-                logging.warning("Hydrogen requires protocol set in order to perform transport protocol match: protocol has been set to "+proto)
-            '''
-                       
-            if (self.match.ip_match is True and self.match.ethertype is None):
-                j_flow['etherType'] = "0x800"
-                logging.warning("Hydrogen requires ethertype set in order to perform ip match: ethertype has been set to 0x800")
+        return self.getJSON_HeliumLithium()
+    
             
-            for action in self.actions:                
-                j_action = action.getAction_Hydrogen()    
-                j_list_action.append(j_action)
-                
-            j_flow['actions'] = j_list_action;
-
-        else:
-            j_flow['flow'] = {}
-            j_flow['flow']['strict'] = self.strict
-            j_flow['flow']['flow-name'] = self.name
-            j_flow['flow']['id'] = self.flow_id
-            j_flow['flow']['table_id'] = self.table_id
-            j_flow['flow']['priority'] = self.priority
-            j_flow['flow']['installHw'] = self.installHw
-            j_flow['flow']['hard-timeout'] = self.hard_timeout
-            j_flow['flow']['idle-timeout'] = self.idle_timeout
-            
-            j_flow['flow']['instructions'] = {}
-            j_flow['flow']['instructions']['instruction'] = {}
-            j_flow['flow']['instructions']['instruction']['order'] = str(0)
-            j_flow['flow']['instructions']['instruction']['apply-actions'] = {}
-            
-            i = 0
-            for action in self.actions:
-                
-                j_action = {}
-                j_action = action.getAction(i)
-                j_list_action.append(j_action)
-                i = i + 1
-            
-            j_flow['flow']['instructions']['instruction']['apply-actions']['action'] = j_list_action
-            
-
-            if (self.match is not None):
-                j_flow['flow']['match'] = {}
-                
-                if (self.match.input_port is not None):
-                    j_flow['flow']['match']['in-port'] = self.match.input_port
-                if (self.match.ip_source is not None):
-                    j_flow['flow']['match']['ipv4-source'] = self.match.ip_source
-                if (self.match.ip_dest is not None):
-                    j_flow['flow']['match']['ipv4-destination'] = self.match.ip_dest
-                if (self.match.ip_protocol is not None):
-                    j_flow['flow']['match']['ip-match'] = {}
-                    j_flow['flow']['match']['ip-match']['ip-protocol'] = self.match.ip_protocol
- 
-                if (self.match.port_source is not None):
-                    if (self.match.ip_protocol is not None):
-                        protocol = self.match.ip_protocol
-                        if protocol == "6":
-                            protocol = "tcp"
-                        elif protocol == "17":
-                            protocol = "udp"
-                        j_flow['flow']['match'][protocol+'-source-port'] = self.match.port_source
-                    else:
-                        logging.warning('sourcePort discarded. You have to set also the "protocol" field')
-
-                if (self.match.port_dest is not None):
-                    if (self.match.ip_protocol is not None):
-                        protocol = self.match.ip_protocol
-                        if protocol == "6":
-                            protocol = "tcp"
-                        elif protocol == "17":
-                            protocol = "udp"
-                        j_flow['flow']['match'][protocol+'-destination-port'] = self.match.port_dest
-                    else:
-                        logging.warning('destPort discarded. You have to set also the "protocol" field')
-                        
-                if (self.match.vlan_id is not None):
-                    j_flow['flow']['match']['vlan-match'] = {}
-                    j_flow['flow']['match']['vlan-match']['vlan-id'] = {}
-                    j_flow['flow']['match']['vlan-match']['vlan-id']['vlan-id'] = self.match.vlan_id
-                    j_flow['flow']['match']['vlan-match']['vlan-id']['vlan-id-present'] = self.match.vlan_id_present
-                if (self.match.eth_match is True):
-                    j_flow['flow']['match']['ethernet-match'] = {}
-                    if (self.match.ethertype is not None):
-                        j_flow['flow']['match']['ethernet-match']['ethernet-type'] = {}
-                        j_flow['flow']['match']['ethernet-match']['ethernet-type']['type'] = self.match.ethertype
-                    if (self.match.eth_source is not None):
-                        j_flow['flow']['match']['ethernet-match']['ethernet-source'] = {}
-                        j_flow['flow']['match']['ethernet-match']['ethernet-source']['address'] = self.match.eth_source
-                    if (self.match.eth_dest is not None):
-                        j_flow['flow']['match']['ethernet-match']['ethernet-destination'] = {}
-                        j_flow['flow']['match']['ethernet-match']['ethernet-destination']['address'] = self.match.eth_dest
-        
-        return json.dumps(j_flow)
 
 
 
@@ -333,7 +349,7 @@ class Action(Action_Interface):
                           set_ethernet_src_address = set_ethernet_src_address, set_ethernet_dst_address= set_ethernet_dst_address,
                           set_ip_src_address = set_ip_src_address, set_ip_dst_address = set_ip_dst_address,
                           set_ip_tos = set_ip_tos, set_l4_src_port = set_l4_src_port, set_l4_dst_port = set_l4_dst_port, 
-                          output_to_queue = output_to_queue, db_id = None)
+                          output_to_queue = output_to_queue, db_id = db_id)
     
     
         
@@ -366,7 +382,7 @@ class Action(Action_Interface):
 
 
 
-    def getAction(self, order):
+    def getAction_HeliumLithium(self, order):
         '''
         Gets the Action as an object (to be inserted in Flow actions list)
         Args:
@@ -504,8 +520,8 @@ class Match(Match_Interface):
         protocol = None
         
         # Not directly supported fields
-        tos_bits = self.nffg_flowrule.match.tos_bits
-        vlan_priority = self.nffg_flowrule.match.vlan_priority
+        tos_bits = nffg_flowrule.match.tos_bits
+        vlan_priority = nffg_flowrule.match.vlan_priority
         db_id = None
         
         return NffgMatch(port_in=port_in, ether_type=ether_type, 
