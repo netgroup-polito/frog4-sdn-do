@@ -420,8 +420,14 @@ class OpenDayLightDO(object):
             raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoind")
         
         # Busy vlan id?
-        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id):
-            raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
+        query_ref = []
+        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id, query_ref):
+            
+            # If old and new flowrule have the same priority, cannot install the new flowrule!
+            for qr in query_ref:
+                old_flowrule = GraphSession().getFlowruleByID(qr.flow_rule_id)
+                if old_flowrule is not None and flowrule.priority == old_flowrule.priority:
+                    raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
     
     
 
@@ -715,7 +721,7 @@ class OpenDayLightDO(object):
                 2) when it is not compliant with the next switch port in.
         '''
         if vlan_out is None and next_switch_ID is not None:
-            vlan_out = self.getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
+            vlan_out = self.__getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
             set_vlan_out = vlan_out
         
         return vlan_in, vlan_out, set_vlan_out
@@ -723,7 +729,7 @@ class OpenDayLightDO(object):
     
     
     
-    def getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
+    def __getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
         
         # init first available vlan id
         prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()

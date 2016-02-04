@@ -27,8 +27,9 @@ with several endpoints and their details.
 	
 	"trunk-vlans":[]
 		Could change dinamically due to the flowrules.
-		It list all the vlan id(s) specified in the match section of
-		the flowrule already instantiated. 
+		It list free vlan id(s) as single id or as range of id.
+		Example: "280..289","90..95",18,31,"290..299",52,"67..82".
+		
 	
 	"netgroup-neighbor:neighbor"
 		List all neighbours of this endpoint (usually only one).

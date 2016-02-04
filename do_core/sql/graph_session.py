@@ -327,12 +327,15 @@ class GraphSession(object):
         return False
     
     
-    def ingressVlanIsBusy(self, vlan_in, port_in, switch_id):
+    def ingressVlanIsBusy(self, vlan_in, port_in, switch_id, query_ref=None):
         session = get_session()
         if vlan_in is None or port_in is None or switch_id is None:
             return False
-        query_ref = session.query(VlanModel.id).filter_by(vlan_in=vlan_in).filter_by(switch_id=switch_id).filter_by(port_in=port_in).all()
-        if len(query_ref)>0:
+        new_query_ref = session.query(VlanModel).filter_by(vlan_in=vlan_in).filter_by(switch_id=switch_id).filter_by(port_in=port_in).all()
+        if len(new_query_ref)>0:
+            if query_ref is not None:
+                query_ref.clear()
+                query_ref.extend(new_query_ref)
             return True
         return False
     
