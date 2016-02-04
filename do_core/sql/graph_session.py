@@ -15,7 +15,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from do_core.sql.sql_server import get_session
 from do_core.exception import GraphError
 
-from do_core.config import Configuration
+#from do_core.resource_description import ResourceDescription
 
 Base = declarative_base()
 
@@ -280,13 +280,13 @@ class GraphSession(object):
     def getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
         
         # init first available vlan id
-        prev_vlan_in = Configuration().VlanID_getFirstAvailableID()
+        prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
         if prev_vlan_in is None:
             return
         prev_vlan_in = prev_vlan_in-1
         
         # init last available vlan id
-        last_vlan_in = Configuration().VlanID_getLastAvailableID()
+        last_vlan_in = ResourceDescription().VlanID_getLastAvailableID()
         if last_vlan_in is None:
             return
         
@@ -307,7 +307,7 @@ class GraphSession(object):
                 prev_vlan_in = this_vlan_in
                 continue
             
-            if Configuration().VlanID_isAvailable(prev_vlan_in+1)==False:
+            if ResourceDescription().VlanID_isAvailable(prev_vlan_in+1)==False:
                 continue
             
             if (prev_vlan_in+1)>last_vlan_in:

@@ -4,9 +4,6 @@ Created on Oct 1, 2014
 @author: fabiomignini
 @author: giacomoratta
 
-Singleton Class.
-A the end of this file the 'initialize' method is called
-in order to create the unique instance.
 '''
 
 import configparser, os, inspect, logging
@@ -51,7 +48,6 @@ class Configuration(object):
             
             # [vlan]
             self.__VLAN_AVAILABLE_IDS = config.get('vlan','available_ids')
-            self.__set_available_vlan_ids_array()
             
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
@@ -112,56 +108,7 @@ class Configuration(object):
         logging.basicConfig( filename=self.LOG_FILE, level=log_level, 
                              format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
         logging.info("[CONFIG] Logging just starded!")
-    
-    
-    def __set_available_vlan_ids_array(self):
-        
-        def __getKey(item):
-            return item[0]
-
-        vi = self.__VLAN_AVAILABLE_IDS
-        self.__VLAN_AVAILABLE_IDS = []
-        
-        ranges = vi.split(";")
-        for r in ranges:
-            exs = r.split("-")
-            if len(exs)!=2:
-                continue
-            
-            min_vlan_id = int(exs[0])
-            max_vlan_id = int(exs[1])
-            if (min_vlan_id > max_vlan_id):
-                continue
-            
-            self.__VLAN_AVAILABLE_IDS.append([min_vlan_id,max_vlan_id])
-            logging.debug("[CONFIG] - Available VLAN ID - Range: '"+r+"'")
-        
-        if len(self.__VLAN_AVAILABLE_IDS)==0:
-            logging.error("[CONFIG] - VLAN ID - No available vlan id read from '"+vi+"'")
-        else:
-            self.__VLAN_AVAILABLE_IDS = sorted(self.__VLAN_AVAILABLE_IDS,key=__getKey)
-    
-    
-    def VlanID_isAvailable(self,vlan_id):
-        for r in self.__VLAN_AVAILABLE_IDS:
-            if vlan_id>=r[0] and vlan_id<=r[1]:
-                return True
-        return False
-    
-    def VlanID_getFirstAvailableID(self):
-        if len(self.__VLAN_AVAILABLE_IDS)==0 or len(self.__VLAN_AVAILABLE_IDS[0])<2:
-            return None
-        return self.__VLAN_AVAILABLE_IDS[0][0]
-    
-    def VlanID_getLastAvailableID(self):
-        if len(self.__VLAN_AVAILABLE_IDS)==0:
-            return None
-        last_index = len(self.__VLAN_AVAILABLE_IDS)-1
-        if len(self.__VLAN_AVAILABLE_IDS[last_index])<2:
-            return None
-        return self.__VLAN_AVAILABLE_IDS[last_index][1]
-            
-    
+                
     
     
     @property

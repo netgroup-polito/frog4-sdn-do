@@ -234,7 +234,7 @@ class OpenDayLightDO(object):
             
             # Check vlan availability
             if ep.type == "vlan" and ep.vlan_id is not None:
-                if Configuration().VlanID_isAvailable(int(ep.vlan_id))==False:
+                if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id))==False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
                 
@@ -250,7 +250,7 @@ class OpenDayLightDO(object):
                 GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
             
             # Check vlan availability
-            if flowrule.match.vlan_id is not None and Configuration().VlanID_isAvailable(int(flowrule.match.vlan_id))==False:
+            if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id))==False:
                 vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                 raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
                 
@@ -272,10 +272,10 @@ class OpenDayLightDO(object):
                         GraphError("Flowrule "+flowrule.id+" has not an egress endpoint ('output_to_port' in 'action')")
                 
                 # Check vlan availability
-                if a.push_vlan is not None and Configuration().VlanID_isAvailable(int(a.push_vlan))==False:
+                if a.push_vlan is not None and ResourceDescription().VlanID_isAvailable(int(a.push_vlan))==False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID "+str(a.push_vlan)+" not allowed! Valid vlan ids: "+vids_list)
-                if a.set_vlan_id is not None and Configuration().VlanID_isAvailable(int(a.set_vlan_id))==False:
+                if a.set_vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(a.set_vlan_id))==False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID "+str(a.set_vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
@@ -681,14 +681,14 @@ class OpenDayLightDO(object):
             vlan_in = int(vlan_in)
             if vlan_in<=0 or vlan_in>=4095:
                 vlan_in = None
-            elif Configuration().VlanID_isAvailable(vlan_in)==False:
+            elif ResourceDescription().VlanID_isAvailable(vlan_in)==False:
                 vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                 raise GraphError("Vlan ID "+str(vlan_in)+" not allowed! Valid vlan ids: "+vids_list)
         if vlan_out is not None:
             vlan_out = int(vlan_out)
             if vlan_out<=0 or vlan_out>=4095:
                 vlan_out = None
-            elif Configuration().VlanID_isAvailable(vlan_out)==False:
+            elif ResourceDescription().VlanID_isAvailable(vlan_out)==False:
                 vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                 raise GraphError("Vlan ID "+str(vlan_out)+" not allowed! Valid vlan ids: "+vids_list)
             
