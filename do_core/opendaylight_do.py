@@ -411,6 +411,9 @@ class OpenDayLightDO(object):
     
     
     def __ODL_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
+        '''
+        Check if the flowrule can be installed on the ingress endpoint.
+        '''
         
         # Is the endpoint enabled?
         if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
@@ -712,10 +715,60 @@ class OpenDayLightDO(object):
                 2) when it is not compliant with the next switch port in.
         '''
         if vlan_out is None and next_switch_ID is not None:
-            vlan_out = GraphSession().getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
+            vlan_out = self.getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
             set_vlan_out = vlan_out
         
         return vlan_in, vlan_out, set_vlan_out
+    
+    
+    
+    
+    def getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
+        
+        # init first available vlan id
+        prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
+        if prev_vlan_in is None:
+            return
+        prev_vlan_in = prev_vlan_in-1
+        
+        # init last available vlan id
+        last_vlan_in = ResourceDescription().VlanID_getLastAvailableID()
+        if last_vlan_in is None:
+            return
+        
+        # return a free vlan_in [2,4094] for port_in@switch_id
+        vlan_ids = GraphSession().getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
+        
+        # Return the smaller vlan id
+        if len(vlan_ids)<=0:
+            return prev_vlan_in+1
+        
+        # Search an ingress vlan id suitable for the switch
+        for q in vlan_ids:
+            if(q.vlan_in is None):
+                continue
+            this_vlan_in = int(q.vlan_in)
+            
+            if (this_vlan_in-prev_vlan_in)<2 :
+                prev_vlan_in = this_vlan_in
+                continue
+            
+            if ResourceDescription().VlanID_isAvailable(prev_vlan_in+1)==False:
+                continue
+            
+            if (prev_vlan_in+1)>last_vlan_in:
+                prev_vlan_in = None
+            break
+        
+        # Latest checks
+        if prev_vlan_in is None:
+            raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
+        
+        if prev_vlan_in<1 or prev_vlan_in>=4094:
+            raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
+        
+        # Valid VLAN ID
+        return (prev_vlan_in+1)
 
 
     

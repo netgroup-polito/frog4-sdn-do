@@ -15,8 +15,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from do_core.sql.sql_server import get_session
 from do_core.exception import GraphError
 
-#from do_core.resource_description import ResourceDescription
-
 Base = declarative_base()
 
 
@@ -270,55 +268,6 @@ class GraphSession(object):
             raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
         
         if prev_vlan_in<1 or prev_vlan_in>=last_vlan_in:
-            raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
-        
-        # Valid VLAN ID
-        return (prev_vlan_in+1)
-    
-    
-    
-    def getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
-        
-        # init first available vlan id
-        prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
-        if prev_vlan_in is None:
-            return
-        prev_vlan_in = prev_vlan_in-1
-        
-        # init last available vlan id
-        last_vlan_in = ResourceDescription().VlanID_getLastAvailableID()
-        if last_vlan_in is None:
-            return
-        
-        # return a free vlan_in [2,4094] for port_in@switch_id
-        vlan_ids = self.getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
-        
-        # Return the smaller vlan id
-        if len(vlan_ids)<=0:
-            return prev_vlan_in+1
-        
-        # Search an ingress vlan id suitable for the switch
-        for q in vlan_ids:
-            if(q.vlan_in is None):
-                continue
-            this_vlan_in = int(q.vlan_in)
-            
-            if (this_vlan_in-prev_vlan_in)<2 :
-                prev_vlan_in = this_vlan_in
-                continue
-            
-            if ResourceDescription().VlanID_isAvailable(prev_vlan_in+1)==False:
-                continue
-            
-            if (prev_vlan_in+1)>last_vlan_in:
-                prev_vlan_in = None
-            break
-        
-        # Latest checks
-        if prev_vlan_in is None:
-            raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
-        
-        if prev_vlan_in<1 or prev_vlan_in>=4094:
             raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
         
         # Valid VLAN ID
