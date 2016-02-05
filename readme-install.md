@@ -33,8 +33,8 @@ To check if a module is already installed and its version:
 
 ```sh
 	git clone https://github.com/netgroup-polito/frog4-odl-do.git
-    cd frog4-odl-do
-    git submodule init && git submodule update
+	cd frog4-odl-do
+	git submodule init && git submodule update
 ```
 
 ### Write your own configuration
@@ -57,9 +57,27 @@ The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
 All the tables will be empty, except "user" and "tenant".
 
 
-### Start the Domain Orchestrator
+### Start the Domain Orchestrator (HTTP)
 ```sh
 	$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+```
+
+### Start the Domain Orchestrator (HTTPS)
+
+In this case a certificate is needed.
+
+A useful guide: [Ubuntu: certificates and security](https://help.ubuntu.com/12.04/serverguide/certificates-and-security.html).
+
+Otherwise, you can generate a self-signed certificate executing this script (based on the previous link):
+```sh
+	$ cd ./keys/certificate
+	$ ./certificate.sh
+	$ cd ../..
+```
+
+Now you can run gunicorn on https:
+```sh
+	$ gunicorn -b 0.0.0.0:9000 -t 500 --certfile=keys/certificate/server.crt --keyfile=keys/certificate/server.key start:app
 ```
 
 ### Utility scripts
