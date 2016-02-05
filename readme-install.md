@@ -77,7 +77,10 @@ Otherwise, you can generate a self-signed certificate executing this script (bas
 
 Now you can run gunicorn on https:
 ```sh
-	$ gunicorn -b 0.0.0.0:9000 -t 500 --certfile=keys/certificate/server.crt --keyfile=keys/certificate/server.key start:app
+	$ gunicorn -b 0.0.0.0:9000 -t 500 \
+	--certfile=keys/certificate/server.crt \
+	--keyfile=keys/certificate/server.key \
+	start:app
 ```
 
 ### Utility scripts
