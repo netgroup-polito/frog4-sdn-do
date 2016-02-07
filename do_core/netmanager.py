@@ -67,6 +67,13 @@ class NetManager():
         def getFlowrules(self):
             return self.__nffg_flowrules.values()
     
+    def getControllerName(self):
+        if self.isODL():
+            return Configuration().CONTROLLER_NAME+" "+Configuration().ODL_VERSION
+        elif self.isONOS():
+            return Configuration().CONTROLLER_NAME+" "+Configuration().ONOS_VERSION
+        else:
+            return "<controller unknown>"
     
     def isODL(self):
         return self.ct_name == "OpenDayLight"

@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
 from do_core.user_authentication import UserAuthentication
-from do_core.opendaylight_do import OpenDayLightDO
+from do_core.do import DO
 from do_core.netmanager import NetManager
 from do_core.config import Configuration
 
@@ -27,14 +27,14 @@ from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound
 
 
 
-class OpenDayLightDO_REST_Base(object):
+class DO_REST_Base(object):
     '''
     Every response must be in json format and must have the following fields:
     - 'title' (e.g. "202 Accepted")
     - 'message' (e.g. "Graph 977 succesfully processed.")
     Additional fields should be used to send the requested data (e.g. nf-fg, status, user-data).
     
-    All the classess "OpenDayLightDO_REST_*" must inherit this class.
+    All the classess "DO_REST_*" must inherit this class.
     This class contains:
         - common json response creator "_json_response"
         - common exception handlers "__except_*"
@@ -129,7 +129,7 @@ class OpenDayLightDO_REST_Base(object):
 
 
 
-class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
+class DO_REST_NFFG_GPUD(DO_REST_Base):
     #GPUD = "Get Put Update Delete" 
     
     def on_put(self, request, response, nffg_id):
@@ -143,9 +143,9 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
             
-            odlDO = OpenDayLightDO(userdata)
-            odlDO.NFFG_Validate(nffg)
-            odlDO.NFFG_Put(nffg)
+            NCDO = DO(userdata)
+            NCDO.NFFG_Validate(nffg)
+            NCDO.NFFG_Put(nffg)
     
             response.body = None #self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
             response.status = falcon.HTTP_202
@@ -170,11 +170,11 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
         except NF_FGValidationError as err:
             self._except_NotAcceptable(response,"NF_FGValidationError",err)
         
-        # NFFG validation - raised by the class OpenDayLightDO()
+        # NFFG validation - raised by the class DO()
         except GraphError as err:
             self._except_NotAcceptable(response,"GraphError",err)
         
-        # Custom NFFG sub-validation - raised by OpenDayLightDO().NFFG_Validate
+        # Custom NFFG sub-validation - raised by DO().NFFG_Validate
         except NffgUselessInformations as err:
             self._except_NotAcceptable(response,"NffgUselessInformations",err)
         
@@ -200,9 +200,9 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
         try :
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlDO = OpenDayLightDO(userdata)
+            NCDO = DO(userdata)
             
-            odlDO.NFFG_Delete(nffg_id)
+            NCDO.NFFG_Delete(nffg_id)
             
             response.body = None #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
             response.status = falcon.HTTP_200
@@ -240,9 +240,9 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
     def on_get(self, request, response, nffg_id):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlDO = OpenDayLightDO(userdata)
+            NCDO = DO(userdata)
             
-            response.body = odlDO.NFFG_Get(nffg_id) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=odlDO.NFFG_Get(nffg_id))
+            response.body = NCDO.NFFG_Get(nffg_id) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=NCDO.NFFG_Get(nffg_id))
             response.status = falcon.HTTP_200
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -277,13 +277,13 @@ class OpenDayLightDO_REST_NFFG_GPUD(OpenDayLightDO_REST_Base):
 
 
 
-class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
+class DO_REST_NFFG_Status(DO_REST_Base):
     def on_get(self, request, response, nffg_id):
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
-            odlDO = OpenDayLightDO(userdata)
+            NCDO = DO(userdata)
             
-            status,percentage = odlDO.NFFG_Status(nffg_id)
+            status,percentage = NCDO.NFFG_Status(nffg_id)
             status_json = {}
             status_json['status'] = status 
             status_json['percentage_completed'] = percentage
@@ -326,7 +326,7 @@ class OpenDayLightDO_REST_NFFG_Status(OpenDayLightDO_REST_Base):
 
 
 
-class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
+class DO_UserAuthentication(DO_REST_Base):
     def on_post(self, request, response):
         try:
             payload = None
@@ -420,7 +420,7 @@ class OpenDayLightDO_UserAuthentication(OpenDayLightDO_REST_Base):
 
 
 
-class OpenDayLightDO_NetworkTopology(OpenDayLightDO_REST_Base):
+class DO_NetworkTopology(DO_REST_Base):
     def on_get(self, request, response):
         try :
             UserAuthentication().authenticateUserFromRESTRequest(request)

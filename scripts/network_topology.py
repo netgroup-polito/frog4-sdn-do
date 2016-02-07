@@ -3,7 +3,7 @@ Created on Gen 14, 2015
 
 @author: giacomoratta
 
-This script print the network topology detected by OpenDayLight Domain Orchestrator.
+This script print the network topology detected by Network Controller Domain Orchestrator.
 
 '''
 
@@ -20,14 +20,15 @@ conf = Configuration()
 conf.log_configuration()
 
 
-# START OPENDAYLIGHT DOMAIN ORCHESTRATOR
-logging.debug("Printing the network topology watched by OpenDayLight Domain Orchestrator")
-print("OpenDayLight Domain Orchestrator - Network Topology")
+# START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
+logging.debug("Printing the network topology watched by Network Controller Domain Orchestrator")
+print("Network Controller Domain Orchestrator - Network Topology")
 
-print("\nOpenDayLight version: "+Configuration().ODL_VERSION+"\n")
 
 ng = NetManager()
 nt = ng.getNetworkTopology()
+
+print("\nNetwork Controller: "+ng.getControllerName()+"\n")
 
 for node in nt:
     print("\n  Node:        "+node['node'])

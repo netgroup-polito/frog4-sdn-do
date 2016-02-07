@@ -20,11 +20,12 @@ from requests.exceptions import HTTPError
 
 
 
-class OpenDayLightDO(object):
+class DO(object):
 
     def __init__(self, user_data):
 
         self.__session_id = None
+        self.__print_enabled = Configuration().OO_CONSOLE_PRINT
         
         self.nffg = None
         self.user_data = user_data
@@ -37,6 +38,12 @@ class OpenDayLightDO(object):
         
         # NetManager
         self.NetManager = NetManager()
+    
+    
+    
+    def __print(self, msg):
+        if self.__print_enabled:
+            print(msg)
 
 
     
@@ -55,8 +62,8 @@ class OpenDayLightDO(object):
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
             
-            # Send flow rules to ODL
-            self.__ODL_FlowsInstantiation(nffg)
+            # Send flow rules to Network Controller
+            self.__NC_FlowsInstantiation(nffg)
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
@@ -71,7 +78,7 @@ class OpenDayLightDO(object):
         
         except Exception as ex:
             logging.error(ex)
-            self.__NFFG_ODL_deleteGraph()
+            self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex                           
         
@@ -100,14 +107,14 @@ class OpenDayLightDO(object):
             updated_nffg = old_nffg.diff(new_nffg)
             logging.debug("Update NF-FG: coming updates: "+updated_nffg.getJSON(True))            
             
-            # Delete useless endpoints and flowrules, from DB and ODL 
-            self.__NFFG_ODL_DeleteAndUpdate(updated_nffg)
+            # Delete useless endpoints and flowrules, from DB and Network Controller 
+            self.__NFFG_NC_DeleteAndUpdate(updated_nffg)
             
             # Update database
             GraphSession().updateNFFG(updated_nffg, self.__session_id)
             
-            # Send flowrules to ODL
-            self.__ODL_FlowsInstantiation(updated_nffg)
+            # Send flowrules to Network Controller
+            self.__NC_FlowsInstantiation(updated_nffg)
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
             
             GraphSession().updateStatus(self.__session_id, 'complete')
@@ -120,7 +127,7 @@ class OpenDayLightDO(object):
             
         except Exception as ex:
             logging.error("Update NF-FG: ",ex)
-            self.__NFFG_ODL_deleteGraph()
+            self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
         return self.__session_id
@@ -137,7 +144,7 @@ class OpenDayLightDO(object):
         try:
             instantiated_nffg = GraphSession().getNFFG(self.__session_id)
             logging.debug("Delete NF-FG: [session="+str(self.__session_id)+"] we are going to delete: "+instantiated_nffg.getJSON())
-            self.__NFFG_ODL_deleteGraph()
+            self.__NFFG_NC_deleteGraph()
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
             # Update the resource description .json
@@ -204,7 +211,7 @@ class OpenDayLightDO(object):
         Busy VLAN ID: the control on the required vlan id(s) must wait for
         the graph instantiation into the database in order to clarify the situation.
         Finally, the the control on the required vlan id(s) is always made before
-        processing a flowrule (see the first rows of "__ODL_ProcessFlowrule").
+        processing a flowrule (see the first rows of "__NC_ProcessFlowrule").
         '''
         
         # END POINTs inspections
@@ -286,15 +293,15 @@ class OpenDayLightDO(object):
 
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-        OPENDAYLIGHT INTERACTIONS
+        NETWORK CONTROLLER INTERACTIONS
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
     
-    def __NFFG_ODL_deleteGraph(self):
+    def __NFFG_NC_deleteGraph(self):
         '''
         Delete a whole graph, and set it as "ended".
         Delete all endpoints, and releated resources.
-        Delete all flowrules from database and from opendaylight.
+        Delete all flowrules from database and from the network controller.
         '''
         
         # Endpoints
@@ -315,7 +322,7 @@ class OpenDayLightDO(object):
 
 
 
-    def __NFFG_ODL_DeleteAndUpdate(self, updated_nffg):
+    def __NFFG_NC_DeleteAndUpdate(self, updated_nffg):
         '''
         Remove all endpoints and all flowrules which is marked as 'to_be_deleted'.
         For each flowrule marked as 'already_deployed' this function checks if the
@@ -358,7 +365,6 @@ class OpenDayLightDO(object):
     def __ProfileGraph_BuildFromNFFG(self, nffg):
         '''
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        Return a odl_objects.ProfileGraph object.
         '''
         for endpoint in nffg.end_points:
             
@@ -389,7 +395,7 @@ class OpenDayLightDO(object):
     
     
 
-    def __ODL_FlowsInstantiation(self, nffg):
+    def __NC_FlowsInstantiation(self, nffg):
         
         # Build the Profile Graph
         self.__ProfileGraph_BuildFromNFFG(nffg)
@@ -406,11 +412,11 @@ class OpenDayLightDO(object):
             in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port1_id)
             
             # Process flow rule with VLAN
-            self.__ODL_ProcessFlowrule(in_endpoint, flowrule)
+            self.__NC_ProcessFlowrule(in_endpoint, flowrule)
     
     
     
-    def __ODL_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
+    def __NC_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
         '''
         Check if the flowrule can be installed on the ingress endpoint.
         '''
@@ -431,7 +437,7 @@ class OpenDayLightDO(object):
     
     
 
-    def __ODL_ProcessFlowrule(self, in_endpoint, flowrule):
+    def __NC_ProcessFlowrule(self, in_endpoint, flowrule):
         '''
         in_endpoint = nffg.EndPoint
         flowrule = nffg.FlowRule
@@ -448,7 +454,7 @@ class OpenDayLightDO(object):
         if in_endpoint.type == "vlan":
             flowrule.match.vlan_id = in_endpoint.vlan_id
         
-        self.__ODL_CheckFlowruleOnEndpoint(in_endpoint, flowrule)
+        self.__NC_CheckFlowruleOnEndpoint(in_endpoint, flowrule)
         
         out_endpoint = None
         
@@ -457,7 +463,7 @@ class OpenDayLightDO(object):
         # If a flow rule has a drop action, we don't care of other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                single_efr = OpenDayLightDO.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
+                single_efr = DO.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
                 single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
                 self.__Push_externalFlowrule(single_efr)
                 return
@@ -482,7 +488,7 @@ class OpenDayLightDO(object):
                 raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
             
             # 'Single-switch' path
-            self.__ODL_LinkEndpointsByVlanID([in_endpoint.switch_id], in_endpoint, out_endpoint, flowrule)
+            self.__NC_LinkEndpointsByVlanID([in_endpoint.switch_id], in_endpoint, out_endpoint, flowrule)
             return
 
         # [ 2 ] Endpoints are on different switches...search for a path!
@@ -490,10 +496,10 @@ class OpenDayLightDO(object):
         if(nodes_path is not None):
             
             logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
-            if self.__ODL_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
+            if self.__NC_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
                 logging.debug("Invalid link between the endpoints")
                 return
-            self.__ODL_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
+            self.__NC_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
             return
             
         # [ 3 ] No paths between the endpoints 
@@ -503,7 +509,7 @@ class OpenDayLightDO(object):
 
 
 
-    def __ODL_checkEndpointsOnPath(self, path, ep1, ep2):
+    def __NC_checkEndpointsOnPath(self, path, ep1, ep2):
         if len(path)<2:
             return None
         #check if ep1 stays on the link
@@ -520,7 +526,7 @@ class OpenDayLightDO(object):
 
 
 
-    def __ODL_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
+    def __NC_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
         ''' 
         This function links two endpoints with a set of flow rules pushed in
         all the intermediate switches (and in first and last switches, of course).
@@ -531,7 +537,7 @@ class OpenDayLightDO(object):
         conflicts in the traversed switches.
         '''
 
-        efr = OpenDayLightDO.__externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
+        efr = DO.__externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
         
         base_actions = []
         vlan_out = None
@@ -628,7 +634,7 @@ class OpenDayLightDO(object):
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
             
             # Check, generate and set vlan ids
-            vlan_in, vlan_out, set_vlan_out = self.__ODL_VlanTraking(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
+            vlan_in, vlan_out, set_vlan_out = self.__NC_VlanTraking(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
             
             # Match
             if vlan_in is not None:
@@ -656,9 +662,7 @@ class OpenDayLightDO(object):
             
             # Set next ingress vlan
             vlan_in = vlan_out
-                
-            print("["+efr.get_flow_name()+"] "+efr.get_switch_id()+" from "+str(port_in)+" to "+str(port_out))
-            
+    
             # Push the flow rule
             base_match.setInputMatch(port_in)
             efr.set_match(base_match)
@@ -677,7 +681,7 @@ class OpenDayLightDO(object):
     
     
     
-    def __ODL_VlanTraking(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
+    def __NC_VlanTraking(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
         '''
         Receives the main parameters for a "vlan based" flow rule.
         Check all vlan ids on the specified ports of current switch and the next switch.
@@ -829,10 +833,13 @@ class OpenDayLightDO(object):
             self.__deleteFlowRule(fr)
         self.__deleteFlowRuleByGraphID(fr.graph_flow_rule_id)
     
+    # Database + Controller
     def __deleteFlowRule(self, flow_rule_ref):
         # flow_rule_ref is a FlowRuleModel object
         if flow_rule_ref.type == 'external': #and flow.status == "complete"
             try:
+                # PRINT
+                self.__print("[Remove Flow] id:'"+flow_rule_ref.internal_id+"' device:'"+flow_rule_ref.switch_id+"'")
                 self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
             except Exception as ex:
                 if type(ex) is HTTPError and ex.response.status_code==404:
@@ -877,7 +884,7 @@ class OpenDayLightDO(object):
         # efr = __externalFlowrule
         '''
         This is the only function that should be used to push an external flow
-        (a "custom flow", in other words) in the database and in the opendaylight controller.
+        (a "custom flow", in other words) in the database and in the network controller.
         GraphSession().addFlowrule(...) is also used in GraphSession().updateNFFG 
         and in GraphSession().addNFFG to store the flow rules written in nffg.json.
         '''
@@ -886,13 +893,13 @@ class OpenDayLightDO(object):
         TODO: check if exists a flowrule with the same match criteria in the same switch
             (very rare event); if it exists, raise an exception!
             Similar flow rules are replaced by ovs switch, so one of them disappear!
-            def __ODL_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action).
+            def __NC_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action).
         '''
         
         # If the flow name already exists, get new one
         self.__checkFlowname_externalFlowrule(efr)
 
-        # ODL/Switch: Add flow rule
+        # NC/Switch: Add flow rule
         sw_flow_name = self.NetManager.createFlow(efr) #efr.get_flow_name()
         
         # DATABASE: Add flow rule
@@ -904,6 +911,9 @@ class OpenDayLightDO(object):
         
         # DATABASE: Add vlan tracking
         self.__addVlanTraking(efr, flow_rule_db_id)
+        
+        # PRINT
+        self.__print("[New Flow] id:'"+efr.get_flow_name()+"' device:'"+efr.get_switch_id()+"'")
     
     
     
@@ -916,7 +926,7 @@ class OpenDayLightDO(object):
             return
         
         efr.set_flow_name(0)
-        this_efr = OpenDayLightDO.__externalFlowrule()
+        this_efr = DO.__externalFlowrule()
         
         flow_rules_ref = GraphSession().getExternalFlowrulesByGraphFlowruleID(efr.get_switch_id(),efr.get_flow_id())
         for fr in flow_rules_ref:
@@ -947,10 +957,10 @@ class OpenDayLightDO(object):
             self.set_flow_name(flowname_suffix)
             self.__priority = priority
             
-            # match = odl_resources.Match object
+            # match = controller_resources.Match object
             self.__match = match
             
-            # actions = array of odl_resources.Action object
+            # actions = array of controller_resources.Action object
             self.set_actions(actions)
             
             # nffg_flowrule = nffg.FlowRule object

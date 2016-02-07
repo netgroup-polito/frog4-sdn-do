@@ -3,7 +3,7 @@ Created on Dic 7, 2015
 
 @author: giacomoratta
 
-This script test the main functions of the OpenDayLight Domain Orchestrator.
+This script test the main functions of the Network Controller Domain Orchestrator.
    1) Load configuration;
    2) load a json file with the NFFG to load;
    3) validate the NFFG;
@@ -23,7 +23,7 @@ from do_core.sql.sql_server import try_session
 
 # Orchestrator Core
 from do_core.user_authentication import UserAuthentication
-from do_core.opendaylight_do import OpenDayLightDO
+from do_core.do import DO
 
 # NF-FG
 from nffg_library.validator import ValidateNF_FG
@@ -32,8 +32,12 @@ from nffg_library.nffg import NF_FG
 # Clean All (starts automatically)
 from scripts import clean_all
 
-def put_json(odlDO, filename):
+def put_json(filename):
     try:
+        # Instantiate the domain orchestrator
+        user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
+        NCDO = DO(user)
+
         # NF-FG File
         in_file = open("/abs/path/graphs/folder/"+filename,"r")
         nffg_file = json.loads(in_file.read())
@@ -42,8 +46,8 @@ def put_json(odlDO, filename):
         nffg.parseDict(nffg_file)
         
         # Validate and Put
-        odlDO.NFFG_Validate(nffg)
-        odlDO.NFFG_Put(nffg)
+        NCDO.NFFG_Validate(nffg)
+        NCDO.NFFG_Put(nffg)
         
     except Exception as ex:
         if hasattr(ex, 'message'):
@@ -57,13 +61,9 @@ def put_json(odlDO, filename):
 # Test connection to database
 try_session()
 
-# START OPENDAYLIGHT DOMAIN ORCHESTRATOR
-logging.debug("OpenDayLight Domain Orchestrator Starting...")
-print("Welcome to 'OpenDayLight Domain Orchestrator'")
+# START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
+logging.debug("Network Controller Domain Orchestrator Starting...")
+print("Welcome to 'Network Controller Domain Orchestrator'")
 
-# Instantiate the domain orchestrator
-user = UserAuthentication().authenticateUserFromCredentials("admin", "admin", "admin_tenant")     
-odlDO = OpenDayLightDO(user)
-
-put_json(odlDO,"hydrogen_invlan1a.json")
+put_json("hydrogen_invlan1a.json")
 

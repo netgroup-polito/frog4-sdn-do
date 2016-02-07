@@ -41,11 +41,6 @@ class Configuration(object):
             self.__LOG_DEBUG = config.getboolean('log', 'debug')
             self.log_configuration()
             
-            # [basic_config]
-            self.__BASIC_CONFIG_IP = config.get('basic_config','ip')
-            self.__BASIC_CONFIG_PORT = config.get('basic_config','port')
-            self.__BASIC_CONFIG_TIMEOUT = config.get('basic_config','timeout')
-            
             # [vlan]
             self.__VLAN_AVAILABLE_IDS = config.get('vlan','available_ids')
             
@@ -83,8 +78,9 @@ class Configuration(object):
             # [resource_description_topic]
             self.__MSG_RESDESC_TOPIC = config.get('resource_description_topic','msg_resdesc_topic')
             self.__MSG_RESDESC_FILE = self.__abs_path+"/"+config.get('resource_description_topic','msg_resdesc_file')
-
-            # Start logging
+            
+            # [other_options]
+            self.__OO_CONSOLE_PRINT = config.get('other_options','oo_console_print')
             
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -110,18 +106,6 @@ class Configuration(object):
         logging.info("[CONFIG] Logging just starded!")
                 
     
-    
-    @property
-    def BASIC_CONFIG_IP(self):
-        return self.__BASIC_CONFIG_IP
-    
-    @property
-    def BASIC_CONFIG_PORT(self):
-        return self.__BASIC_CONFIG_PORT
-    
-    @property
-    def BASIC_CONFIG_TIMEOUT(self):
-        return self.__BASIC_CONFIG_TIMEOUT
     
     @property
     def VLAN_AVAILABLE_IDS(self):
@@ -214,6 +198,10 @@ class Configuration(object):
     @property
     def MSG_RESDESC_FILE(self):
         return self.__MSG_RESDESC_FILE
+    
+    @property
+    def OO_CONSOLE_PRINT(self):
+        return self.__OO_CONSOLE_PRINT
 
 conf = Configuration()
 conf.initialize()

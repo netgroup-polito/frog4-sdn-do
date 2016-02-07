@@ -27,18 +27,18 @@ from do_core.config import Configuration
 from do_core.sql.sql_server import try_session
 
 # REST Interface
-from do_core.rest_interface import OpenDayLightDO_REST_NFFG_GPUD
-from do_core.rest_interface import OpenDayLightDO_REST_NFFG_Status
-from do_core.rest_interface import OpenDayLightDO_UserAuthentication
-from do_core.rest_interface import OpenDayLightDO_NetworkTopology
+from do_core.rest_interface import DO_REST_NFFG_GPUD
+from do_core.rest_interface import DO_REST_NFFG_Status
+from do_core.rest_interface import DO_UserAuthentication
+from do_core.rest_interface import DO_NetworkTopology
 
 from do_core.messaging import Messaging
 
 # Database connection test
 try_session()
 
-# START OPENDAYLIGHT DOMAIN ORCHESTRATOR
-logging.debug("OpenDayLight Domain Orchestrator Starting...")
+# START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
+logging.debug("Network Controller Domain Orchestrator Starting...")
     
 # Falcon
 logging.info("Starting server application")
@@ -47,25 +47,25 @@ app = falcon.API()
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 # [ PUT, UPDATE, DELETE, GET (id) ]
-rest_interface_gpud = OpenDayLightDO_REST_NFFG_GPUD()
+rest_interface_gpud = DO_REST_NFFG_GPUD()
 app.add_route('/NF-FG/{nffg_id}', rest_interface_gpud)
 
 # [ STATUS (id) ]
-rest_nffg_status = OpenDayLightDO_REST_NFFG_Status()
+rest_nffg_status = DO_REST_NFFG_Status()
 app.add_route('/NF-FG/status/{nffg_id}', rest_nffg_status)
 
 # [ USER AUTH ]
-rest_user_auth = OpenDayLightDO_UserAuthentication()
+rest_user_auth = DO_UserAuthentication()
 app.add_route('/login', rest_user_auth)
 
 # [ NETWORK TOPOLOGY ]
-rest_net_topology = OpenDayLightDO_NetworkTopology()
+rest_net_topology = DO_NetworkTopology()
 app.add_route('/topology', rest_net_topology)
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 logging.info("Falcon Successfully started")
-print("Welcome to 'OpenDayLight Domain Orchestrator'")
+print("Welcome to 'Network Controller Domain Orchestrator'")
 
 Messaging().PublishDomainConfig()
 
