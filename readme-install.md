@@ -1,5 +1,31 @@
 # FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
+### Install the SDN Controller
+
+[ONOS Packages](https://wiki.onosproject.org/display/ONOS/Download+packages+and+tutorial+VMs)
+
+ONOS requires JAVA 8:
+```sh
+	sudo add-apt-repository ppa:webupd8team/java
+	sudo apt-get update
+	sudo apt-get install oracle-java8-installer
+```
+
+[OpenDayLight Releases](https://www.opendaylight.org/downloads)
+
+OpenDayLight requires JAVA 7:
+```sh
+	sudo add-apt-repository ppa:webupd8team/java
+	sudo apt-get update
+	sudo apt-get install oracle-java7-installer
+```
+
+Note: both versions can coexist, but you must choose what version to enable:
+```sh
+	sudo update-alternatives --config java
+```
+
+
 ### Install Python 3
 
 ```sh
@@ -85,7 +111,7 @@ Now you can run gunicorn on https:
 
 ### Utility scripts
 
-* Reset database and clean all switches.
+* Reset database and clean every switch.
 ```sh
 	$ python3 ./scripts/clean_all.py
 ```

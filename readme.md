@@ -30,6 +30,18 @@ A domain administrator has to add and configure the endpoints editing the file
 [./config/ResourceDescription.json](/config/ResourceDescription.json).
 
 
+## SDN Controllers
+
+This project leans on a SDN controller to have some network informations and
+for each openflow-based operation (e.g. create and delete flow rules).
+
+Currently, the DO supports [OpenDayLight](https://www.opendaylight.org/) and [ONOS](http://onosproject.org/), in particular:
+* ONOS 1.5.0 "Falcon"
+* OpenDayLight Hydrogen Virtualization 1.0
+* OpenDayLight Helium SR4
+* OpenDayLight Lithium SR3
+
+
 ## DoubleDecker and ResourceDescription.json
 
 To advertise the features and the capabilities of this domain, we use
@@ -123,9 +135,12 @@ Response:
 	Url: '/NF-FG/status/12345'
 	X-Auth-Token: 797187d548d937827b53a7e6f3d3ff7fb1ead5d9887480fd71eb97971535bf1d
 ```
-Response is the status:
+Response:
 ```
-	completed
+	{
+		"percentage_completed": 100,
+		"status": "complete"
+	}
 ```
 
 
