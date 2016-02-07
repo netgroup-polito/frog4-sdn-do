@@ -2,7 +2,10 @@
 
 ### Install the SDN Controller
 
-[ONOS Packages](https://wiki.onosproject.org/display/ONOS/Download+packages+and+tutorial+VMs)
+[ONOS - Build from source code (recommended)](https://wiki.onosproject.org/display/ONOS/Getting+ONOS#GettingONOS-ONOSSourceCode) or 
+[ONOS - Packages and tutorials](https://wiki.onosproject.org/display/ONOS/Download+packages+and+tutorial+VMs)
+
+[OpenDayLight - Releases and Guides](https://www.opendaylight.org/downloads)
 
 ONOS requires JAVA 8:
 ```sh
@@ -10,8 +13,6 @@ ONOS requires JAVA 8:
 	sudo apt-get update
 	sudo apt-get install oracle-java8-installer
 ```
-
-[OpenDayLight Releases](https://www.opendaylight.org/downloads)
 
 OpenDayLight requires JAVA 7:
 ```sh
