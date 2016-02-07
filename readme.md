@@ -1,6 +1,6 @@
-# FROG4 OpenDayLight Domain Orchestrator
+# FROG4 OpenFlow Domain Orchestrator
 
-This orchestrator supervises an OpenDayLight domain - constituited only by several switches - 
+This orchestrator supervises an OpenFlow domain - constituited only by several switches - 
 and provides traffic steering capabilities between its endpoints.
 
 

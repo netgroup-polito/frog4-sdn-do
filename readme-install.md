@@ -1,4 +1,4 @@
-# FROG4 OpenDayLight Domain Orchestrator - Installation Guide
+# FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
 ### Install Python 3
 
@@ -90,7 +90,7 @@ Now you can run gunicorn on https:
 	$ python3 ./scripts/clean_all.py
 ```
 
-* Print the network topology detected by OpenDayLight Domain Orchestrator.
+* Print the network topology detected by OpenFlow Domain Orchestrator.
 ```sh
 	$ python3 ./scripts/network_topology.py
 ```
