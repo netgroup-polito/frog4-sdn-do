@@ -59,8 +59,8 @@ To check if a module is already installed and its version:
 ### Clone the code
 
 ```sh
-	git clone https://github.com/netgroup-polito/frog4-odl-do.git
-	cd frog4-odl-do
+	git clone https://github.com/netgroup-polito/frog4-openwflow-do.git
+	cd frog4-openflow-do
 	git submodule init && git submodule update
 ```
 
@@ -68,7 +68,7 @@ To check if a module is already installed and its version:
 
 Edit [./default-config.ini](/config/default-config.ini) and rename it in "config.ini".
 
-Pay attention to all paths: they must be relative paths (respect of 'frog4-odl-do' directory).
+Pay attention to all paths: they must be relative paths (respect of 'frog4-openflow-do' directory).
 
 
 ### Create the database
