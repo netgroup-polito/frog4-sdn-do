@@ -71,6 +71,10 @@ class Flow(Flow_Interface):
             j_flow['vlanId'] = self.match.vlan_id
         if (self.match.ethertype is not None):
             j_flow['etherType'] = self.match.ethertype
+        if (self.match.eth_source is not None):
+            j_flow['dlSrc'] = self.match.eth_source
+        if (self.match.eth_dest is not None):
+            j_flow['dlDst'] = self.match.eth_dest
         
         return json.dumps(j_flow)
         
@@ -79,12 +83,8 @@ class Flow(Flow_Interface):
             j_flow['nwSrc'] = self.match.ip_source
         if (self.match.ip_dest is not None):
             j_flow['nwDst'] = self.match.ip_dest
-        if (self.match.eth_source is not None):
-            j_flow['dlSrc'] = self.match.eth_source
-        if (self.match.eth_dest is not None):
-            j_flow['dlDst'] = self.match.eth_dest
         if (self.match.ip_protocol is not None):
-            j_flow['protocol'] = self.match.ip_protocol               
+            j_flow['protocol'] = self.match.ip_protocol
         if (self.match.port_source is not None):
             if (self.match.ip_protocol is not None and self.match.ethertype is not None):
                 j_flow['tpSrc'] = self.match.port_source
@@ -461,10 +461,10 @@ class Match(Match_Interface):
         self.vlan_id_present = None
         self.eth_match = False
         self.ethertype = None
-        
-        '''
         self.eth_source = None
         self.eth_dest = None
+        
+        '''
         self.ip_protocol = None
         self.ip_match = None
         self.ip_source = None
@@ -480,6 +480,10 @@ class Match(Match_Interface):
                 self.setVlanMatch(match.vlan_id)
             if match.ether_type is not None:
                 self.setEtherTypeMatch(match.ether_type)
+            if match.source_mac is not None:
+                self.setEtherSource(match.source_mac)
+            if match.dest_mac is not None:
+                self.setEtherDest(match.dest_mac)
 
         
     def setInputMatch(self, in_port):
@@ -492,7 +496,14 @@ class Match(Match_Interface):
     def setEtherTypeMatch(self, ethertype):
         self.eth_match = True
         self.ethertype = ethertype
+        
+    def setEtherSource(self, eth_source):
+        self.eth_match = True
+        self.eth_source = eth_source
     
+    def setEtherDest(self, eth_dest):
+        self.eth_match = True
+        self.eth_dest = eth_dest
     
     @property
     def InputPort(self):
@@ -502,6 +513,14 @@ class Match(Match_Interface):
     def VlanID(self):
         return self.vlan_id
     
+    @property
+    def EtherSource(self):
+        return self.eth_source
+    
+    @property
+    def EtherDest(self):
+        return self.eth_dest
+    
     
     
     def getNffgMatch(self, nffg_flowrule):
@@ -509,10 +528,10 @@ class Match(Match_Interface):
         port_in = self.input_port
         ether_type = self.ethertype
         vlan_id = self.vlan_id
+        source_mac = self.eth_source
+        dest_mac = self.eth_dest
         
         # Not supported
-        source_mac = None
-        dest_mac = None
         source_ip = None
         dest_ip = None
         source_port = None

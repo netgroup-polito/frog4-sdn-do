@@ -432,8 +432,8 @@ class DO(object):
             # If old and new flowrule have the same priority, cannot install the new flowrule!
             for qr in query_ref:
                 old_flowrule = GraphSession().getFlowruleByID(qr.flow_rule_id)
-                if old_flowrule is not None and flowrule.priority == old_flowrule.priority:
-                    raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+")")
+                if old_flowrule is not None and str(flowrule.priority) == old_flowrule.priority:
+                    raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+"). Change the flowrule priority (not "+str(flowrule.priority)+").")
     
     
 
@@ -588,8 +588,8 @@ class DO(object):
         for i in range(0, len(path)):
             hop = path[i]
             efr.set_flow_name(i)
-            base_match = Match(flowrule.match)
-            efr.set_actions(list(base_actions))
+            base_match = Match() #base_match = Match(flowrule.match)
+            efr.set_actions(None) #efr.set_actions(list(base_actions))
             
             # Switch position
             pos = 0 # (-2: 'single-switch' path, -1:first, 0:middle, 1:last)
@@ -604,6 +604,11 @@ class DO(object):
             # First switch
             if i==0:
                 pos = -1
+                
+                # Match and Actions of the original flowrule
+                base_match = Match(flowrule.match)
+                efr.set_actions(list(base_actions))
+                
                 efr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
@@ -735,50 +740,33 @@ class DO(object):
     
     def __getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
         
-        # init first available vlan id
-        prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
-        if prev_vlan_in is None:
-            return
-        prev_vlan_in = prev_vlan_in-1
-        
-        # init last available vlan id
-        last_vlan_in = ResourceDescription().VlanID_getLastAvailableID()
-        if last_vlan_in is None:
-            return
-        
         # return a free vlan_in [2,4094] for port_in@switch_id
         vlan_ids = GraphSession().getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
         
         # Return the smaller vlan id
         if len(vlan_ids)<=0:
-            return prev_vlan_in+1
+            prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
+            if prev_vlan_in is None:
+                return
+            return prev_vlan_in
         
         # Search an ingress vlan id suitable for the switch
+        vlan_list = []
         for q in vlan_ids:
             if(q.vlan_in is None):
                 continue
-            this_vlan_in = int(q.vlan_in)
-            
-            if (this_vlan_in-prev_vlan_in)<2 :
-                prev_vlan_in = this_vlan_in
-                continue
-            
-            if ResourceDescription().VlanID_isAvailable(prev_vlan_in+1)==False:
-                continue
-            
-            if (prev_vlan_in+1)>last_vlan_in:
-                prev_vlan_in = None
-            break
+            vlan_list.append(int(q.vlan_in))
+        prev_vlan_in = ResourceDescription().VlanID_getAnAvailableID(vlan_list)
         
         # Latest checks
-        if prev_vlan_in is None:
+        if prev_vlan_in==0 or prev_vlan_in is None:
             raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
         
         if prev_vlan_in<1 or prev_vlan_in>=4094:
             raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
         
         # Valid VLAN ID
-        return (prev_vlan_in+1)
+        return prev_vlan_in
 
 
     

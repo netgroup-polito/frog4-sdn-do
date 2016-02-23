@@ -303,5 +303,27 @@ class ResourceDescription(object):  # Singleton Class
         return free_vlan_ids[last_index][1]
     
     
+    def VlanID_getAnAvailableID(self, busy_list, switch_id=None, port_id=None):
+        if switch_id is None or port_id is None:
+            free_vlan_ids = self.__config_vlan_available_ids
+        else:
+            endpoint_name = switch_id+self.__endpoint_name_separator+port_id
+            free_vlan_ids = self.__endpoints[endpoint_name]['free_vlans']
+        
+        i = 0
+        while i<len(free_vlan_ids):
+            j = free_vlan_ids[i][0]
+            if free_vlan_ids[i][0]==free_vlan_ids[i][1]:
+                jlen = 1
+            else:
+                jlen = free_vlan_ids[i][1]
+            while j<=jlen:
+                if j not in busy_list:
+                    return j
+                j=j+1
+            i=i+1
+        return 0
+    
+    
 
 ResourceDescription().loadFile(Configuration().MSG_RESDESC_FILE)
