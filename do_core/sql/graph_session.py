@@ -577,7 +577,7 @@ class GraphSession(object):
         with session.begin():
             flow_rule_ref = FlowRuleModel(id=flow_rule_db_id, internal_id=flow_rule.internal_id, 
                                        graph_flow_rule_id=flow_rule.id, session_id=session_id, switch_id=switch_id,
-                                       priority=flow_rule.priority,  status=flow_rule.status, description=flow_rule.description,
+                                       priority=flow_rule.priority,  status=None, description=flow_rule.description,
                                        creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
             session.add(flow_rule_ref)
             return flow_rule_db_id

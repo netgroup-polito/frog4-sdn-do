@@ -5,7 +5,7 @@
 '''
 
 from __future__ import division
-import logging
+import logging, datetime
 
 from nffg_library.nffg import FlowRule as NffgFlowrule
 
@@ -21,6 +21,23 @@ from requests.exceptions import HTTPError
 
 
 class DO(object):
+    
+    class mytimerclass222(object):
+        def __init__(self):
+            self._start = None
+            self._end = None
+            return
+        
+        def a(self):
+            self._start = datetime.datetime.now()
+            
+        def z(self,msg):
+            self._end = datetime.datetime.now()
+            if self._start is not None:
+                delta = self._end - self._start
+                print(msg+" > ",end="")
+                print(delta)
+            self.a()
 
     def __init__(self, user_data):
 
@@ -59,13 +76,19 @@ class DO(object):
             
         # Instantiate a new NF-FG
         try:
+            t = DO.mytimerclass222()
+            t.a()
+            
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
+            t.z("db")
+            
             
             # Send flow rules to Network Controller
             self.__NC_FlowsInstantiation(nffg)
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
-
+            t.z("flowrule")
+            
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
@@ -423,17 +446,24 @@ class DO(object):
         
         # Is the endpoint enabled?
         if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
-            raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoind")
+            raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoint")
         
         # Busy vlan id?
         query_ref = []
         if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id, query_ref):
             
             # If old and new flowrule have the same priority, cannot install the new flowrule!
+            priorities = []
             for qr in query_ref:
                 old_flowrule = GraphSession().getFlowruleByID(qr.flow_rule_id)
                 if old_flowrule is not None and str(flowrule.priority) == old_flowrule.priority:
-                    raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+"). Change the flowrule priority (not "+str(flowrule.priority)+").")
+                    #raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+"). Change the flowrule priority (not "+str(flowrule.priority)+").")
+                    priorities.append(int(old_flowrule.priority))
+            if len(priorities)>0:
+                priorities.sort()
+                minpriority = priorities[0]-1
+                flowrule.priority = minpriority
+                    
     
     
 

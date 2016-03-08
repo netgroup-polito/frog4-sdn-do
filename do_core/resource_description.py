@@ -283,7 +283,7 @@ class ResourceDescription(object):  # Singleton Class
             endpoint_name = switch_id+self.__endpoint_name_separator+port_id
             free_vlan_ids = self.__endpoints[endpoint_name]['free_vlans']
             
-        if len(free_vlan_ids)==0 or len(free_vlan_ids)<2:
+        if len(free_vlan_ids)==0 or len(free_vlan_ids[0])<2:
             return None
         return free_vlan_ids[0][0]
     
