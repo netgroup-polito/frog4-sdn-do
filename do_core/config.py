@@ -51,7 +51,7 @@ class Configuration(object):
             self.__DATABASE_CONNECTION = config.get('database','connection')
             db_file = os.path.basename(self.__DATABASE_CONNECTION)
             self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file,self.__abs_path+"/"+db_file)
-            self.__DATABASE_DUMP_FILE = self.__abs_path+"/"+config.get('database','dump_file')
+            self.__DATABASE_DUMP_FILE = self.__abs_path+"/"+config.get('database','database_name')
             
             # [network_controller]
             self.__CONTROLLER_NAME = config.get('network_controller','controller_name')
@@ -80,7 +80,7 @@ class Configuration(object):
             self.__MSG_RESDESC_FILE = self.__abs_path+"/"+config.get('resource_description_topic','msg_resdesc_file')
             
             # [other_options]
-            self.__OO_CONSOLE_PRINT = config.get('other_options','oo_console_print')
+            self.__OO_CONSOLE_PRINT = config.get('other_options','console_print')
             
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
