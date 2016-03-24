@@ -354,7 +354,65 @@ class GraphSession(object):
         session = get_session()
         flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_flow_rule_id=graph_flow_rule_id).filter_by(switch_id=switch_id).filter_by(type='external').order_by(asc(FlowRuleModel.internal_id)).all()
         return flow_rules_ref
+
+
+    def getFlowruleOnTheSwitch(self, switch_id, port_in, nffg_fr):
+        session = get_session()
+        qref = session.query(FlowRuleModel,MatchModel).\
+            filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
+						filter(FlowRuleModel.priority == nffg_fr.priority).\
+            filter(FlowRuleModel.switch_id == switch_id).\
+            filter(MatchModel.port_in == port_in).\
+						filter(MatchModel.vlan_id == nffg_fr.match.vlan_id).\
+						filter(MatchModel.vlan_priority == nffg_fr.match.vlan_priority).\
+            filter(MatchModel.ether_type == nffg_fr.match.ether_type).\
+            filter(MatchModel.source_mac == nffg_fr.match.source_mac).\
+            filter(MatchModel.dest_mac == nffg_fr.match.dest_mac).\
+            filter(MatchModel.source_ip == nffg_fr.match.source_ip).\
+            filter(MatchModel.dest_ip == nffg_fr.match.dest_ip).\
+            filter(MatchModel.tos_bits == nffg_fr.match.tos_bits).\
+            filter(MatchModel.source_port == nffg_fr.match.source_port).\
+            filter(MatchModel.dest_port == nffg_fr.match.dest_port).\
+            filter(MatchModel.protocol == nffg_fr.match.protocol).\
+            all()
+        if len(qref)>0:
+            return qref
+        return None
     
+    
+    
+    def getFlowruleMatchesOnTheSwitch(self, switch_id, port_in, nffg_match):
+        session = get_session()
+        qref = session.query(FlowRuleModel,MatchModel).\
+            filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
+            filter(FlowRuleModel.switch_id == switch_id).\
+            filter(MatchModel.port_in == port_in).\
+            filter(MatchModel.ether_type == nffg_match.ether_type).\
+            filter(MatchModel.source_mac == nffg_match.source_mac).\
+            filter(MatchModel.dest_mac == nffg_match.dest_mac).\
+            filter(MatchModel.source_ip == nffg_match.source_ip).\
+            filter(MatchModel.dest_ip == nffg_match.dest_ip).\
+            filter(MatchModel.tos_bits == nffg_match.tos_bits).\
+            filter(MatchModel.source_port == nffg_match.source_port).\
+            filter(MatchModel.dest_port == nffg_match.dest_port).\
+            filter(MatchModel.protocol == nffg_match.protocol).\
+            all()
+        if len(qref)>0:
+            return qref
+        return None
+    
+        
+    
+    def getBusyVlanInOnTheSwitch(self, switch_id, port_in, nffg_match):
+        qref = self.getFlowruleMatchesOnTheSwitch(switch_id, port_in, nffg_match)
+        
+        # Collect the ingress VLAN IDs
+        busy_vlan_ids = []
+        if qref is not None:
+            for fr in qref:
+                if fr.MatchModel.vlan_id is not None:
+                    busy_vlan_ids.append(int(fr.MatchModel.vlan_id))
+        return busy_vlan_ids
     
     
     

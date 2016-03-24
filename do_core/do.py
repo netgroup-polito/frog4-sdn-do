@@ -5,7 +5,7 @@
 '''
 
 from __future__ import division
-import logging, datetime
+import logging
 
 from nffg_library.nffg import FlowRule as NffgFlowrule
 
@@ -21,23 +21,6 @@ from requests.exceptions import HTTPError
 
 
 class DO(object):
-    
-    class mytimerclass222(object):
-        def __init__(self):
-            self._start = None
-            self._end = None
-            return
-        
-        def a(self):
-            self._start = datetime.datetime.now()
-            
-        def z(self,msg):
-            self._end = datetime.datetime.now()
-            if self._start is not None:
-                delta = self._end - self._start
-                print(msg+" > ",end="")
-                print(delta)
-            self.a()
 
     def __init__(self, user_data):
 
@@ -76,24 +59,20 @@ class DO(object):
             
         # Instantiate a new NF-FG
         try:
-            t = DO.mytimerclass222()
-            t.a()
             
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
-            t.z("db")
             
             
             # Send flow rules to Network Controller
             self.__NC_FlowsInstantiation(nffg)
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
-            t.z("flowrule")
             
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
+            #ResourceDescription().updateAll()
+            #ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -143,8 +122,8 @@ class DO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
+            #ResourceDescription().updateAll()
+            #ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -171,8 +150,8 @@ class DO(object):
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
             # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
+            #ResourceDescription().updateAll()
+            #ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -225,6 +204,8 @@ class DO(object):
             logging.debug("NFFG Validation: "+msg+". This DO does not process this kind of flowrules.")
             raise NffgUselessInformations("NFFG Validation: "+msg+". This DO does not process this kind of flowrules.")
         
+        # EP Array
+        EPs = {}
         
         # VNFs inspections
         if len(nffg.vnfs)>0:
@@ -264,10 +245,13 @@ class DO(object):
             
             # Check vlan availability
             if ep.type == "vlan" and ep.vlan_id is not None:
-                if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id))==False:
-                    vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
-                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
-                
+                if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
+                    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
+                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+ep.id+"! Valid vlan ids: "+vids_list)
+            
+            # Add the endpoint
+            EPs['endpoint:'+ep.id] = { "sid":ep.switch_id, "pid":ep.interface }
+            
 
         # FLOW RULEs inspection
         for flowrule in nffg.flow_rules:
@@ -280,15 +264,15 @@ class DO(object):
                 GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
             
             # Check vlan availability
-            if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id))==False:
-                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
+            if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'], EPs[flowrule.match.port_in]['pid'])==False:
+                vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
                 raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
-                
 
             # Detect multiple output actions (they are not allowed).
             # If multiple output are needed, multiple flow rules should be written
             # in the nffg.json, with a different priorities!
             output_action_counter=0
+            output_ep = None
             for a in flowrule.actions:
                 if a.controller is not None and a.controller==True:
                     raise_useless_info("presence of 'output_to_controller'")
@@ -300,12 +284,14 @@ class DO(object):
                     output_action_counter = output_action_counter+1
                     if self.__getEndpointIdFromString(a.output) is None:
                         GraphError("Flowrule "+flowrule.id+" has not an egress endpoint ('output_to_port' in 'action')")
-                
-                # Check vlan availability
-                if a.push_vlan is not None and ResourceDescription().VlanID_isAvailable(int(a.push_vlan))==False:
+                    output_ep = a.output
+            
+            # Check vlan availability
+            for a in flowrule.actions:
+                if a.push_vlan is not None and ResourceDescription().VlanID_isAvailable(int(a.push_vlan), EPs[output_ep]['sid'], EPs[output_ep]['pid'])==False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID "+str(a.push_vlan)+" not allowed! Valid vlan ids: "+vids_list)
-                if a.set_vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(a.set_vlan_id))==False:
+                if a.set_vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(a.set_vlan_id), EPs[output_ep]['sid'], EPs[output_ep]['pid'])==False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID "+str(a.set_vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
@@ -448,21 +434,10 @@ class DO(object):
         if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
             raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoint")
         
-        # Busy vlan id?
-        query_ref = []
-        if GraphSession().ingressVlanIsBusy(flowrule.match.vlan_id, in_endpoint.interface, in_endpoint.switch_id, query_ref):
-            
-            # If old and new flowrule have the same priority, cannot install the new flowrule!
-            priorities = []
-            for qr in query_ref:
-                old_flowrule = GraphSession().getFlowruleByID(qr.flow_rule_id)
-                if old_flowrule is not None and str(flowrule.priority) == old_flowrule.priority:
-                    #raise GraphError("Flowrule "+flowrule.id+" use a busy vlan id "+flowrule.match.vlan_id+" on the same ingress port (ingress endpoint "+in_endpoint.id+"). Change the flowrule priority (not "+str(flowrule.priority)+").")
-                    priorities.append(int(old_flowrule.priority))
-            if len(priorities)>0:
-                priorities.sort()
-                minpriority = priorities[0]-1
-                flowrule.priority = minpriority
+        # Flowrule collision
+        qref = GraphSession().getFlowruleOnTheSwitch(in_endpoint.switch_id, in_endpoint.interface, flowrule)
+        if qref is not None:
+            raise GraphError("Flowrule "+flowrule.id+" collides with an another flowrule on the ingress port (ingress endpoint "+in_endpoint.id+").")
                     
     
     
@@ -618,7 +593,6 @@ class DO(object):
         for i in range(0, len(path)):
             hop = path[i]
             efr.set_flow_name(i)
-            base_match = Match() #base_match = Match(flowrule.match)
             efr.set_actions(None) #efr.set_actions(list(base_actions))
             
             # Switch position
@@ -633,12 +607,7 @@ class DO(object):
             
             # First switch
             if i==0:
-                pos = -1
-                
-                # Match and Actions of the original flowrule
-                base_match = Match(flowrule.match)
-                efr.set_actions(list(base_actions))
-                
+                pos = -1                
                 efr.set_switch_id(ep1.switch_id)
                 port_in = ep1.interface
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
@@ -652,6 +621,9 @@ class DO(object):
                 efr.set_switch_id(ep2.switch_id)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
                 port_out = ep2.interface
+                
+                # Add actions
+                efr.set_actions(list(base_actions))
                 
                 # Force the vlan out to be equal to the original
                 if pop_vlan_flag == False and original_vlan_out is not None:
@@ -667,19 +639,25 @@ class DO(object):
                 efr.set_switch_id(hop)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
+                
             
             # Check, generate and set vlan ids
-            vlan_in, vlan_out, set_vlan_out = self.__NC_VlanTraking(port_in, port_out, vlan_in, vlan_out, next_switch_ID, next_switch_portIn)
+            vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_ID, next_switch_portIn, flowrule.match, vlan_out)
+
+            # MATCH           
+            base_match = Match(flowrule.match)
             
-            # Match
+            # VLAN In
             if vlan_in is not None:
                 base_match.setVlanMatch(vlan_in)
+            
+            # ACTIONS
                 
-                # Remove VLAN header
-                if pop_vlan_flag and ( pos==1 or pos==-2): #1=last switch; -2='single-switch' path
-                    action_stripvlan = Action()
-                    action_stripvlan.setPopVlanAction()
-                    efr.append_action(action_stripvlan)
+            # Remove VLAN header
+            if pop_vlan_flag and ( pos==1 or pos==-2): #1=last switch; -2='single-switch' path
+                action_stripvlan = Action()
+                action_stripvlan.setPopVlanAction()
+                efr.append_action(action_stripvlan)
 
             # Add/mod VLAN header
             if set_vlan_out is not None:
@@ -715,8 +693,7 @@ class DO(object):
     
     
     
-    
-    def __NC_VlanTraking(self, port_in, port_out, vlan_in=None, vlan_out=None, next_switch_ID=None, next_switch_portIn=None):
+    def __checkAndSetVlanIDs(self, switch_id, port_in, nffg_match, vlan_in=None):
         '''
         Receives the main parameters for a "vlan based" flow rule.
         Check all vlan ids on the specified ports of current switch and the next switch.
@@ -724,79 +701,40 @@ class DO(object):
         This function make other some checks to verify the correctness of all parameters.
         
         '''
-        # Rectify vlan ids
-        if vlan_in is not None:
-            vlan_in = int(vlan_in)
-            if vlan_in<=0 or vlan_in>=4095:
-                vlan_in = None
-            elif ResourceDescription().VlanID_isAvailable(vlan_in)==False:
-                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
-                raise GraphError("Vlan ID "+str(vlan_in)+" not allowed! Valid vlan ids: "+vids_list)
-        if vlan_out is not None:
-            vlan_out = int(vlan_out)
-            if vlan_out<=0 or vlan_out>=4095:
-                vlan_out = None
-            elif ResourceDescription().VlanID_isAvailable(vlan_out)==False:
-                vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
-                raise GraphError("Vlan ID "+str(vlan_out)+" not allowed! Valid vlan ids: "+vids_list)
+        # New Egress VLAN ID
+        free_vlan_id = None
+        if switch_id is not None:
+            free_vlan_id = self.__getFreeVlanOnSwitch(switch_id, port_in, nffg_match, vlan_in)
+            if free_vlan_id is None:
+                raise GraphError("No free vlan ids on the switch "+switch_id)
+            if free_vlan_id == vlan_in:
+                free_vlan_id = None
+        else:
+            free_vlan_id = vlan_in
             
-        # Detect if a mod_vlan action is needed
-        set_vlan_out = None
-        if vlan_out is not None and vlan_out != vlan_in:
-            set_vlan_out = vlan_out
-        
-        # Set the output vlan that we have to check in the next switch
-        if vlan_in is not None and vlan_out is None:
-            vlan_out = vlan_in
-        
-        # Check if the output vlan can be accepted on next_switch_portIn@next_switch_ID
-        if vlan_out is not None and next_switch_ID is not None:
-            if GraphSession().ingressVlanIsBusy(vlan_out, next_switch_portIn, next_switch_ID):
-                vlan_out = None
-        ''' 
-            Check if an output vlan id is needed.
-            Enter this "if" when vlan_out is None and this happens in two main cases:
-                1) when it is not specified;
-                2) when it is not compliant with the next switch port in.
-        '''
-        if vlan_out is None and next_switch_ID is not None:
-            vlan_out = self.__getFreeIngressVlanID_fromAvailableVlanIDsList(next_switch_portIn,next_switch_ID) #return int or None
-            set_vlan_out = vlan_out
-        
-        return vlan_in, vlan_out, set_vlan_out
+        previous_vlan_out = vlan_in
+        set_previous_vlan_out = free_vlan_id
+        if set_previous_vlan_out is not None:
+            previous_vlan_out = set_previous_vlan_out
+            
+        return previous_vlan_out, set_previous_vlan_out
+
     
     
-    
-    
-    def __getFreeIngressVlanID_fromAvailableVlanIDsList(self, port_in, switch_id):
+    def __getFreeVlanOnSwitch(self, switch_id, port_in, nffg_match, vlan_in=None):
+        busy_vlan_ids = GraphSession().getBusyVlanInOnTheSwitch(switch_id, port_in, nffg_match)
         
-        # return a free vlan_in [2,4094] for port_in@switch_id
-        vlan_ids = GraphSession().getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
+        if vlan_in is not None and vlan_in not in busy_vlan_ids:
+            return vlan_in
         
-        # Return the smaller vlan id
-        if len(vlan_ids)<=0:
-            prev_vlan_in = ResourceDescription().VlanID_getFirstAvailableID()
-            if prev_vlan_in is None:
-                return
-            return prev_vlan_in
-        
-        # Search an ingress vlan id suitable for the switch
-        vlan_list = []
-        for q in vlan_ids:
-            if(q.vlan_in is None):
-                continue
-            vlan_list.append(int(q.vlan_in))
-        prev_vlan_in = ResourceDescription().VlanID_getAnAvailableID(vlan_list)
-        
-        # Latest checks
-        if prev_vlan_in==0 or prev_vlan_in is None:
-            raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
-        
-        if prev_vlan_in<1 or prev_vlan_in>=4094:
-            raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
-        
-        # Valid VLAN ID
-        return prev_vlan_in
+        # Select first valid VLAN ID
+        for vid_range in Configuration().ALLOWED_VLANS:
+            vid = vid_range[0]
+            while vid < vid_range[1]:
+                if vid not in busy_vlan_ids:
+                    return vid
+                vid = vid+1
+        return None
 
 
     

@@ -7,7 +7,7 @@ Keep in the database user and tenant informations only.
 import logging
 from do_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
-from do_core.resource_description import ResourceDescription
+#from do_core.resource_description import ResourceDescription
 from do_core.messaging import Messaging
 from do_core.netmanager import NetManager
 
@@ -44,8 +44,8 @@ def do_core_clean_all():
     GraphSession().cleanAll()
     logging.info("Cleaning database and switches completed!")
     
-    ResourceDescription().updateAll()
-    ResourceDescription().saveFile()
+    #ResourceDescription().updateAll()
+    #ResourceDescription().saveFile()
     Messaging().PublishDomainConfig()
     logging.info("Resource description file updated!")
     

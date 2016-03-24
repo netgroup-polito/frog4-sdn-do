@@ -43,6 +43,7 @@ class Configuration(object):
             
             # [vlan]
             self.__VLAN_AVAILABLE_IDS = config.get('vlan','available_ids')
+            self.__ALLOWED_VLANS = self.__set_available_vlan_ids_array(self.__VLAN_AVAILABLE_IDS)
             
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication','token_expiration')
@@ -104,12 +105,55 @@ class Configuration(object):
         logging.basicConfig( filename=self.LOG_FILE, level=log_level, 
                              format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
         logging.info("[CONFIG] Logging just starded!")
+    
+    
+    
+    def __set_available_vlan_ids_array(self, vid_ranges):
+        
+        '''
+        Expected vid_ranges = "280-289,62,737,90-95,290-299,13-56,92,57-82,2-5,12"
+        '''
+        
+        def __getKey(item):
+            return item[0]
+        
+        vid_array = []
+        if isinstance(vid_ranges, str):
+            ranges = vid_ranges.split(",")
+        else:
+            ranges = vid_ranges
+            
+        for r in ranges:
+            r = str(r)
+            exs = r.split("-")
+            if len(exs)==1:
+                exs.append(exs[0])
+            elif len(exs)!=2:
+                continue
+            
+            min_vlan_id = int(exs[0])
+            max_vlan_id = int(exs[1])
+            if (min_vlan_id > max_vlan_id):
+                continue
+            
+            vid_array.append([min_vlan_id,max_vlan_id])
+            logging.debug("[CONFIG] - Available VLAN ID - Range: '"+r+"'")
+        
+        if len(vid_array)==0:
+            logging.error("[CONFIG] - VLAN ID - No available vlan id read from '"+vid_ranges+"'")
+            return []
+        else:
+            return sorted(vid_array,key=__getKey)
                 
     
     
     @property
     def VLAN_AVAILABLE_IDS(self):
         return self.__VLAN_AVAILABLE_IDS
+    
+    @property
+    def ALLOWED_VLANS(self):
+        return self.__ALLOWED_VLANS
     
     @property
     def AUTH_TOKEN_EXPIRATION(self):
