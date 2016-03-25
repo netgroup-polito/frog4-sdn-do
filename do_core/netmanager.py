@@ -9,7 +9,6 @@ import networkx as nx
 
 from do_core.config import Configuration
 
-
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
     from do_core.odl.objects import Flow, Match ,Action
     from do_core.odl.rest import ODL_Rest
@@ -66,6 +65,25 @@ class NetManager():
         
         def getFlowrules(self):
             return self.__nffg_flowrules.values()
+
+    
+    def ProfileGraph_BuildFromNFFG(self, nffg):
+        '''
+        Create a ProfileGraph with the flowrules and endpoints specified in nffg.
+        '''
+        for endpoint in nffg.end_points:
+            
+            if endpoint.status is None:
+                endpoint.status = "new"
+                
+            self.ProfileGraph.addEndpoint(endpoint)
+        
+        for flowrule in nffg.flow_rules:
+            if flowrule.status is None:
+                flowrule.status = 'new'
+            self.ProfileGraph.addFlowrule(flowrule)
+            
+            
     
     def getControllerName(self):
         if self.isODL():
@@ -255,3 +273,182 @@ class NetManager():
             return None
         self.setTopologyGraph()
         return self.topology[switch][to_switch]['from_port']
+    
+    
+
+    
+    
+    
+    
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+        CLASS - EXTERNAL FLOWRULE
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    '''
+        
+    class externalFlowrule(object):
+        '''
+        Class used to store an external flow rule
+        that is going to be pushed in the specified switch.
+        '''
+        def __init__(self,switch_id=None,nffg_match=None,nffg_actions=None,flow_id=None,priority=None,flowname_suffix=None,nffg_flowrule=None):
+            self.__switch_id = switch_id
+            self.set_flow_id(flow_id)
+            self.set_flow_name(flowname_suffix)
+            self.__priority = priority
+            
+            # nffg_match = nffg.Match object
+            match = None
+            if nffg_match is not None:
+                match = Match(nffg_match)
+            self.__match = match
+            
+            # nffg_actions = array of nffg.Action objects
+            self.set_actions(nffg_actions)
+            
+            # nffg_flowrule = nffg.FlowRule object
+            # (usually not used, but useful in some cases)
+            self.__nffg_flowrule = nffg_flowrule
+
+
+
+        # SWITCH
+        
+        def get_switch_id(self):
+            return self.__switch_id
+
+        def set_switch_id(self, value):
+            self.__switch_id = value
+        
+        
+        
+        # MATCH
+
+        def get_match(self):
+            return self.__match
+
+        def set_match(self, nffgmatch):
+            self.__match = Match(nffgmatch)
+        
+        
+        
+        # ACTIONS
+        
+        def get_actions(self):
+            return self.__actions
+
+        def append_action(self, nffgaction):
+            if nffgaction is None:
+                return
+            new_action = Action(nffgaction)
+            self.__actions.append(new_action)
+
+        def set_actions(self, nffgactions):
+            self.__actions = []
+            if nffgactions is None:
+                return
+            for a in nffgactions:
+                new_action = Action(a)
+                self.__actions.append(new_action)
+        
+        
+        
+        # PRIORITY
+
+        def get_priority(self):
+            return self.__priority
+
+        def set_priority(self, value):
+            self.__priority = value
+        
+        
+        
+        # FLOW ID
+
+        def get_flow_id(self):
+            return self.__flow_id
+
+        def set_flow_id(self, value):
+            self.__flow_id = value
+            self.__reset_flow_name()
+            
+        
+        
+        # FLOW NAME
+
+        def get_flow_name(self):
+            return self.__flow_name
+        
+        def __reset_flow_name(self):
+            self.__flow_name = str(self.__flow_id)+"_"
+
+        def set_flow_name(self, suffix):
+            self.__reset_flow_name()
+            self.__flow_name_suffix = None
+            if(suffix is not None and str(suffix).isdigit()):
+                self.__flow_name = self.__flow_name + str(suffix)
+                self.__flow_name_suffix = int(suffix)        
+
+        def set_complete_flow_name(self, flow_name):
+            fn = self.split_flow_name(flow_name)
+            if len(fn)<2:
+                return
+            self.__flow_id = fn[0]
+            self.set_flow_name(fn[1])
+
+        def split_flow_name(self, flow_name=None):
+            if flow_name is not None:
+                fn = flow_name.split("_")
+                if len(fn)<2:
+                    return None
+                if fn[1].isdigit()==False:
+                    return None
+                fn[1]=int(fn[1])
+                return fn
+            return [self.__flow_id,self.__flow_name_suffix]
+        
+        def inc_flow_name(self):
+            fn = self.split_flow_name()
+            if fn is not None:
+                self.set_flow_name(int(fn[1])+1)
+        
+        def compare_flow_name(self, flow_name):
+            fn1 = self.split_flow_name()
+            if fn1 is None:
+                return 0
+            fn2 = self.split_flow_name(flow_name)
+            if fn2 is None:
+                return 0
+            fn1[1] = int(fn1[1])
+            fn2[1] = int(fn2[1])
+            return ( fn1[1] - fn2[1] )
+            
+            
+
+        def setInOut(self, switch_id, action, port_in, port_out, flowname_suffix):
+            if(self.__match is None):
+                self.__match = Match()
+            new_act = Action(action)
+            if(port_out is not None):
+                new_act.setOutputAction(port_out, 65535)
+            
+            self.__actions.append(new_act)
+            self.__match.setInputMatch(port_in)
+            self.__switch_id = switch_id
+            self.__flow_name = self.__flow_name+flowname_suffix
+
+        
+        def isReady(self):
+            return ( self.__switch_id is not None and self.__flow_id is not None )
+        
+        
+        def getNffgMatch(self):
+            return self.__match.getNffgMatch(self.__nffg_flowrule)
+            
+
+        def getNffgAction(self):
+            base_action = Action()
+            return base_action.getNffgAction(self.__actions, self.__nffg_flowrule)
+
+
+

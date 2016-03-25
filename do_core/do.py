@@ -5,15 +5,14 @@
 '''
 
 from __future__ import division
-import logging
+import logging, copy
 
-from nffg_library.nffg import FlowRule as NffgFlowrule
-
-from do_core.sql.graph_session import GraphSession
+from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction
 
 from do_core.config import Configuration
+from do_core.sql.graph_session import GraphSession
 from do_core.resource_description import ResourceDescription
-from do_core.netmanager import NetManager, Match ,Action
+from do_core.netmanager import NetManager
 from do_core.messaging import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
@@ -368,26 +367,6 @@ class DO(object):
                         if ep_out is not None and ep_out in updated_endpoints:
                             flowrule.status = 'new'
 
-
-
-
-    def __ProfileGraph_BuildFromNFFG(self, nffg):
-        '''
-        Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        '''
-        for endpoint in nffg.end_points:
-            
-            if endpoint.status is None:
-                endpoint.status = "new"
-                
-            self.NetManager.ProfileGraph.addEndpoint(endpoint)
-        
-        for flowrule in nffg.flow_rules:
-            if flowrule.status is None:
-                flowrule.status = 'new'
-            self.NetManager.ProfileGraph.addFlowrule(flowrule)
-    
-    
     
     
     def __getEndpointIdFromString(self, endpoint_string):
@@ -407,7 +386,8 @@ class DO(object):
     def __NC_FlowsInstantiation(self, nffg):
         
         # Build the Profile Graph
-        self.__ProfileGraph_BuildFromNFFG(nffg)
+        #self.__ProfileGraph_BuildFromNFFG(nffg)
+        self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
         
         # [ FLOW RULEs ]
         for flowrule in self.NetManager.ProfileGraph.getFlowrules():
@@ -422,23 +402,6 @@ class DO(object):
             
             # Process flow rule with VLAN
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
-    
-    
-    
-    def __NC_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
-        '''
-        Check if the flowrule can be installed on the ingress endpoint.
-        '''
-        
-        # Is the endpoint enabled?
-        if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
-            raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoint")
-        
-        # Flowrule collision
-        qref = GraphSession().getFlowruleOnTheSwitch(in_endpoint.switch_id, in_endpoint.interface, flowrule)
-        if qref is not None:
-            raise GraphError("Flowrule "+flowrule.id+" collides with an another flowrule on the ingress port (ingress endpoint "+in_endpoint.id+").")
-                    
     
     
 
@@ -468,9 +431,9 @@ class DO(object):
         # If a flow rule has a drop action, we don't care of other actions!
         for a in flowrule.actions:
             if a.drop is True:
-                single_efr = DO.__externalFlowrule( match=Match(flowrule.match), priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
+                single_efr = self.NetManager.externalFlowrule( nffg_match=flowrule.match, priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
                 single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
-                self.__Push_externalFlowrule(single_efr)
+                self.NetManager.__Push_externalFlowrule(single_efr)
                 return
         
         # Search for the output endpoint
@@ -512,6 +475,21 @@ class DO(object):
         return
 
 
+    
+    def __NC_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
+        '''
+        Check if the flowrule can be installed on the ingress endpoint.
+        '''
+        
+        # Is the endpoint enabled?
+        if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
+            raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoint")
+        
+        # Flowrule collision
+        qref = GraphSession().getFlowruleOnTheSwitch(in_endpoint.switch_id, in_endpoint.interface, flowrule)
+        if qref is not None:
+            raise GraphError("Flowrule "+flowrule.id+" collides with an another flowrule on the ingress port (ingress endpoint "+in_endpoint.id+").")
+
 
 
     def __NC_checkEndpointsOnPath(self, path, ep1, ep2):
@@ -531,7 +509,7 @@ class DO(object):
 
 
 
-    def __NC_LinkEndpointsByVlanID(self, path, ep1, ep2, flowrule):
+    def __NC_LinkEndpointsByVlanID(self, path, epIN, epOUT, flowrule):
         ''' 
         This function links two endpoints with a set of flow rules pushed in
         all the intermediate switches (and in first and last switches, of course).
@@ -542,7 +520,7 @@ class DO(object):
         conflicts in the traversed switches.
         '''
 
-        efr = DO.__externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
+        efr = self.NetManager.externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
         
         base_actions = []
         vlan_out = None
@@ -575,10 +553,9 @@ class DO(object):
                 pop_vlan_flag = True
                 continue
             
-            # Filter non OUTPUT actions 
+            #Filter non OUTPUT actions 
             if a.output is None:
-                no_output = Action(a)
-                base_actions.append(no_output)
+                base_actions.append(copy.copy(a))
         
         ''' Remember to pop vlan header by the last switch.
             If vlan out is not None, a pushvlan/setvlan action is present, and popvlan action is incompatible.
@@ -608,19 +585,19 @@ class DO(object):
             # First switch
             if i==0:
                 pos = -1                
-                efr.set_switch_id(ep1.switch_id)
-                port_in = ep1.interface
+                efr.set_switch_id(epIN.switch_id)
+                port_in = epIN.interface
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
                 if port_out is None and len(path)==1: #'single-switch' path
                     pos = -2
-                    port_out = ep2.interface
+                    port_out = epOUT.interface
             
             # Last switch
             elif i==len(path)-1:
                 pos = 1
-                efr.set_switch_id(ep2.switch_id)
+                efr.set_switch_id(epOUT.switch_id)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
-                port_out = ep2.interface
+                port_out = epOUT.interface
                 
                 # Add actions
                 efr.set_actions(list(base_actions))
@@ -630,9 +607,9 @@ class DO(object):
                     vlan_out = original_vlan_out
                     
                 # Vlan egress endpoint ...set the vlan_id
-                if ep2.type=='vlan':
+                if epOUT.type=='vlan':
                     pop_vlan_flag = False
-                    vlan_out = ep2.vlan_id
+                    vlan_out = epOUT.vlan_id
             
             # Middle way switch
             else:
@@ -645,19 +622,17 @@ class DO(object):
             vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_ID, next_switch_portIn, flowrule.match, vlan_out)
 
             # MATCH           
-            base_match = Match(flowrule.match)
+            base_nffg_match = copy.copy(flowrule.match)
             
             # VLAN In
             if vlan_in is not None:
-                base_match.setVlanMatch(vlan_in)
+                base_nffg_match.vlan_id = vlan_in
             
             # ACTIONS
                 
             # Remove VLAN header
             if pop_vlan_flag and ( pos==1 or pos==-2): #1=last switch; -2='single-switch' path
-                action_stripvlan = Action()
-                action_stripvlan.setPopVlanAction()
-                efr.append_action(action_stripvlan)
+                efr.append_action(NffgAction(pop_vlan=True))
 
             # Add/mod VLAN header
             if set_vlan_out is not None:
@@ -665,23 +640,17 @@ class DO(object):
                 # If there is a match rule on vlan id, it means a vlan header 
                 # it is already present and we do not need to push a vlan.
                 if vlan_in is None:
-                    action_pushvlan = Action()
-                    action_pushvlan.setPushVlanAction()
-                    efr.append_action(action_pushvlan)
-                    
-                action_setvlan = Action()
-                action_setvlan.setSwapVlanAction(set_vlan_out)
-                efr.append_action(action_setvlan)
+                    efr.append_action(NffgAction(push_vlan=True))
+
+                efr.append_action(NffgAction(set_vlan_id=set_vlan_out))
             
             # Set next ingress vlan
             vlan_in = vlan_out
     
             # Push the flow rule
-            base_match.setInputMatch(port_in)
-            efr.set_match(base_match)
-            action_output = Action()
-            action_output.setOutputAction(port_out, 65535)
-            efr.append_action(action_output)
+            base_nffg_match.port_in = port_in
+            efr.set_match(base_nffg_match)
+            efr.append_action(NffgAction(output=port_out))
             self.__Push_externalFlowrule(efr)
         # end-for
         '''
@@ -746,33 +715,6 @@ class DO(object):
         DATABASE INTERACTIONS
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     '''
-    
-    def __addVlanTraking(self, efr, flow_rule_db_id):
-        # efr = __externalFlowrule
-        vlan_in = None
-        vlan_out = None
-        port_in = None
-        port_out = None
-        switch_id = efr.get_switch_id()
-        
-        if(efr.get_match().InputPort is not None):
-            port_in = efr.get_match().InputPort
-        
-        if(efr.get_match().vlan_id is not None):
-            vlan_in = efr.get_match().VlanID
-            vlan_out = vlan_in
-        
-        for a in efr.get_actions():
-            if(a.is_output_port_action()):
-                port_out = a.OutputPort
-            if(a.is_set_vlan_action()):
-                vlan_out = a.VlanID
-            elif(a.is_pop_vlan_action()):
-                vlan_out = None
-        
-        # DATABASE: Add vlan tracking
-        GraphSession().addVlanTracking(flow_rule_db_id, switch_id,vlan_in,port_in,vlan_out,port_out)
-        
         
     
     def __deleteFlowRuleByGraphID(self, graph_flow_rule_id):
@@ -826,10 +768,6 @@ class DO(object):
 
     
     
-    
-    
-    
-    
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
         EXTERNAL FLOWRULE
@@ -837,7 +775,7 @@ class DO(object):
     '''
 
     def __Push_externalFlowrule(self, efr):
-        # efr = __externalFlowrule
+        # efr = NetManager.externalFlowrule
         '''
         This is the only function that should be used to push an external flow
         (a "custom flow", in other words) in the database and in the network controller.
@@ -845,12 +783,19 @@ class DO(object):
         and in GraphSession().addNFFG to store the flow rules written in nffg.json.
         '''
         
+        nffg_match = efr.getNffgMatch()
+        nffg_actions = efr.getNffgAction()
+        nffg_flowrule = NffgFlowrule(match=nffg_match, actions=nffg_actions)
+        
         '''
-        TODO: check if exists a flowrule with the same match criteria in the same switch
-            (very rare event); if it exists, raise an exception!
-            Similar flow rules are replaced by ovs switch, so one of them disappear!
-            def __NC_ExternalFlowrule_Exists(self, switch, nffg_match, nffg_action).
+        Check if exists a flowrule with the same match criteria in the same switch (very rare event);
+        If it exists, raise an exception!
+        Similar flow rules are replaced by ovs switch, so one of them disappear!
         '''
+        qref = GraphSession().getFlowruleOnTheSwitch(efr.get_switch_id(), nffg_match.port_in, nffg_flowrule)
+        if qref is not None:
+            raise GraphError("Cannot install the flowrule "+efr.get_flow_name()+". Collision on switch "+efr.get_switch_id()+" .")
+
         
         # If the flow name already exists, get new one
         self.__checkFlowname_externalFlowrule(efr)
@@ -862,11 +807,8 @@ class DO(object):
         flow_rule = NffgFlowrule(_id=efr.get_flow_id(),node_id=efr.get_switch_id(), _type='external', status='complete',
                                  priority=efr.get_priority(), internal_id=sw_flow_name)
         flow_rule_db_id = GraphSession().addFlowrule(self.__session_id, efr.get_switch_id(), flow_rule)
-        GraphSession().dbStoreMatch(efr.getNffgMatch(), flow_rule_db_id, flow_rule_db_id)
-        GraphSession().dbStoreAction(efr.getNffgAction(), flow_rule_db_id)
-        
-        # DATABASE: Add vlan tracking
-        self.__addVlanTraking(efr, flow_rule_db_id)
+        GraphSession().dbStoreMatch(nffg_match, flow_rule_db_id, flow_rule_db_id)
+        GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
         
         # PRINT
         self.__print("[New Flow] id:'"+efr.get_flow_name()+"' device:'"+efr.get_switch_id()+"'")
@@ -882,7 +824,7 @@ class DO(object):
             return
         
         efr.set_flow_name(0)
-        this_efr = DO.__externalFlowrule()
+        this_efr = self.NetManager.externalFlowrule()
         
         flow_rules_ref = GraphSession().getExternalFlowrulesByGraphFlowruleID(efr.get_switch_id(),efr.get_flow_id())
         for fr in flow_rules_ref:
@@ -896,144 +838,5 @@ class DO(object):
                 continue            
             break
         efr.inc_flow_name()
-            
-            
-        
-        
-        
     
-    class __externalFlowrule(object):
-        '''
-        Private class used to store an external flow rule
-        that is going to be pushed in the specified switch.
-        '''
-        def __init__(self,switch_id=None,match=None,actions=None,flow_id=None,priority=None,flowname_suffix=None,nffg_flowrule=None):
-            self.__switch_id = switch_id
-            self.set_flow_id(flow_id)
-            self.set_flow_name(flowname_suffix)
-            self.__priority = priority
-            
-            # match = controller_resources.Match object
-            self.__match = match
-            
-            # actions = array of controller_resources.Action object
-            self.set_actions(actions)
-            
-            # nffg_flowrule = nffg.FlowRule object
-            # (usually not used, but useful in some cases)
-            self.__nffg_flowrule = nffg_flowrule
-            
-
-        def get_switch_id(self):
-            return self.__switch_id
-
-        def get_match(self):
-            return self.__match
-
-        def get_actions(self):
-            return self.__actions
-
-        def get_flow_id(self):
-            return self.__flow_id
-
-        def get_flow_name(self):
-            return self.__flow_name
-
-        def get_priority(self):
-            return self.__priority
-
-        def set_switch_id(self, value):
-            self.__switch_id = value
-
-        def set_match(self, value):
-            self.__match = value
-
-        def set_actions(self, value):
-            if value is None:
-                self.__actions = []
-            else:
-                self.__actions = value
-        
-        def append_action(self, value):
-            if value is None:
-                return
-            self.__actions.append(value)
-            
-        def __reset_flow_name(self):
-            self.__flow_name = str(self.__flow_id)+"_"
-            
-        def set_flow_id(self, value):
-            self.__flow_id = value
-            self.__reset_flow_name()
-
-        def set_flow_name(self, suffix):
-            self.__reset_flow_name()
-            self.__flow_name_suffix = None
-            if(suffix is not None and str(suffix).isdigit()):
-                self.__flow_name = self.__flow_name + str(suffix)
-                self.__flow_name_suffix = int(suffix)
-        
-        def set_complete_flow_name(self, flow_name):
-            fn = self.split_flow_name(flow_name)
-            if len(fn)<2:
-                return
-            self.__flow_id = fn[0]
-            self.set_flow_name(fn[1])
-
-        def set_priority(self, value):
-            self.__priority = value
-        
-        def split_flow_name(self, flow_name=None):
-            if flow_name is not None:
-                fn = flow_name.split("_")
-                if len(fn)<2:
-                    return None
-                if fn[1].isdigit()==False:
-                    return None
-                fn[1]=int(fn[1])
-                return fn
-            return [self.__flow_id,self.__flow_name_suffix]
-        
-        def inc_flow_name(self):
-            fn = self.split_flow_name()
-            if fn is not None:
-                self.set_flow_name(int(fn[1])+1)
-        
-        def compare_flow_name(self, flow_name):
-            fn1 = self.split_flow_name()
-            if fn1 is None:
-                return 0
-            fn2 = self.split_flow_name(flow_name)
-            if fn2 is None:
-                return 0
-            fn1[1] = int(fn1[1])
-            fn2[1] = int(fn2[1])
-            return ( fn1[1] - fn2[1] )
-            
-            
-
-        def setInOut(self, switch_id, action, port_in, port_out, flowname_suffix):
-            if(self.__match is None):
-                self.__match = Match()
-            new_act = Action(action)
-            if(port_out is not None):
-                new_act.setOutputAction(port_out, 65535)
-            
-            self.__actions.append(new_act)
-            self.__match.setInputMatch(port_in)
-            self.__switch_id = switch_id
-            self.__flow_name = self.__flow_name+flowname_suffix
-
-        
-        def isReady(self):
-            return ( self.__switch_id is not None and self.__flow_id is not None )
-        
-        
-        def getNffgMatch(self):
-            return self.__match.getNffgMatch(self.__nffg_flowrule)
-            
-
-        def getNffgAction(self):
-            base_action = Action()
-            return base_action.getNffgAction(self.__actions, self.__nffg_flowrule)
-
+    

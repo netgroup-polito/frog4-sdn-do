@@ -246,6 +246,8 @@ class Action(Action_Interface):
                 self.setPushVlanAction()
             elif action.pop_vlan is True:
                 self.setPopVlanAction()
+            elif action.output is not None:
+                self.setOutputAction(action.output,65535)
 
     
     @property
@@ -476,6 +478,8 @@ class Match(Match_Interface):
         
         if match is not None:
             #TODO: add remaining match
+            if match.port_in is not None:
+                self.setInputMatch(match.port_in)
             if match.vlan_id is not None:
                 self.setVlanMatch(match.vlan_id)
             if match.ether_type is not None:
