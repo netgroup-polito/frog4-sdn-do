@@ -71,6 +71,16 @@ Edit [./default-config.ini](/config/default-config.ini) and rename it in "config
 Pay attention to all paths: they must be relative paths (respect of 'frog4-openflow-do' directory).
 
 
+### Set the SDN Controller
+
+The section "[network_controller]" defines the name of the SDN Controller.
+
+According to the SDN Controller name, edit the section [opendaylight] or [onos] 
+to specify version, endpoint and credentials.
+
+
+
+
 ### Create the database
 ```sh
 	$ python3 ./scripts/create_database.py
