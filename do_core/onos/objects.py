@@ -2,6 +2,10 @@
 Created on 2/feb/2016
 
 @author: giacomoratta
+
+JAVA Code where the field names can be founded
+https://github.com/opennetworkinglab/onos/tree/master/core/api/src/main/java/org/onosproject/net/flow/instructions
+https://github.com/opennetworkinglab/onos/tree/master/core/api/src/main/java/org/onosproject/net/flow/criteria
 '''
 
 import json

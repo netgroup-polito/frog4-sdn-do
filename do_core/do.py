@@ -70,8 +70,8 @@ class DO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            #ResourceDescription().updateAll()
-            #ResourceDescription().saveFile()
+            ResourceDescription().updateAll()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -121,8 +121,8 @@ class DO(object):
             GraphSession().updateStatus(self.__session_id, 'complete')
             
             # Update the resource description .json
-            #ResourceDescription().updateAll()
-            #ResourceDescription().saveFile()
+            ResourceDescription().updateAll()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -149,8 +149,8 @@ class DO(object):
             logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
             
             # Update the resource description .json
-            #ResourceDescription().updateAll()
-            #ResourceDescription().saveFile()
+            ResourceDescription().updateAll()
+            ResourceDescription().saveFile()
             
             Messaging().PublishDomainConfig()
             
@@ -240,13 +240,13 @@ class DO(object):
                 
             # Check endpoints in ResourceDescription.json (switch/port)
             if ResourceDescription().checkEndpoint(ep.switch_id, ep.interface)==False:
-                raise GraphError("Endpoint "+ep.id+" not found")
+                raise GraphError("Endpoint "+str(ep.id)+" not found")
             
             # Check vlan availability
             if ep.type == "vlan" and ep.vlan_id is not None:
                 if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
                     vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
-                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+ep.id+"! Valid vlan ids: "+vids_list)
+                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+"! Valid vlan ids: "+vids_list)
             
             # Add the endpoint
             EPs['endpoint:'+ep.id] = { "sid":ep.switch_id, "pid":ep.interface }
@@ -279,10 +279,10 @@ class DO(object):
                     raise_useless_info("presence of 'output_to_queue'")
                 if a.output is not None:
                     if output_action_counter > 0:
-                        raise_invalid_actions("Multiple 'output_to_port' not allowed (flow rule "+flowrule.id+")")
+                        raise_invalid_actions("Multiple 'output_to_port' not allowed (flow rule "+str(flowrule.id)+")")
                     output_action_counter = output_action_counter+1
                     if self.__getEndpointIdFromString(a.output) is None:
-                        GraphError("Flowrule "+flowrule.id+" has not an egress endpoint ('output_to_port' in 'action')")
+                        GraphError("Flowrule "+str(flowrule.id)+" has not an egress endpoint ('output_to_port' in 'action')")
                     output_ep = a.output
             
             # Check vlan availability
@@ -738,6 +738,11 @@ class DO(object):
             try:
                 # PRINT
                 self.__print("[Remove Flow] id:'"+flow_rule_ref.internal_id+"' device:'"+flow_rule_ref.switch_id+"'")
+                
+                # RESOURCE DESCRIPTION
+                ResourceDescription().delete_flowrule(flow_rule_ref.internal_id)
+                
+                # CONTROLLER
                 self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
             except Exception as ex:
                 if type(ex) is HTTPError and ex.response.status_code==404:
@@ -809,6 +814,9 @@ class DO(object):
         flow_rule_db_id = GraphSession().addFlowrule(self.__session_id, efr.get_switch_id(), flow_rule)
         GraphSession().dbStoreMatch(nffg_match, flow_rule_db_id, flow_rule_db_id)
         GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
+        
+        # RESOURCE DESCRIPTION
+        ResourceDescription().new_flowrule(sw_flow_name)
         
         # PRINT
         self.__print("[New Flow] id:'"+efr.get_flow_name()+"' device:'"+efr.get_switch_id()+"'")

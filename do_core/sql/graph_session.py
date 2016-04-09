@@ -226,6 +226,15 @@ class GraphSession(object):
         except:
             return None
         return None
+    
+    
+    def getFlowruleByInternalID(self, internal_id=None):
+        try:
+            session = get_session()
+            return session.query(FlowRuleModel).filter_by(internal_id=internal_id).one()
+        except:
+            return None
+        return None
         
     
     def getFlowrules(self, session_id, graph_flow_rule_id=None):
@@ -309,8 +318,30 @@ class GraphSession(object):
                 percentage = percentage+1
         
         return ( percentage / count_flowrules * 100 )
+    
+    
+    def getMatchByFlowruleID(self, flowrule_id):
+        try:
+            session = get_session()
+            return session.query(MatchModel).filter_by(flow_rule_id=flowrule_id).one()
+        except:
+            return None
+        return None
+        
+    
+    def getEndpointVlanInIDs(self, port_in, switch_id):
+        session = get_session()
+        qref = session.query(FlowRuleModel,MatchModel).\
+            filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
+            filter(FlowRuleModel.switch_id == switch_id).\
+            filter(MatchModel.port_in == port_in).\
+            all()
+        if len(qref)>0:
+            return qref
+        return None
         
         
+     
         
     def getVlanInIDs(self, port_in, switch_id):
         session = get_session()
