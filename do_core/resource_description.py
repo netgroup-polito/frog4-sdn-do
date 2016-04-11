@@ -8,7 +8,7 @@ class ResourceDescription(object):  # Singleton Class
     __filename = None
     __dict = None
     __endpoint_name_separator = "/"
-    __save = False
+    __save = True
     
     _instance = None
     def __new__(cls, *args, **kwargs):
