@@ -320,7 +320,7 @@ class DO(object):
         
         # Flowrules (maybe will never enter)
         flowrules = GraphSession().getFlowrules(self.__session_id)
-        if flowrules is None:
+        if flowrules is not None:
             for fr in flowrules:
                 self.__deleteFlowRule(fr)
         
