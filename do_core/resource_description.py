@@ -8,6 +8,7 @@ class ResourceDescription(object):  # Singleton Class
     __filename = None
     __dict = None
     __endpoint_name_separator = "/"
+    __save = False
     
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -55,6 +56,8 @@ class ResourceDescription(object):  # Singleton Class
         load the json into a OrderedDict (that stores the original order)
         and we dump the json without sorting the keys (sort_keys=False).
         '''
+        if self.__save == False:
+            return
         output_json = json.dumps(self.__dict,sort_keys=False,indent=2)
         out_file = open(self.__filename,"w")
         out_file.write(output_json)

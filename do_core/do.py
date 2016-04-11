@@ -243,10 +243,10 @@ class DO(object):
                 raise GraphError("Endpoint "+str(ep.id)+" not found")
             
             # Check vlan availability
-            if ep.type == "vlan" and ep.vlan_id is not None:
-                if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
-                    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
-                    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+"! Valid vlan ids: "+vids_list)
+            #if ep.type == "vlan" and ep.vlan_id is not None:
+            #    if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
+            #        vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
+            #        raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+"! Valid vlan ids: "+vids_list)
             
             # Add the endpoint
             EPs['endpoint:'+ep.id] = { "sid":ep.switch_id, "pid":ep.interface }
@@ -263,9 +263,9 @@ class DO(object):
                 GraphError("Flowrule "+flowrule.id+" has not an ingress endpoint ('port_in')")
             
             # Check vlan availability
-            if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'], EPs[flowrule.match.port_in]['pid'])==False:
-                vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
-                raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
+            #if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'], EPs[flowrule.match.port_in]['pid'])==False:
+            #    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
+            #    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
             # Detect multiple output actions (they are not allowed).
             # If multiple output are needed, multiple flow rules should be written
