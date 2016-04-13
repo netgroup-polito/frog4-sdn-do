@@ -96,7 +96,7 @@ All the tables will be empty, except "user" and "tenant".
 
 ### Start the Domain Orchestrator (HTTP)
 ```sh
-	$ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+	$ gunicorn -b 0.0.0.0:9000 -t 500 main:app
 ```
 
 ### Start the Domain Orchestrator (HTTPS)
@@ -117,7 +117,7 @@ Now you can run gunicorn on https:
 	$ gunicorn -b 0.0.0.0:9000 -t 500 \
 	--certfile=keys/certificate/server.crt \
 	--keyfile=keys/certificate/server.key \
-	start:app
+	main:app
 ```
 
 ### Utility scripts

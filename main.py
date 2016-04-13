@@ -6,11 +6,11 @@ Created on Dic 7, 2015
 
 This script starts the web server and has to be called via gunicorn.
 Write in the shell:
-    $ gunicorn -b 0.0.0.0:9000 -t 500 start:app
+    $ gunicorn -b 0.0.0.0:9000 -t 500 main:app
 
 Otherwise, make a python script with this two rows:
     from subprocess import call
-    call("gunicorn -b 0.0.0.0:9000 -t 500 start:app", shell=True)
+    call("gunicorn -b 0.0.0.0:9000 -t 500 main:app", shell=True)
 
 Script phases:
    1) Load configuration;
