@@ -605,17 +605,18 @@ class DO(object):
                 # Force the vlan out to be equal to the original
                 if pop_vlan_flag == False and original_vlan_out is not None:
                     vlan_out = original_vlan_out
-                    
-                # Vlan egress endpoint ...set the vlan_id
-                if epOUT.type=='vlan':
-                    pop_vlan_flag = False
-                    vlan_out = epOUT.vlan_id
             
             # Middle way switch
             else:
                 efr.set_switch_id(hop)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
+            
+            
+            # Vlan egress endpoint ...set the vlan_id
+            if epOUT.type=='vlan' and (pos==1 or pos==-2):
+                pop_vlan_flag = False
+                vlan_out = epOUT.vlan_id
                 
             
             # Check, generate and set vlan ids
