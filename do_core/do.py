@@ -237,11 +237,11 @@ class DO(object):
                 raise_useless_info("presence of connection to remote endpoint")
             if ep.prepare_connection_to_remote_endpoint_ids is not None and len(ep.prepare_connection_to_remote_endpoint_ids)>0:
                 raise_useless_info("presence of connection to remote endpoints")
-                
+            """
             # Check endpoints in ResourceDescription.json (switch/port)
             if ResourceDescription().checkEndpoint(ep.switch_id, ep.interface)==False:
                 raise GraphError("Endpoint "+str(ep.id)+" not found")
-            
+            """
             # Check vlan availability
             #if ep.type == "vlan" and ep.vlan_id is not None:
             #    if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
