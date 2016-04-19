@@ -12,6 +12,10 @@ with several endpoints and their details.
 	Identifies the type of this domain orchestrator.
 	Do not change this value. 
 
+"management-address":"192.168.1.1:9100"
+    Specifies IP and port where this domain orchestrator can be reached.
+    Follows the format "IP:port". 
+
 "openconfig-interfaces:interface"
 	List all endpoints. Every object rappresent a specific endpoint.
 	
@@ -31,23 +35,24 @@ with several endpoints and their details.
 		Example: "280..289","90..95",18,31,"290..299",52,"67..82".
 		
 	
-	"netgroup-neighbor:neighbor"
+	"frog-neighbor:neighbor"
 		List all neighbours of this endpoint (usually only one).
 		
-		"domain":"domain1"
+		"domain-name":"domain1"
 			The domain name of the neighbor.
 		 
-		"interface":"10.0.0.1/eth3"
-			Follows the format "node/interface".
+		"remote-interface":"10.0.0.1/eth3"
+			Follows the format "node/interface" or interface only.
 
 
 --------------------------------------------------------------------------------
 
 {
-  "netgroup-domain:informations": {
+  "frog-domain:informations": {
     "name": "my_odl_do",
     "type": "ODL",
-    "netgroup-network-manager:informations": {
+    "management-address": "127.0.0.1:9100",
+    "frog-network-manager:informations": {
       "openconfig-interfaces:interfaces": {
         "openconfig-interfaces:interface": [
           {
@@ -68,10 +73,10 @@ with several endpoints and their details.
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "eth3"
                 }
               ]
             }
@@ -95,10 +100,10 @@ with several endpoints and their details.
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "eth3"
                 }
               ]
             }

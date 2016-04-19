@@ -129,7 +129,7 @@ class ResourceDescription(object):  # Singleton Class
         
         self.__endpoints = {}
         
-        for interface in self.__dict["netgroup-domain:informations"]["netgroup-network-manager:informations"]["openconfig-interfaces:interfaces"]["openconfig-interfaces:interface"]:
+        for interface in self.__dict["frog-domain:informations"]["frog-network-manager:informations"]["openconfig-interfaces:interfaces"]["openconfig-interfaces:interface"]:
             name_split = interface['name'].split(self.__endpoint_name_separator)
             if len(name_split)<2:
                 continue

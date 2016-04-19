@@ -1,8 +1,9 @@
 {
-  "netgroup-domain:informations": {
+  "frog-domain:informations": {
     "name": "odl_do",
     "type": "ODL",
-    "netgroup-network-manager:informations": {
+    "management-address": "127.0.0.1:9100",
+    "frog-network-manager:informations": {
       "openconfig-interfaces:interfaces": {
         "openconfig-interfaces:interface": [
           {
@@ -23,10 +24,10 @@
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "10.0.0.1/eth3"
                 }
               ]
             }
@@ -49,10 +50,10 @@
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "10.0.0.1/eth3"
                 }
               ]
             }
@@ -75,10 +76,10 @@
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "10.0.0.1/eth3"
                 }
               ]
             }
@@ -101,10 +102,10 @@
                   "trunk-vlans": []
                 }
               },
-              "netgroup-neighbor:neighbor": [
+              "frog-neighbor:neighbor": [
                 {
-                  "domain": "domain1",
-                  "interface": "10.0.0.1/eth3"
+                  "domain-name": "domain1",
+                  "remote-interface": "10.0.0.1/eth3"
                 }
               ]
             }
