@@ -221,8 +221,6 @@ class DO(object):
         for ep in nffg.end_points:
             if(ep.type is not None and ep.type != "interface" and ep.type != "vlan"):
                 raise_useless_info("'end-points.type' must be 'interface' or 'vlan' (not '"+ep.type+"')")
-            if ep.node_id is not None:
-                raise_useless_info("presence of 'node-id'")
             if(ep.remote_endpoint_id is not None):
                 raise_useless_info("presence of 'end-points.remote_endpoint_id'")
             if(ep.remote_ip is not None):
@@ -239,17 +237,17 @@ class DO(object):
                 raise_useless_info("presence of connection to remote endpoints")
             """
             # Check endpoints in ResourceDescription.json (switch/port)
-            if ResourceDescription().checkEndpoint(ep.switch_id, ep.interface)==False:
+            if ResourceDescription().checkEndpoint(ep.node_id, ep.interface)==False:
                 raise GraphError("Endpoint "+str(ep.id)+" not found")
             """
             # Check vlan availability
             #if ep.type == "vlan" and ep.vlan_id is not None:
-            #    if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.switch_id, ep.interface)==False:
-            #        vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
+            #    if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.node_id, ep.interface)==False:
+            #        vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.node_id, ep.interface)
             #        raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+"! Valid vlan ids: "+vids_list)
             
             # Add the endpoint
-            EPs['endpoint:'+ep.id] = { "sid":ep.switch_id, "pid":ep.interface }
+            EPs['endpoint:'+ep.id] = { "sid":ep.node_id, "pid":ep.interface }
             
 
         # FLOW RULEs inspection
@@ -264,7 +262,7 @@ class DO(object):
             
             # Check vlan availability
             #if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'], EPs[flowrule.match.port_in]['pid'])==False:
-            #    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.switch_id, ep.interface)
+            #    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.node_id, ep.interface)
             #    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
             # Detect multiple output actions (they are not allowed).
@@ -432,7 +430,7 @@ class DO(object):
         for a in flowrule.actions:
             if a.drop is True:
                 single_efr = self.NetManager.externalFlowrule( nffg_match=flowrule.match, priority=flowrule.priority, flow_id=flowrule.id, nffg_flowrule=flowrule)
-                single_efr.setInOut(in_endpoint.switch_id, a, in_endpoint.interface , None, "1")
+                single_efr.setInOut(in_endpoint.node_id, a, in_endpoint.interface , None, "1")
                 self.NetManager.__Push_externalFlowrule(single_efr)
                 return
         
@@ -449,21 +447,21 @@ class DO(object):
             raise GraphError("Flowrule "+flowrule.id+" has an invalid egress endpoint")
 
         # [ 1 ] Endpoints are on the same switch
-        if in_endpoint.switch_id == out_endpoint.switch_id:
+        if in_endpoint.node_id == out_endpoint.node_id:
             
             # Error: endpoints are equal!
             if in_endpoint.interface == out_endpoint.interface:
                 raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
             
             # 'Single-switch' path
-            self.__NC_LinkEndpointsByVlanID([in_endpoint.switch_id], in_endpoint, out_endpoint, flowrule)
+            self.__NC_LinkEndpointsByVlanID([in_endpoint.node_id], in_endpoint, out_endpoint, flowrule)
             return
 
         # [ 2 ] Endpoints are on different switches...search for a path!
-        nodes_path = self.NetManager.getShortestPath(in_endpoint.switch_id, out_endpoint.switch_id)
+        nodes_path = self.NetManager.getShortestPath(in_endpoint.node_id, out_endpoint.node_id)
         if(nodes_path is not None):
             
-            logging.info("Found a path bewteen "+in_endpoint.switch_id+" and "+out_endpoint.switch_id+". "+"Path Length = "+str(len(nodes_path)))
+            logging.info("Found a path bewteen "+in_endpoint.node_id+" and "+out_endpoint.node_id+". "+"Path Length = "+str(len(nodes_path)))
             if self.__NC_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
                 logging.debug("Invalid link between the endpoints")
                 return
@@ -471,7 +469,7 @@ class DO(object):
             return
             
         # [ 3 ] No paths between the endpoints 
-        logging.debug("Cannot find a link between "+in_endpoint.switch_id+" and "+out_endpoint.switch_id)
+        logging.debug("Cannot find a link between "+in_endpoint.node_id+" and "+out_endpoint.node_id)
         return
 
 
@@ -482,11 +480,11 @@ class DO(object):
         '''
         
         # Is the endpoint enabled?
-        if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.switch_id):
+        if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.node_id):
             raise GraphError("The ingress endpoint "+in_endpoint.id+" is a busy direct endpoint")
         
         # Flowrule collision
-        qref = GraphSession().getFlowruleOnTheSwitch(in_endpoint.switch_id, in_endpoint.interface, flowrule)
+        qref = GraphSession().getFlowruleOnTheSwitch(in_endpoint.node_id, in_endpoint.interface, flowrule)
         if qref is not None:
             raise GraphError("Flowrule "+flowrule.id+" collides with an another flowrule on the ingress port (ingress endpoint "+in_endpoint.id+").")
 
@@ -497,12 +495,12 @@ class DO(object):
             return None
         #check if ep1 stays on the link
         if ep1.interface == self.NetManager.switchPortIn(path[0], path[1]):
-            logging.debug("...path not valid: endpoint "+ep1.switch_id+" port:"+ep1.interface+" stay on the link!")
+            logging.debug("...path not valid: endpoint "+ep1.node_id+" port:"+ep1.interface+" stay on the link!")
             return False
         #check if ep2 stays on the link
         path_last = len(path)-1
         if ep2.interface == self.NetManager.switchPortIn(path[path_last], path[path_last-1]):
-            logging.debug("...path not valid: endpoint "+ep2.switch_id+" port:"+ep2.interface+" stay on the link!")
+            logging.debug("...path not valid: endpoint "+ep2.node_id+" port:"+ep2.interface+" stay on the link!")
             return False
         return True
 
@@ -585,7 +583,7 @@ class DO(object):
             # First switch
             if i==0:
                 pos = -1                
-                efr.set_switch_id(epIN.switch_id)
+                efr.set_switch_id(epIN.node_id)
                 port_in = epIN.interface
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
                 if port_out is None and len(path)==1: #'single-switch' path
@@ -595,7 +593,7 @@ class DO(object):
             # Last switch
             elif i==len(path)-1:
                 pos = 1
-                efr.set_switch_id(epOUT.switch_id)
+                efr.set_switch_id(epOUT.node_id)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
                 port_out = epOUT.interface
                 
