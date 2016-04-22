@@ -739,7 +739,7 @@ class DO(object):
                 self.__print("[Remove Flow] id:'"+flow_rule_ref.internal_id+"' device:'"+flow_rule_ref.switch_id+"'")
                 
                 # RESOURCE DESCRIPTION
-                ResourceDescription().delete_flowrule(flow_rule_ref.internal_id)
+                ResourceDescription().delete_flowrule(flow_rule_ref.id)
                 
                 # CONTROLLER
                 self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
@@ -815,7 +815,7 @@ class DO(object):
         GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
         
         # RESOURCE DESCRIPTION
-        ResourceDescription().new_flowrule(sw_flow_name)
+        ResourceDescription().new_flowrule(flow_rule_db_id)
         
         # PRINT
         self.__print("[New Flow] id:'"+efr.get_flow_name()+"' device:'"+efr.get_switch_id()+"'")

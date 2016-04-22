@@ -3,18 +3,18 @@ from collections import OrderedDict
 from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession
 
-class ResourceDescription(object):  # Singleton Class
-    
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
     __filename = None
     __dict = None
     __endpoint_name_separator = "/"
     __save = True
-    
-    _instance = None
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(ResourceDescription, cls).__new__(cls, *args, **kwargs)
-        return cls._instance 
     
     
     def __init__(self):
@@ -65,14 +65,14 @@ class ResourceDescription(object):  # Singleton Class
     
     
 
-    def new_flowrule(self, fr_internal_id):
+    def new_flowrule(self, fr_db_id):
         '''
         Execute some update operations when a new flowrule is added.
             1) TRUNK VLAN: remove a busy vlan id from the endpoint 'trunk-vlan' field
             2) DISABLE ENDPOINT: set the endpoint as 'disabled' when has a match that does not specify a vlan_id 
         '''
         
-        fr = GraphSession().getFlowruleByInternalID(fr_internal_id)
+        fr = GraphSession().getFlowruleByID(fr_db_id)
         if fr is None:
             return
         match = GraphSession().getMatchByFlowruleID(fr.id)
@@ -93,14 +93,14 @@ class ResourceDescription(object):  # Singleton Class
     
     
     
-    def delete_flowrule(self, fr_internal_id):
+    def delete_flowrule(self, fr_db_id):
         '''
         Execute some update operations when a flowrule is removed.
             1) TRUNK VLAN: add a free vlan id into the endpoint 'trunk-vlan' field
             2) ENABLE ENDPOINT: set the endpoint as 'enabled'
         '''
         
-        fr = GraphSession().getFlowruleByInternalID(fr_internal_id)
+        fr = GraphSession().getFlowruleByID(fr_db_id)
         if fr is None:
             return
         match = GraphSession().getMatchByFlowruleID(fr.id)

@@ -751,7 +751,7 @@ class GraphSession(object):
             # Add end-point resources
             # End-point attached to something that is not another graph
             if endpoint.type=="interface" or endpoint.type=="vlan":
-                self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.switch_id, endpoint.vlan_id, 'complete')
+                self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
 
         # [ FLOW RULES ]
         for flow_rule in nffg.flow_rules:
@@ -774,7 +774,7 @@ class GraphSession(object):
                 # Add end-point resources
                 # End-point attached to something that is not another graph
                 if endpoint.type=="interface" or endpoint.type=="vlan":
-                    self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.switch_id, endpoint.vlan_id, 'complete')
+                    self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
         
         # [ FLOW RULES ]
         for flow_rule in nffg.flow_rules:
