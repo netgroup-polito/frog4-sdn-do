@@ -59,7 +59,7 @@ To check if a module is already installed and its version:
 ### Clone the code
 
 ```sh
-	git clone https://github.com/netgroup-polito/frog4-openwflow-do.git
+	git clone https://github.com/netgroup-polito/frog4-openflow-do.git
 	cd frog4-openflow-do
 	git submodule init && git submodule update
 ```
