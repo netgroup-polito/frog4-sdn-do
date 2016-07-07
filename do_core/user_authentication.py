@@ -174,12 +174,11 @@ class UserAuthentication(object):
         Reads the header fields that starts with "X-Auth-" and 
         call the proper methods to check the user authentication.
         '''
-        username = request.get_header("X-Auth-User")
-        password = request.get_header("X-Auth-Pass")
-        #tenant = request.get_header("X-Auth-Tenant")
+        username = request.headers.get("X-Auth-User")
+        password = request.headers.get("X-Auth-Pass")
+        #tenant = rrequest.headers.get("X-Auth-Tenant")
         
-        token = request.get_header("X-Auth-Token")
-        #user_id = request.get_header("X-Auth-UserId")
+        token = request.headers.get("X-Auth-Token")
         
         if token is not None:
             return self.authenticateUserFromToken(token)

@@ -5,9 +5,8 @@ Created on Oct 1, 2014
 @author: giacomoratta
 '''
 
-import logging, json, requests, falcon
-#from falcon.http_error import HTTPError as falconHTTPError
-import falcon.status_codes  as falconStatusCodes
+import logging, json, requests
+from flask import request, jsonify, Response
 from sqlalchemy.orm.exc import NoResultFound
 
 # Orchestrator Core
@@ -24,9 +23,10 @@ from nffg_library.exception import NF_FGValidationError
 # Exceptions
 from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
     UserNotFound, TenantNotFound, UserTokenExpired, GraphError
+from flask.views import MethodView
 
 
-
+"""
 class DO_REST_Base(object):
     '''
     Every response must be in json format and must have the following fields:
@@ -126,17 +126,54 @@ class DO_REST_Base(object):
         message = self.__get_exception_message(ex)
         logging.exception(ex) #unique case which uses logging.exception
         self.__http_error(response,falconStatusCodes.HTTP_500,message)
+"""
 
 
-
-class DO_REST_NFFG_GPUD(DO_REST_Base):
+class DO_REST_NFFG_GPUD(MethodView):
     #GPUD = "Get Put Update Delete" 
     
-    def on_put(self, request, response, nffg_id):
+    def put(self, nffg_id):
+        """
+        Put a graph
+        Deploy a graph
+        ---
+        tags:
+          - NF-FG
+        parameters:
+          - name: nffg_id
+            in: path
+            description: ID of the graph
+            type: string
+            required: true       
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string
+          - name: NF-FG
+            in: body
+            description: Graph to be deployed
+            required: true
+            schema:
+                type: string
+        responses:
+          202:
+            description: Graph correctly deployed  
+          400:
+            description: Bad request                  
+          401:
+            description: Unauthorized
+          404:
+            description: No results
+          406:
+            description: Not acceptable      
+          500:
+            description: Internal Error
+        """        
         try:            
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             
-            request_body = request.stream.read().decode('utf-8')
+            request_body = request.data.decode('utf-8')
             nffg_dict = json.loads(request_body, 'utf-8')
             
             ValidateNF_FG().validate(nffg_dict)
@@ -147,56 +184,97 @@ class DO_REST_NFFG_GPUD(DO_REST_Base):
             NCDO.NFFG_Validate(nffg)
             NCDO.NFFG_Put(nffg)
     
-            response.body = None #self._json_response(falcon.HTTP_202, "Graph "+nffg.id+" succesfully processed.")
-            response.status = falcon.HTTP_202
+            return ("Graph correctly deployed", 202)
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
-        
+            logging.exception(err)
+            return ("Bad Request", 400)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)             
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
+            logging.exception(err)
+            return (err.message, 401)            
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable(response,"ValueError",err)
+            logging.exception(err)
+            return ("ValueError", 406)            
         
         # NFFG validation - raised by ValidateNF_FG().validate
         except NF_FGValidationError as err:
-            self._except_NotAcceptable(response,"NF_FGValidationError",err)
+            logging.exception(err)
+            return ("NF_FGValidationError", 406)                    
         
         # NFFG validation - raised by the class DO()
         except GraphError as err:
-            self._except_NotAcceptable(response,"GraphError",err)
+            logging.exception(err)
+            return ("GraphError", 406)                 
         
         # Custom NFFG sub-validation - raised by DO().NFFG_Validate
         except NffgUselessInformations as err:
-            self._except_NotAcceptable(response,"NffgUselessInformations",err)
+            logging.exception(err)
+            return ("NffgUselessInformations", 406)               
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)            
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)                        
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)              
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)              
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
     
-
     
-    def on_delete(self, request, response, nffg_id):
+    def delete(self, nffg_id):
+        """
+        Delete a graph
+        ---
+        tags:
+          - NF-FG   
+        parameters:
+          - name: nffg_id
+            in: path
+            description: Graph ID to be deleted
+            required: true
+            type: string            
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string            
+        responses:
+          200:
+            description: Graph deleted
+          400:
+            description: Bad request                  
+          401:
+            description: Unauthorized
+          404:
+            description: Graph not found
+          500:
+            description: Internal Error
+        """          
         try :
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
@@ -204,81 +282,160 @@ class DO_REST_NFFG_GPUD(DO_REST_Base):
             
             NCDO.NFFG_Delete(nffg_id)
             
-            response.body = None #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" succesfully deleted.")
-            response.status = falcon.HTTP_200
+            return ("Session deleted")
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
+            logging.exception(err)
+            return ("Bad Request", 400)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)    
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
+            logging.exception(err)
+            return (err.message, 401)             
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
-        except TenantNotFound:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
+        except TenantNotFound as err:
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
 
     
-    
-    def on_get(self, request, response, nffg_id):
+    def get(self, nffg_id):
+        """
+        Get a graph
+        Returns an already deployed graph
+        ---
+        tags:
+          - NF-FG
+        produces:
+          - application/json          
+        parameters:
+          - name: nffg_id
+            in: path
+            description: Graph ID to be retrieved
+            required: true
+            type: string            
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string            
+        responses:
+          200:
+            description: Graph retrieved
+          400:
+            description: Bad request                  
+          401:
+            description: Unauthorized
+          404:
+            description: Graph not found
+          500:
+            description: Internal Error
+        """        
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             NCDO = DO(userdata)
             
-            response.body = NCDO.NFFG_Get(nffg_id) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", nffg=NCDO.NFFG_Get(nffg_id))
-            response.status = falcon.HTTP_200
+            resp = Response(response=NCDO.NFFG_Get(nffg_id), status=200, mimetype="application/json")
+            return resp            
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
+            logging.exception(err)
+            return ("Bad Request", 400)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)    
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
+            logging.exception(err)
+            return (err.message, 401)   
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
 
 
-
-
-
-class DO_REST_NFFG_Status(DO_REST_Base):
-    def on_get(self, request, response, nffg_id):
+class DO_REST_NFFG_Status(MethodView):
+    def get(self, nffg_id):
+        """
+        Get the status of a graph
+        ---
+        tags:
+          - NF-FG
+        produces:
+          - application/json             
+        parameters:
+          - name: nffg_id
+            in: path
+            description: Graph ID to be retrieved
+            type: string            
+            required: true
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string
+                    
+        responses:
+          200:
+            description: Status correctly retrieved
+          400:
+            description: Bad request                
+          401:
+            description: Unauthorized
+          404:
+            description: Graph not found
+          500:
+            description: Internal Error
+        """            
         try :
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             NCDO = DO(userdata)
@@ -291,172 +448,286 @@ class DO_REST_NFFG_Status(DO_REST_Base):
             if status=='initialization' or status=='updating':
                 status_json['status'] = 'in_progress'
             
-            response.body = json.dumps(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
-            response.status = falcon.HTTP_200
+            return jsonify(status_json) #self._json_response(falcon.HTTP_200, "Graph "+nffg_id+" found.", status=json.dumps(status) )
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
+            logging.exception(err)
+            return ("Bad Request", 400)
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)    
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
+            logging.exception(err)
+            return (err.message, 401)   
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
 
 
+class DO_UserAuthentication(MethodView):
+    def post(self):
+        """
+        Perform the login
+        Given the credentials it returns the token associated to that user
+        ---
+        tags:
+          - NF-FG
+        parameters:
+          - in: body
+            name: body
+            schema:
+              id: login
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description:  username
+                password:
+                  type: string
+                  description: password
 
-
-
-class DO_UserAuthentication(DO_REST_Base):
-    def on_post(self, request, response):
+        responses:
+          200:
+            description: Login successfully performed
+          400:
+            description: Bad request                     
+          401:
+           description: Login failed
+          500:
+            description: Internal Error                
+        """        
         try:
             payload = None
-            request_body = request.stream.read().decode('utf-8')
+            request_body = request.data.decode('utf-8')
             if len(request_body)>0:
                 payload = json.loads(request_body, 'utf-8')
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
             
-            response.body = userdata.token #userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
-            response.status = falcon.HTTP_200
+            return userdata.token #userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
-        
+            logging.exception(err)
+            return ("Bad Request", 400)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
-        
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
-        
+            logging.exception(err)
+            return (err.message, 401)
+
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable(response,"ValueError",err)
+            logging.exception(err)
+            return ("ValueError", 406)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
     
     
-    
-    def on_head(self, request, response):
+    def head(self):
+        """
+        Test a token
+        It checks the validity of the given token
+        ---
+        tags:
+          - NF-FG
+        parameters:
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token to be tested
+            required: true
+            type: string
+
+        responses:
+          200:
+            description: Token is valid
+          400:
+            description: Bad request                     
+          401:
+           description: Login failed
+          500:
+            description: Internal Error                
+        """          
         try:
-            token = request.get_header("X-Auth-Token")
+            token = request.headers.get("X-Auth-Token")
         
             if token is not None:
                 UserAuthentication().authenticateUserFromToken(token)
             else:
                 raise wrongRequest('Wrong authentication request: expected X-Auth-Token in the request header')
             
-            response.body = None
-            response.status = falcon.HTTP_200
+            return ("Token is valid")
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
-        
+            logging.exception(err)
+            return ("Bad Request", 400)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
-        
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthenticatedRequest(response,"UserTokenExpired",err)
-        
+            logging.exception(err)
+            return (err.message, 401)
+
         # NFFG validation - raised by json.loads()
         except ValueError as err:
-            self._except_NotAcceptable(response,"ValueError",err)
+            logging.exception(err)
+            return ("ValueError", 406)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
 
 
-
-
-class DO_NetworkTopology(DO_REST_Base):
-    def on_get(self, request, response):
+class DO_NetworkTopology(MethodView):
+    def get(self):
+        """
+        Get the network topology
+        ---
+        tags:
+          - network topology
+        produces:
+          - application/json             
+        parameters:
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string
+                    
+        responses:
+          200:
+            description: Topology correctly retrieved
+          400:
+            description: Bad request                
+          401:
+            description: Unauthorized
+          404:
+            description: Graph not found
+          500:
+            description: Internal Error
+        """            
         try :
             UserAuthentication().authenticateUserFromRESTRequest(request)
             
             ng = NetManager()
             
-            response.body = json.dumps(ng.getNetworkTopology()) #self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
-            response.status = falcon.HTTP_200
+            return jsonify(ng.getNetworkTopology()) #self._json_response(falcon.HTTP_200, "Network topology", topology=json.dumps(ng.getNetworkTopology()))
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
-            self._except_BadRequest(response,"wrongRequest",err)
-        
+            logging.exception(err)
+            return ("Bad Request", 400)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
-            self._except_unauthorizedRequest(response,err,request)
-        
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)
+                
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
-            self._except_unauthorizedRequest(response,"UserTokenExpired",err)
+            logging.exception(err)
+            return (err.message, 401)
         
         # No Results
         except UserNotFound as err:
-            self._except_NotFound(response,"UserNotFound",err)
+            logging.exception(err)
+            return ("UserNotFound", 404)
         except TenantNotFound as err:
-            self._except_NotFound(response,"TenantNotFound",err)
+            logging.exception(err)
+            return ("TenantNotFound", 404)
         except NoResultFound as err:
-            self._except_NotFound(response,"NoResultFound",err)
+            logging.exception(err)
+            return ("NoResultFound", 404)
         except sessionNotFound as err:
-            self._except_NotFound(response,"sessionNotFound",err)
+            logging.exception(err)
+            return ("sessionNotFound", 404)
         
         # Other errors
         except requests.HTTPError as err:
-            self._except_requests_HTTPError(response,err)
-        except Exception as ex:
-            self._except_standardException(response,ex)
-
-
-
+            logging.exception(err)
+            return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)

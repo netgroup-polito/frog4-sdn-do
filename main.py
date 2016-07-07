@@ -14,11 +14,13 @@ Otherwise, make a python script with this two rows:
 
 Script phases:
    1) Load configuration;
-   2) start falcon web framework;
+   2) start flask web framework;
    3) add api paths.
 '''
 
-import logging, falcon
+import logging
+from flask import Flask
+from flasgger import Swagger
 
 # Configuration Parser
 from do_core.config import Configuration
@@ -39,7 +41,7 @@ try_session()
 
 # START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
 logging.debug("Network Controller Domain Orchestrator Starting...")
-    
+"""
 # Falcon
 logging.info("Starting server application")
 app = falcon.API()
@@ -63,12 +65,58 @@ rest_net_topology = DO_NetworkTopology()
 app.add_route('/topology', rest_net_topology)
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+"""
+app = Flask(__name__)
 
-logging.info("Falcon Successfully started")
+swagger_config = {
+    "swagger_version": "2.0",
+    "title": "FROG4 - OpenFlow Domain Orchestrator API",
+    "headers": [
+         ('Access-Control-Allow-Origin', '*')
+    ],
+    "specs": [
+        {
+            "version": "1.0.0",
+            "title": "OpenFlow DO API",
+            "endpoint": 'v1_spec',
+            "route": '/v1/spec',
+        }
+    ],
+        "static_url_path": "/apidocs",
+        "static_folder": "swaggerui",
+        "specs_route": "/specs"
+}
+
+Swagger(app, config=swagger_config)
+
+orch = DO_REST_NFFG_GPUD.as_view('NF-FG')
+app.add_url_rule(
+    '/NF-FG/<nffg_id>',
+    view_func=orch,
+    methods=["GET", "PUT", "DELETE"]
+)
+
+nffg_status = DO_REST_NFFG_Status.as_view('NFFGStatus')
+app.add_url_rule(
+    '/NF-FG/status/<nffg_id>',
+    view_func=nffg_status,
+    methods=["GET"]
+)
+
+login = DO_UserAuthentication.as_view('login')
+app.add_url_rule(
+    '/login',
+    view_func=login,
+    methods=["HEAD", "POST"]
+)
+network_topology = DO_NetworkTopology.as_view('network_topology')
+app.add_url_rule(
+    '/topology',
+    view_func=network_topology,
+    methods=["GET"]
+)
+logging.info("Flask Successfully started")
 print("Welcome to 'Network Controller Domain Orchestrator'")
 
 Messaging().PublishDomainConfig()
 
-
-    
-    
