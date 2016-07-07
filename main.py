@@ -39,6 +39,9 @@ from do_core.messaging import Messaging
 # Database connection test
 try_session()
 
+# initialize logging
+Configuration().log_configuration()
+
 # START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
 logging.debug("Network Controller Domain Orchestrator Starting...")
 """
@@ -119,4 +122,3 @@ logging.info("Flask Successfully started")
 print("Welcome to 'Network Controller Domain Orchestrator'")
 
 Messaging().PublishDomainConfig()
-
