@@ -45,6 +45,8 @@ Note: both versions can coexist, but you must choose what version to enable:
 * sqlite3 2.6.0
 * sqlalchemy 1.0.11
 * networkx 1.10
+* flask 0.11.1
+* flasgger 0.5.12
 
 To install a python3 module:
 ```sh
