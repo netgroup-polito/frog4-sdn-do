@@ -13,6 +13,7 @@ from do_core.exception import WrongConfigurationFile
 class Configuration(object):
 
 	_instance = None
+
 	def __new__(cls, *args, **kwargs):
 		if cls._instance is None:
 			cls._instance = super(Configuration, cls).__new__(cls, *args, **kwargs)
@@ -20,7 +21,6 @@ class Configuration(object):
 
 	def __init__(self):
 		return
-
 
 	def initialize(self):
 		config = configparser.RawConfigParser()
@@ -90,10 +90,8 @@ class Configuration(object):
 		except Exception as ex:
 			raise WrongConfigurationFile(str(ex))
 
-
-
 	def log_configuration(self):
-		log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s'
+		log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s:%(lineno)s'
 		if self.__LOG_DEBUG is True:
 			log_level = logging.DEBUG
 			requests_log = logging.getLogger("requests")
@@ -106,11 +104,8 @@ class Configuration(object):
 			requests_log.setLevel(logging.WARNING)
 		else:
 			log_level = logging.WARNING
-		logging.basicConfig( filename=self.LOG_FILE, level=log_level,
-							 format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p')
+		logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format, datefmt='%m/%d/%Y %I:%M:%S %p:%r')
 		logging.info("[CONFIG] Logging just starded!")
-
-
 
 	def __set_available_vlan_ids_array(self, vid_ranges):
 

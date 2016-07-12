@@ -395,7 +395,9 @@ class DO(object):
                 continue   
             
             # Get ingress endpoint
+            logging.debug("port_in: " + flowrule.match.port_in)
             port1_id = self.__getEndpointIdFromString(flowrule.match.port_in)
+            logging.debug("port1_id: " + port1_id)
             in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port1_id)
             
             # Process flow rule with VLAN
@@ -448,7 +450,7 @@ class DO(object):
 
         # [ 1 ] Endpoints are on the same switch
         if in_endpoint.node_id == out_endpoint.node_id:
-            
+            logging.debug("Endpoint are on the same switch.")
             # Error: endpoints are equal!
             if in_endpoint.interface == out_endpoint.interface:
                 raise GraphError("Flowrule "+flowrule.id+" is wrong: endpoints are overlapping")
@@ -458,10 +460,11 @@ class DO(object):
             return
 
         # [ 2 ] Endpoints are on different switches...search for a path!
+        logging.debug("Endpoint are on different switches, finding a path...")
         nodes_path = self.NetManager.getShortestPath(in_endpoint.node_id, out_endpoint.node_id)
         if(nodes_path is not None):
             
-            logging.info("Found a path bewteen "+in_endpoint.node_id+" and "+out_endpoint.node_id+". "+"Path Length = "+str(len(nodes_path)))
+            logging.info("Found a path between "+in_endpoint.node_id+" and "+out_endpoint.node_id+". "+"Path Length = "+str(len(nodes_path)))
             if self.__NC_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint)==False:
                 logging.debug("Invalid link between the endpoints")
                 return
@@ -562,16 +565,18 @@ class DO(object):
             This flag is also set to True when a "pop-vlan" action and a vlan match are present. 
         '''
         pop_vlan_flag = (vlan_out is None) and (pop_vlan_flag or vlan_in is None)
-        
-        
+
         # [PATH] Traverse the path and create the flow for each switch
+        logging.debug("Creating the flow for each switch")
+        logging.debug("Path: " + str(path))
         for i in range(0, len(path)):
+            logging.debug("index in path: " + str(i))
             hop = path[i]
             efr.set_flow_name(i)
-            efr.set_actions(None) #efr.set_actions(list(base_actions))
+            efr.set_actions(None) 	# efr.set_actions(list(base_actions))
             
             # Switch position
-            pos = 0 # (-2: 'single-switch' path, -1:first, 0:middle, 1:last)
+            pos = 0		# (-2: 'single-switch' path, -1:first, 0:middle, 1:last)
             
             # Next switch and next ingress port
             next_switch_ID = None
@@ -582,21 +587,23 @@ class DO(object):
             
             # First switch
             if i==0:
-                pos = -1                
+                pos = -1
+                logging.debug("setting switch_id: " + epIN.node_id)
                 efr.set_switch_id(epIN.node_id)
                 port_in = epIN.interface
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
                 if port_out is None and len(path)==1: #'single-switch' path
                     pos = -2
                     port_out = epOUT.interface
-            
+
             # Last switch
             elif i==len(path)-1:
                 pos = 1
+                logging.debug("setting switch_id: " + epOUT.node_id)
                 efr.set_switch_id(epOUT.node_id)
                 port_in = self.NetManager.switchPortIn(hop, path[i-1])
-                port_out = epOUT.interface
-                
+                port_out = self.NetManager.getPortByInterface(epOUT.node_id, epOUT.interface)
+                logging.debug("port out: " + port_out)
                 # Add actions
                 efr.set_actions(list(base_actions))
                 

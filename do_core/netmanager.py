@@ -150,15 +150,63 @@ class NetManager():
         
         elif self.isONOS():
             json_data = ONOS_Rest(self.ct_version).getDevices(self.ct_endpoint, self.ct_username, self.ct_password)
-            devices = json.loads(json_data)
+            devices_info = json.loads(json_data)
             
-            for device in devices['devices']:
-                swList.append({'node_id':device["id"]})
-            
+            for device_info in devices_info['devices']:
+                swList.append({'node_id': device_info["id"]})
+
         return swList
     
-    
-    
+    def getDevicesInfo(self):
+
+        devices = []
+
+        if self.isODL_Hydrogen():
+            # TODO implement
+            pass
+        elif self.isODL():
+            # TODO implement
+            pass
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).getDevices(self.ct_endpoint, self.ct_username, self.ct_password)
+            devices_info = json.loads(json_data)
+            for device_info in devices_info['devices']:
+                device = {'node_id': device_info["id"], 'ports': []}
+                json_ports = ONOS_Rest(self.ct_version).getDevicePorts(self.ct_endpoint, self.ct_username, self.ct_password, device_info["id"])
+                ports = json.loads(json_ports)['ports']
+                for port in ports:
+                    device['ports'].append({
+                        'port_id': port['port'],
+                        'interface': port['annotations']['portName']
+                    })
+                devices.append(device)
+        return devices
+
+    def getDeviceInfo(self, device_id):
+
+        device = {}
+
+        if self.isODL_Hydrogen():
+            # TODO implement
+            pass
+        elif self.isODL():
+            # TODO implement
+            pass
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).getDevices(self.ct_endpoint, self.ct_username, self.ct_password)
+            devices_info = json.loads(json_data)
+            for device_info in devices_info['devices']:
+                if device_info["id"] == device_id:
+                    device = {'node_id': device_info["id"], 'ports': []}
+                    json_ports = ONOS_Rest(self.ct_version).getDevicePorts(self.ct_endpoint, self.ct_username, self.ct_password, device_info["id"])
+                    ports = json.loads(json_ports)['ports']
+                    for port in ports:
+                        device['ports'].append({
+                            'port_id': port['port'],
+                            'interface': port['annotations']['portName']
+                        })
+                    return device
+
     def getSwitchLinksList(self):
         lkList = list()
          
@@ -216,7 +264,7 @@ class NetManager():
         self.topology = nx.DiGraph()
         swList = self.getSwitchList()
         lkList = self.getSwitchLinksList()
-        
+
         for sw in swList:
             self.topology.add_node(sw['node_id'])
             
@@ -264,6 +312,7 @@ class NetManager():
         if switch is None or from_switch is None:
             return None
         self.setTopologyGraph()
+        #print("topology: " + str(self.topology[]))
         return self.topology[switch][from_switch]['from_port']
 
     
@@ -274,11 +323,19 @@ class NetManager():
         self.setTopologyGraph()
         return self.topology[switch][to_switch]['from_port']
     
-    
+    def getPortByInterface(self, switch_id, interface):
+        # return the port id of a switch by the correspondent interface name
+        if switch_id is None or interface is None:
+            return None
+        if not self.isONOS():
+            return interface
+        device = self.getDeviceInfo(switch_id)
+        if device['node_id'] == switch_id:
+            for port in device['ports']:
+                if port['interface'] == interface:
+                    return port['port_id']
+        return None
 
-    
-    
-    
     
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
