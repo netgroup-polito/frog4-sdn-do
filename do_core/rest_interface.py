@@ -221,7 +221,7 @@ class DO_REST_NFFG_GPUD(MethodView):
         # Custom NFFG sub-validation - raised by DO().NFFG_Validate
         except NffgUselessInformations as err:
             logging.exception(err)
-            return ("NffgUselessInformations", 406)               
+            return (err.message, 406)
         
         # No Results
         except UserNotFound as err:
