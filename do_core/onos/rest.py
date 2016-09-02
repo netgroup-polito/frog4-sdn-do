@@ -4,9 +4,9 @@ Created on 2/feb/2016
 @author: giacomoratta
 '''
 import requests, logging
-from do_core.controller_interface.rest import Rest_Interface
+from do_core.controller_interface.rest import RestInterface
 
-class ONOS_Rest(Rest_Interface):
+class ONOS_Rest(RestInterface):
     
     version=""
     
@@ -16,6 +16,7 @@ class ONOS_Rest(Rest_Interface):
         self.rest_devices_url = '/onos/v1/devices'
         self.rest_links_url = '/onos/v1/links'
         self.rest_flows_url = '/onos/v1/flows'  # /onos/v1/flows/{DeviceId}
+        self.rest_apps_url = '/onos/v1/applications'
 
     def __logging_debug(self, response, url, jsonFlow=None):
         log_string = "response: "+str(response.status_code)+", "+response.reason
@@ -98,4 +99,40 @@ class ONOS_Rest(Rest_Interface):
         self.__logging_debug(response, url)
         response.raise_for_status()
         return response.text
+
+    def activateApp(self, onos_endpoint, onos_user, onos_pass, app_name):
+        """
+        Activate an application on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application to activate
+        :return:
+        """
+        headers = {'Accept': 'application/json'}
+        url = onos_endpoint+self.rest_apps_url+"/"+str(app_name)+"/active"
+        response = requests.post(url, headers=headers, auth=(onos_user, onos_pass))
+
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
+
+    def deactivateApp(self, onos_endpoint, onos_user, onos_pass, app_name):
+        """
+        Deactivate an application running on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application to activate
+        :return:
+        """
+        headers = {'Accept': 'application/json'}
+        url = onos_endpoint+self.rest_apps_url+"/"+str(app_name)+"/active"
+        response = requests.delete(url, headers=headers, auth=(onos_user, onos_pass))
+
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
+
+
 

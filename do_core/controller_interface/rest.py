@@ -6,18 +6,16 @@ Created on 3/feb/2016
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
+class RestInterface:
 
-class Rest_Interface:  
-    
-    '''
+    """
     Abstract class that defines the interface to be implemented on the controller rest calls
-    '''
+    """
     __metaclass__ = ABCMeta
-    
-    
+
     @abstractmethod
     def createFlow(self, onos_endpoint, onos_user, onos_pass, jsonFlow, switch_id, flow_id):
-        '''
+        """
         Create a flow on the switch selected (Currently using OF1.0)
         Args:
             jsonFlow:
@@ -28,13 +26,12 @@ class Rest_Interface:
                 OpenFlow id of the flow
         Exceptions:
             raise the requests.HTTPError exception connected to the REST call in case of HTTP error
-        '''
+        """
         pass
-    
-    
+
     @abstractmethod
     def deleteFlow(self, onos_endpoint, onos_user, onos_pass, switch_id, flow_id):
-        '''
+        """
         Delete a flow
         Args:
             switch_id:
@@ -43,6 +40,29 @@ class Rest_Interface:
                 OpenFlow id of the flow
         Exceptions:
             raise the requests.HTTPError exception connected to the REST call in case of HTTP error
-        '''
+        """
         pass
 
+    @abstractmethod
+    def activateApp(self, onos_endpoint, onos_user, onos_pass, app_name):
+        """
+        Activate an application on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application to activate
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def deactivateApp(self, onos_endpoint, onos_user, onos_pass, app_name):
+        """
+        Deactivate an application running on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application to activate
+        :return:
+        """
+        pass
