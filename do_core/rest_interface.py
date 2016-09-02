@@ -244,8 +244,7 @@ class DO_REST_NFFG_GPUD(MethodView):
         except Exception as err:
             logging.exception(err)
             return (str(err), 500)
-    
-    
+
     def delete(self, nffg_id):
         """
         Delete a graph
@@ -275,8 +274,7 @@ class DO_REST_NFFG_GPUD(MethodView):
           500:
             description: Internal Error
         """          
-        try :
-            
+        try:
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             NCDO = DO(userdata)
             

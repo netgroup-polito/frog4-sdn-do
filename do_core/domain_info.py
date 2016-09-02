@@ -2,6 +2,9 @@
 Created on 02 sep 2016
 @author: gabrielecastellano
 """
+import inspect
+import json
+import os
 
 
 class DomainInfo(object):
@@ -31,6 +34,23 @@ class DomainInfo(object):
         if 'capabilities' in domain_info_dict['netgroup-domain:informations']:
             self.capabilities = Capabilities()
             self.capabilities.parse_dict(domain_info_dict['netgroup-domain:informations']['capabilities'])
+
+    @staticmethod
+    def get_from_file(file_name):
+        """
+
+        :param file_name: name of json file in the /config folder
+        :return: DomainInfo
+        """
+        base_folder = os.path.realpath(os.path.abspath(
+            os.path.split(inspect.getfile(inspect.currentframe()))[0]
+        )).rpartition('/')[0]
+        json_data = open(base_folder+"/config/"+file_name).read()
+        domain_info_dict = json.loads(json_data)
+        # TODO validation
+        domain_info = DomainInfo()
+        domain_info.parse_dict(domain_info_dict)
+        return domain_info
 
 
 class HardwareInfo(object):

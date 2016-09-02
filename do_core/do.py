@@ -7,6 +7,7 @@
 from __future__ import division
 import logging, copy
 
+from do_core.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction
 
 from do_core.config import Configuration
@@ -52,7 +53,6 @@ class DO(object):
 
         # Instantiate a new NF-FG
         try:
-
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
 
@@ -191,9 +191,19 @@ class DO(object):
         # EP Array
         EPs = {}
 
+        '''
+        The below domain could offer some network function capabilities that could be used to implement
+        the VNFs of this graph. Here we check if this is possible (all VNFs of the graph could be implemented on the
+        domain), else raise an error.
+        '''
         # VNFs inspections
-        if len(nffg.vnfs) > 0:
-            raise_useless_info("presence of 'VNFs'")
+        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
+        available_functions = []
+        for functional_capability in domain_info.capabilities.functional_capabilities:
+            available_functions.append(functional_capability.name)
+        for vnf in nffg.vnfs:
+            if vnf.name not in available_functions:
+                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -204,13 +214,13 @@ class DO(object):
 
         # END POINTs inspections
         for ep in nffg.end_points:
-            if (ep.type is not None and ep.type != "interface" and ep.type != "vlan"):
+            if ep.type is not None and ep.type != "interface" and ep.type != "vlan":
                 raise_useless_info("'end-points.type' must be 'interface' or 'vlan' (not '" + ep.type + "')")
-            if (ep.remote_endpoint_id is not None):
+            if ep.remote_endpoint_id is not None:
                 raise_useless_info("presence of 'end-points.remote_endpoint_id'")
-            if (ep.remote_ip is not None):
+            if ep.remote_ip is not None:
                 raise_useless_info("presence of 'end-points.remote-ip'")
-            if (ep.local_ip is not None):
+            if ep.local_ip is not None:
                 raise_useless_info("presence of 'end-points.local-ip'")
             if ep.gre_key is not None:
                 raise_useless_info("presence of 'gre-key'")
