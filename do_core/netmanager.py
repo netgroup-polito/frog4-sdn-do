@@ -8,6 +8,7 @@ import json
 import networkx as nx
 
 from do_core.config import Configuration
+from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
     from do_core.odl.objects import Flow, Match ,Action
@@ -53,37 +54,142 @@ class NetManager():
         def __init__(self):
             self.__nffg_endpoints = {}
             self.__nffg_flowrules = {}
+            self.__nffg_vnfs = {}
     
         def addEndpoint(self, ep):
             self.__nffg_endpoints[ep.id] = ep
         
         def addFlowrule(self, fr):
             self.__nffg_flowrules[fr.id] = fr
+
+        def addVnf(self, vnf):
+            self.__nffg_flowrules[vnf.id] = vnf
         
         def getEndpoint(self, ep_id):
+            """
+
+            :param ep_id:
+            :return:
+            :rtype: EndPoint
+            """
             return self.__nffg_endpoints[ep_id]
         
         def getFlowrules(self):
             return self.__nffg_flowrules.values()
 
+        def getVnfs(self):
+            return self.__nffg_vnfs.values()
+
+        def getSwitchesVnfs(self):
+            switches_vnfs = []
+            for vnf in self.__nffg_vnfs:
+                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+                    switches_vnfs.append(vnf)
+            return switches_vnfs
+
+        def getDetachedVnfs(self):
+            detached_vnfs = []
+            for vnf in self.__nffg_vnfs:
+                is_detached = True
+                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+                    continue
+                for flow_from in self.get_flows_from_vnf(vnf):
+                    if is_detached:
+                        for action in flow_from.actions:
+                            if action.output.split(':')[0] == 'vnf':
+                                is_detached = False
+                                break
+                if not is_detached:
+                    break
+                for flow_to in self.get_flows_to_vnf(vnf):
+                    if flow_to.match.port_in.split(':')[0] == 'vnf':
+                        is_detached = False
+                        break
+                if is_detached:
+                    detached_vnfs.append(vnf)
+            return detached_vnfs
+
+        def getAttachedVnfs(self):
+            attached_vnfs = []
+            for vnf in self.__nffg_vnfs:
+                is_attached = False
+                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+                    continue
+                for flow_from in self.get_flows_from_vnf(vnf):
+                    if not is_attached:
+                        for action in flow_from.actions:
+                            if action.output.split(':')[0] == 'vnf':
+                                is_attached = True
+                                break
+                if is_attached:
+                    attached_vnfs.append(vnf)
+                    break
+                for flow_to in self.get_flows_to_vnf(vnf):
+                    if flow_to.match.port_in.split(':')[0] == 'vnf':
+                        is_attached = True
+                        break
+                if is_attached:
+                    attached_vnfs.append(vnf)
+            return attached_vnfs
+
+        def get_flows_from_vnf(self, vnf):
+            """
+
+            :param vnf:
+            :return:
+            :rtype: list of Flow
+            """
+            f = Flow()
+            flow_rules = []
+            for port in vnf.ports:
+                flow_rules = flow_rules + self.__get_flows_from_node("vnf:"+vnf.id+":"+port.id)
+            return flow_rules
+            pass
+
+        def get_flows_to_vnf(self, vnf):
+            flow_rules = []
+            for port in vnf.ports:
+                flow_rules = flow_rules + self.__get_flows_to_node("vnf:"+vnf.id+":"+port.id)
+            return flow_rules
+            pass
+
+        def __get_flows_from_node(self, node_id):
+            flow_rules = []
+            for flow_rule in self.__nffg_flowrules:
+                if flow_rule.match.port_in == node_id:
+                    flow_rules.append(flow_rule)
+            return flow_rules
+
+        def __get_flows_to_node(self, node_id):
+            flow_rules = []
+            for flow_rule in self.__nffg_flowrules:
+                for action in flow_rule.actions:
+                    if action.output == node_id:
+                        flow_rules.append(flow_rule)
+                        continue
+            return flow_rules
+
     
     def ProfileGraph_BuildFromNFFG(self, nffg):
-        '''
+        """
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
-        '''
+        :type nffg: NF_FG
+        """
+
         for endpoint in nffg.end_points:
-            
             if endpoint.status is None:
-                endpoint.status = "new"
-                
+                endpoint.status = 'new'
             self.ProfileGraph.addEndpoint(endpoint)
         
         for flowrule in nffg.flow_rules:
             if flowrule.status is None:
                 flowrule.status = 'new'
             self.ProfileGraph.addFlowrule(flowrule)
-            
-            
+
+        for vnf in nffg.vnfs:
+            if vnf.status is None:
+                vnf.status = 'new'
+            self.ProfileGraph.addVnf(vnf)
     
     def getControllerName(self):
         if self.isODL():
@@ -101,9 +207,7 @@ class NetManager():
     
     def isODL_Hydrogen(self):
         return self.ct_name == "OpenDayLight" and self.ct_version == "Hydrogen"
-    
-    
-    
+
     def createFlow(self, efr):
         if self.isODL():
             flowj = Flow("flowrule", efr.get_flow_name(), 0, efr.get_priority(), True, 0, 0, efr.get_actions(), efr.get_match())
@@ -125,8 +229,21 @@ class NetManager():
         elif self.isONOS():
             ONOS_Rest(self.ct_version).deleteFlow(self.ct_endpoint, self.ct_username, self.ct_password, switch_id, flowname)
             
-            
-        
+    def activate_app(self, app_name):
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            ONOS_Rest(self.ct_version).activateApp(self.ct_endpoint, self.ct_username, self.ct_password, app_name)
+
+    def deactivate_app(self, app_name):
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            ONOS_Rest(self.ct_version).deactivateApp(self.ct_endpoint, self.ct_username, self.ct_password, app_name)
         
     def getSwitchList(self):
         swList = list()

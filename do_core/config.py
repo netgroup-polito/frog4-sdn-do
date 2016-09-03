@@ -84,6 +84,9 @@ class Configuration(object):
 			self.__MSG_RESDESC_TOPIC = config.get('resource_description_topic','msg_resdesc_topic')
 			self.__MSG_RESDESC_FILE = self.__abs_path+"/"+config.get('resource_description_topic','msg_resdesc_file')
 
+			# [vnf_emulation]
+			self.__VNF_SWITCH_TEMPLATE = config.get('vnf_emulation','nfv_switch_template')
+
 			# [other_options]
 			self.__OO_CONSOLE_PRINT = config.get('other_options','console_print')
 
@@ -247,6 +250,10 @@ class Configuration(object):
 	@property
 	def MSG_RESDESC_FILE(self):
 		return self.__MSG_RESDESC_FILE
+
+	@property
+	def VNF_SWITCH_TEMPLATE(self):
+		return self.__VNF_SWITCH_TEMPLATE
 
 	@property
 	def OO_CONSOLE_PRINT(self):

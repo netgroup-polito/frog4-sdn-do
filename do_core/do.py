@@ -8,7 +8,7 @@ from __future__ import division
 import logging, copy
 
 from do_core.domain_info import DomainInfo
-from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction
+from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
 from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession
@@ -56,8 +56,17 @@ class DO(object):
             logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
 
+            # Build the Profile Graph
+            self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
+
             # Send flow rules to Network Controller
             self.__NC_FlowsInstantiation(nffg)
+            logging.debug("Flow rules instantiated!")
+
+            # TODO activate applications implementing the requested VNFs
+
+            # TODO configure applications to match vnf involving flow rules
+
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
@@ -199,7 +208,7 @@ class DO(object):
         '''
         # VNFs inspections
         # TODO this check is implemented through the 'template' information. I don't know if is the best approach
-        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration.MSG_RESDESC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.tamplate)
@@ -374,10 +383,6 @@ class DO(object):
 
     def __NC_FlowsInstantiation(self, nffg):
 
-        # Build the Profile Graph
-        # self.__ProfileGraph_BuildFromNFFG(nffg)
-        self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
-
         # [ FLOW RULEs ]
         for flowrule in self.NetManager.ProfileGraph.getFlowrules():
 
@@ -397,6 +402,68 @@ class DO(object):
 
             # Process flow rule with VLAN
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
+
+    def __NC_ApplicationsInstantiation(self, nffg):
+        """
+        Instantiate applications on the controller implementing VNFs of the NF_FG.
+        The vnf are categorized in three groups:
+        SWITCH: vnfs that implement a L2 bridge connecting endpoints
+        DETACHED: vnfs that have flows just to/from endpoints
+        ATTACHED: vnfs that have flows to/from an other vnf
+        :param nffg:
+        :return:
+        """
+
+        def raise_useless_info(msg):
+            logging.debug("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
+            raise NffgUselessInformations("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
+
+        domain_info = DomainInfo.get_from_file(Configuration.MSG_RESDESC_FILE)
+
+        # [ SWITCH VNFs ]
+        if len(self.NetManager.ProfileGraph.getSwitchesVnfs()) != 0:
+            # TODO add support to emulate a L2 switch connecting the end points
+            raise_useless_info("Switch vnf not supported yet")
+
+        # [ DETACHED VNFs ]
+        for vnf in self.NetManager.ProfileGraph.getDetachedVnfs():
+            # get the name of the application
+            application_name = ""
+            for capability in domain_info.capabilities.functional_capabilities:
+                if capability.template == vnf.template:
+                    application_name = capability.name
+            # we just need to activate the application and to pass as configuration the interfaces
+            self.__NC_ProcessDetachedVnf(application_name, vnf)
+
+        # [ ATTACHED VNFs ]
+        if len(self.NetManager.ProfileGraph.getSwitchesVnfs()) != 0:
+            # TODO add support to emulate a L2 switch connecting the end points
+            raise_useless_info("Attached vnf not supported yet")
+
+    def __NC_ProcessDetachedVnf(self, application_name, vnf):
+        """
+
+        :param application_name: application implementing the vnf
+        :param vnf: vnf to emulate
+        :type application_name: str
+        :type vnf: VNF
+        """
+        flows = self.NetManager.ProfileGraph.get_flows_from_vnf()
+        vnf_port_map = {}
+
+        # get endpoints attached to vnf ports
+        for flow in flows:
+            for action in flow.actions:
+                if action.output is not None:
+                    vnf_port_map[flow.match.port_in.split(':')[2] + flow.match.port_in.split(':')[3]] = action.output
+
+        # get interface names for endpoints
+        for vnf_port in vnf_port_map:
+            endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port])
+            vnf_port_map[vnf_port] = endpoint.interface
+
+        self.NetManager.activate_app(application_name)
+        # TODO push configuration to set ports
 
     def __NC_ProcessFlowrule(self, in_endpoint, flowrule):
         '''
@@ -427,7 +494,7 @@ class DO(object):
                 single_efr = self.NetManager.externalFlowrule(nffg_match=flowrule.match, priority=flowrule.priority,
                                                               flow_id=flowrule.id, nffg_flowrule=flowrule)
                 single_efr.setInOut(in_endpoint.node_id, a, in_endpoint.interface, None, "1")
-                self.NetManager.__Push_externalFlowrule(single_efr)
+                self.__Push_externalFlowrule(single_efr)
                 return
 
         # Search for the output endpoint
@@ -793,6 +860,7 @@ class DO(object):
         self.__checkFlowname_externalFlowrule(efr)
 
         # NC/Switch: Add flow rule
+        sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
         sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
 
         # DATABASE: Add flow rule

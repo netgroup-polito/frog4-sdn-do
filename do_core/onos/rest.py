@@ -6,6 +6,7 @@ Created on 2/feb/2016
 import requests, logging
 from do_core.controller_interface.rest import RestInterface
 
+
 class ONOS_Rest(RestInterface):
     
     version=""
