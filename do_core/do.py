@@ -42,9 +42,9 @@ class DO(object):
             print(msg)
 
     def NFFG_Put(self, nffg):
-        '''
-        Manage the request of NF-FG instantiation
-        '''
+        """
+        Manage the request of NF-FG instantiation.
+        """
         logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
         # Check if the NF-FG is already instantiated, update it and exit
@@ -186,7 +186,8 @@ class DO(object):
 
         def raise_invalid_actions(msg):
             logging.debug("NFFG Validation: " + msg + ". This DO does not process this kind of flowrules.")
-            raise NffgUselessInformations("NFFG Validation: " + msg + ". This DO does not process this kind of flowrules.")
+            raise NffgUselessInformations("NFFG Validation: " + msg +
+                                          ". This DO does not process this kind of flowrules.")
 
         # EP Array
         EPs = {}
@@ -197,12 +198,13 @@ class DO(object):
         domain), else raise an error.
         '''
         # VNFs inspections
+        # TODO this check is implemented through the 'template' information. I don't know if is the best approach
         domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
-            available_functions.append(functional_capability.name)
+            available_functions.append(functional_capability.tamplate)
         for vnf in nffg.vnfs:
-            if vnf.name not in available_functions:
+            if vnf.template not in available_functions:
                 raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
 
         '''
@@ -383,11 +385,15 @@ class DO(object):
             if flowrule.status != 'new':
                 continue
 
-                # Get ingress endpoint
+            # Get ingress endpoint
             logging.debug("port_in: " + flowrule.match.port_in)
-            port1_id = self.__getEndpointIdFromString(flowrule.match.port_in)
-            logging.debug("port1_id: " + port1_id)
-            in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port1_id)
+            port_in_id = self.__getEndpointIdFromString(flowrule.match.port_in)
+            logging.debug("port_in_id: " + port_in_id)
+            # check if it is not an endpoint flow rule
+            if port_in_id.split(':')[0] != 'endpoint':
+                logging.debug("skipping '" + port_in_id.split(':')[0] + "' flow rule.")
+                continue
+            in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port_in_id)
 
             # Process flow rule with VLAN
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
