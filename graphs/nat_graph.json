@@ -1,0 +1,93 @@
+{
+  "forwarding-graph": {
+    "name": "ISP-Graph",
+    "VNFs": [
+      {
+        "name": "nat-i",
+        "ports": [
+          {
+            "name": "data-port",
+            "id": "User:1"
+          },
+          {
+            "name": "data-port",
+            "id": "WAN:0"
+          }
+        ],
+        "id": "00000001",
+        "vnf_template": "isp_nat.json"
+      }
+    ],
+    "id": "0",
+    "end-points": [
+      {
+	      "type": "interface",
+        "interface": {
+          "interface": "s2-eth1"
+        },
+        "id": "00000001",
+        "name": "INGRESS"
+      },
+      {
+	      "type": "interface",
+        "interface": {
+          "interface": "s3-eth1"
+        },
+        "id": "00000002",
+        "name": "INGRESS"
+      }
+    ],
+    "big-switch": {
+      "flow-rules": [
+        {
+          "match": {
+            "port_in": "endpoint:00000002"
+          },
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:WAN:0"
+            }
+          ],
+          "priority": 1,
+          "id": "000000003"
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:WAN:0"
+          },
+          "actions": [
+            {
+              "output_to_port": "endpoint:00000002"
+            }
+          ],
+          "priority": 1,
+          "id": "000000004"
+        },
+        {
+          "match": {
+            "port_in": "endpoint:00000001"
+          },
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:User:1"
+            }
+          ],
+          "priority": 1,
+          "id": "000000007"
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:User:1"
+          },
+          "actions": [
+            {
+              "output_to_port": "endpoint:00000001"
+            }
+          ],
+          "priority": 1,
+          "id": "000000008"
+        }
+      ]
+    }
+  }
+}

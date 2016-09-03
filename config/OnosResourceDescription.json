@@ -132,6 +132,7 @@
           {
             "type": "NAT",
             "name": "it.polito.onosapps.nat",
+            "template": "isp_nat.json",
             "family": "Network",
             "function-specifications": {
               "function-specification": [
