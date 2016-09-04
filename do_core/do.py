@@ -64,6 +64,8 @@ class DO(object):
             logging.debug("Flow rules instantiated!")
 
             # TODO activate applications implementing the requested VNFs
+            self.__NC_ApplicationsInstantiation(nffg)
+            logging.debug("Applications activated!")
 
             # TODO configure applications to match vnf involving flow rules
 
@@ -182,12 +184,12 @@ class DO(object):
         return session.status, percentage
 
     def NFFG_Validate(self, nffg):
-        '''
+        """
         A validator for this specific domain orchestrator.
         The original json, as specified in the extern NFFG library,
         could contain useless objects and fields for this DO.
-        If this happens, we have to raise exceptions to stop the request processing.  
-        '''
+        If this happens, we have to raise exceptions to stop the request processing.
+        """
 
         def raise_useless_info(msg):
             logging.debug("NFFG Validation: " + msg + ". This DO does not process this kind of data.")
@@ -208,14 +210,14 @@ class DO(object):
         '''
         # VNFs inspections
         # TODO this check is implemented through the 'template' information. I don't know if is the best approach
-        print(Configuration().MSG_RESDESC_FILE)
         domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
-            available_functions.append(functional_capability.tamplate)
+            available_functions.append(functional_capability.template)
         for vnf in nffg.vnfs:
-            if vnf.template not in available_functions:
-                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
+            if vnf.vnf_template_location not in available_functions:
+                raise_useless_info("The VNF '" + vnf.name + "' with template '" +
+                                   vnf.template + "' cannot be implemented on this domain")
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -385,7 +387,7 @@ class DO(object):
     def __NC_FlowsInstantiation(self, nffg):
 
         # [ FLOW RULEs ]
-        for flowrule in self.NetManager.ProfileGraph.getFlowrules():
+        for flowrule in self.NetManager.ProfileGraph.get_ep_flowrules():
 
             # Check if this flowrule has to be installed
             if flowrule.status != 'new':
@@ -403,6 +405,7 @@ class DO(object):
 
             # Process flow rule with VLAN
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
+            logging.debug("instantiated flow rule: " + flowrule.getDict())
 
     def __NC_ApplicationsInstantiation(self, nffg):
         """
@@ -422,22 +425,23 @@ class DO(object):
         domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
 
         # [ SWITCH VNFs ]
-        if len(self.NetManager.ProfileGraph.getSwitchesVnfs()) != 0:
+        if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
             # TODO add support to emulate a L2 switch connecting the end points
             raise_useless_info("Switch vnf not supported yet")
 
         # [ DETACHED VNFs ]
-        for vnf in self.NetManager.ProfileGraph.getDetachedVnfs():
+        for vnf in self.NetManager.ProfileGraph.get_detached_vnfs():
             # get the name of the application
             application_name = ""
             for capability in domain_info.capabilities.functional_capabilities:
-                if capability.template == vnf.template:
+                if capability.template == vnf.vnf_template_location:
                     application_name = capability.name
             # we just need to activate the application and to pass as configuration the interfaces
             self.__NC_ProcessDetachedVnf(application_name, vnf)
+            logging.debug("Activated application: " + application_name)
 
         # [ ATTACHED VNFs ]
-        if len(self.NetManager.ProfileGraph.getSwitchesVnfs()) != 0:
+        if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
             # TODO add support to emulate a L2 switch connecting the end points
             raise_useless_info("Attached vnf not supported yet")
 
@@ -449,7 +453,7 @@ class DO(object):
         :type application_name: str
         :type vnf: VNF
         """
-        flows = self.NetManager.ProfileGraph.get_flows_from_vnf()
+        flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
         vnf_port_map = {}
 
         # get endpoints attached to vnf ports
@@ -460,7 +464,7 @@ class DO(object):
 
         # get interface names for endpoints
         for vnf_port in vnf_port_map:
-            endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port])
+            endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
             vnf_port_map[vnf_port] = endpoint.interface
 
         self.NetManager.activate_app(application_name)

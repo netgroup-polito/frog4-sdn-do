@@ -187,7 +187,7 @@
         "functional-capability": [
           {
             "type": "NAT",
-            "name": "it.polito.onosapps.nat",
+            "name": "it.polito.onosapp.nat",
             "template": "isp_nat.json",
             "family": "Network",
             "function-specifications": {

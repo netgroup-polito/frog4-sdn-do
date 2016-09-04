@@ -2,14 +2,29 @@
 Created on 02 sep 2016
 @author: gabrielecastellano
 """
-import inspect
 import json
-import os
 
 
 class DomainInfo(object):
     def __init__(self, domain_id=None, name=None, _type=None, domain_ip=None, domain_port=None,
                  hardware_info=None, capabilities=None):
+        """
+
+        :param domain_id:
+        :param name:
+        :param _type:
+        :param domain_ip:
+        :param domain_port:
+        :param hardware_info:
+        :param capabilities:
+        :type domain_id: str
+        :type name: str
+        :type _type: str
+        :type domain_ip: str
+        :type domain_port: str
+        :type hardware_info: HardwareInfo
+        :type capabilities: Capabilities
+        """
         self.domain_id = domain_id
         self.name = name
         self.type = _type
@@ -54,6 +69,13 @@ class DomainInfo(object):
 
 class HardwareInfo(object):
     def __init__(self, resources=None, interfaces=None):
+        """
+
+        :param resources:
+        :param interfaces:
+        :type resources: Resources
+        :type interfaces: list of Interface
+        """
         self.resources = resources
         self.interfaces = interfaces or []
 
@@ -82,6 +104,15 @@ class HardwareInfo(object):
 
 class Resources(object):
     def __init__(self, cpu=None, memory=None, storage=None):
+        """
+
+        :param cpu:
+        :param memory:
+        :param storage:
+        :type cpu: Cpu
+        :type memory: Memory
+        :type storage: Storage
+        """
         self.cpu = cpu
         self.memory = memory
         self.storage = storage
@@ -100,6 +131,15 @@ class Resources(object):
 
 class Cpu(object):
     def __init__(self, number=None, frequency=None, free=None):
+        """
+
+        :param number:
+        :param frequency:
+        :param free:
+        :type number: int
+        :type frequency: int
+        :type free: int
+        """
         self.number = number
         self.frequency = frequency
         self.free = free
@@ -112,6 +152,17 @@ class Cpu(object):
 
 class Memory(object):
     def __init__(self, size=None, frequency=None, latency=None, free=None):
+        """
+
+        :param size:
+        :param frequency:
+        :param latency:
+        :param free:
+        :type size: int
+        :type frequency: int
+        :type latency: int
+        :type free: int
+        """
         self.size = size
         self.frequency = frequency
         self.latency = latency
@@ -126,6 +177,15 @@ class Memory(object):
 
 class Storage(object):
     def __init__(self, size=None, latency=None, free=None):
+        """
+
+        :param size:
+        :param latency:
+        :param free:
+        :type size: int
+        :type latency: int
+        :type free: int
+        """
         self.size = size
         self.latency = latency
         self.free = free
@@ -139,7 +199,30 @@ class Storage(object):
 class Interface(object):
     # Subinterfaces are ignored
     def __init__(self, node=None, name=None, side=None, enabled=None, neighbors=None, gre=False, gre_tunnels=None,
-                 vlan=False, vlans_free=None):
+                 vlan=False, vlan_mode=None, vlans_free=None):
+        """
+
+        :param node: ip address
+        :param name: interface name
+        :param side:
+        :param enabled:
+        :param neighbors:
+        :param gre:
+        :param gre_tunnels:
+        :param vlan:
+        :param vlan_mode:
+        :param vlans_free:
+        :type node: str
+        :type name: str
+        :type side: str
+        :type enabled: bool
+        :type neighbors: list of Neighbor
+        :type gre: bool
+        :type gre_tunnels: list of GreTunnel
+        :type vlan: bool
+        :type vlan_mode: str
+        :type vlans_free: list of int
+        """
         self.node = node
         self.name = name
         self.side = side
@@ -147,6 +230,7 @@ class Interface(object):
         self.gre = gre
         self.gre_tunnels = gre_tunnels or []
         self.vlan = vlan
+        self.vlan_mode = vlan_mode
         self.vlans_free = vlans_free or []
         self.neighbors = neighbors or []
 
@@ -184,7 +268,8 @@ class Interface(object):
                         'openconfig-vlan:vlan']:
                     vlan_config = interface_dict['openconfig-if-ethernet:ethernet']['openconfig-vlan:vlan'][
                             'openconfig-vlan:config']
-                    if vlan_config['interface-mode'] == "TRUNK":
+                    self.vlan_mode = vlan_config['interface-mode']
+                    if vlan_config['interface-mode'] == 'TRUNK':
                         for vlan in vlan_config['trunk-vlans']:
                             self.vlans_free.append(vlan)
 
@@ -207,6 +292,17 @@ class Interface(object):
 
 class Neighbor(object):
     def __init__(self, domain_name=None, remote_interface=None, neighbor_type=None, node=None):
+        """
+
+        :param domain_name:
+        :param remote_interface:
+        :param neighbor_type:
+        :param node:
+        :type domain_name: str
+        :type remote_interface: str
+        :type neighbor_type: str
+        :type node: str
+        """
         self.domain_name = domain_name
         self.remote_interface = remote_interface
         self.neighbor_type = neighbor_type
@@ -227,6 +323,17 @@ class Neighbor(object):
 
 class GreTunnel(object):
     def __init__(self, name=None, local_ip=None, remote_ip=None, gre_key=None):
+        """
+
+        :param name:
+        :param local_ip:
+        :param remote_ip:
+        :param gre_key:
+        :type name: str
+        :type local_ip: str
+        :type remote_ip: str
+        :type gre_key: str
+        """
         self.name = name
         self.local_ip = local_ip
         self.remote_ip = remote_ip
@@ -244,6 +351,13 @@ class GreTunnel(object):
 
 class Capabilities(object):
     def __init__(self, infrastructural_capabilities=None, functional_capabilities=None):
+        """
+
+        :param infrastructural_capabilities:
+        :param functional_capabilities:
+        :type infrastructural_capabilities: list of InfrastructuralCapability
+        :type functional_capabilities: list of FunctionalCapability
+        """
         self.infrastructural_capabilities = infrastructural_capabilities or []
         self.functional_capabilities = functional_capabilities or []
 
@@ -262,6 +376,13 @@ class Capabilities(object):
 
 class InfrastructuralCapability(object):
     def __init__(self, _type=None, name=None):
+        """
+
+        :param _type:
+        :param name:
+        :type _type: str
+        :type name: str
+        """
         self.type = _type
         self.name = name
 
@@ -272,6 +393,21 @@ class InfrastructuralCapability(object):
 
 class FunctionalCapability(object):
     def __init__(self, _type=None, name=None, family=None, template=None, resources=None, function_specifications=None):
+        """
+
+        :param _type:
+        :param name:
+        :param family:
+        :param template:
+        :param resources:
+        :param function_specifications:
+        :type _type: str
+        :type name: str
+        :type family: str
+        :type template: str
+        :type resources: Resources
+        :type function_specifications: list of FunctionSpecification
+        """
         self.type = _type
         self.name = name
         self.family = family
@@ -298,6 +434,17 @@ class FunctionalCapability(object):
 
 class FunctionSpecification(object):
     def __init__(self, name=None, value=None, unit=None, mean=None):
+        """
+
+        :param name:
+        :param value:
+        :param unit:
+        :param mean:
+        :type name: str
+        :type value: str
+        :type unit: str
+        :type mean: str
+        """
         self.name = name
         self.value = value
         self.unit = unit

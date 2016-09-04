@@ -19,8 +19,7 @@ elif Configuration().CONTROLLER_NAME == "ONOS":
     from do_core.onos.rest import ONOS_Rest
         
 
-
-class NetManager():
+class NetManager:
 
     def __init__(self):
         
@@ -48,8 +47,7 @@ class NetManager():
         
         # Profile Graph
         self.ProfileGraph = NetManager.__ProfileGraph()
-    
-    
+
     class __ProfileGraph(object):
         def __init__(self):
             self.__nffg_endpoints = {}
@@ -63,7 +61,7 @@ class NetManager():
             self.__nffg_flowrules[fr.id] = fr
 
         def addVnf(self, vnf):
-            self.__nffg_flowrules[vnf.id] = vnf
+            self.__nffg_vnfs[vnf.id] = vnf
         
         def getEndpoint(self, ep_id):
             """
@@ -80,18 +78,33 @@ class NetManager():
         def getVnfs(self):
             return self.__nffg_vnfs.values()
 
-        def getSwitchesVnfs(self):
+        def get_ep_flowrules(self):
+            ep_flowrules = []
+            for flowrule in self.__nffg_flowrules.values():
+                has_vnf = False
+                if flowrule.match.port_in.split(':')[0] == 'vnf':
+                    has_vnf = True
+                else:
+                    for action in flowrule.actions:
+                        if action.output.split(':')[0] == 'vnf':
+                            has_vnf = True
+                            break
+                if not has_vnf:
+                    ep_flowrules.append(flowrule)
+            return ep_flowrules
+
+        def get_switch_vnfs(self):
             switches_vnfs = []
-            for vnf in self.__nffg_vnfs:
-                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+            for vnf in self.__nffg_vnfs.values():
+                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
                     switches_vnfs.append(vnf)
             return switches_vnfs
 
-        def getDetachedVnfs(self):
+        def get_detached_vnfs(self):
             detached_vnfs = []
-            for vnf in self.__nffg_vnfs:
+            for vnf in self.__nffg_vnfs.values():
                 is_detached = True
-                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
                     continue
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if is_detached:
@@ -109,11 +122,11 @@ class NetManager():
                     detached_vnfs.append(vnf)
             return detached_vnfs
 
-        def getAttachedVnfs(self):
+        def get_attached_vnfs(self):
             attached_vnfs = []
-            for vnf in self.__nffg_vnfs:
+            for vnf in self.__nffg_vnfs.values():
                 is_attached = False
-                if vnf.template == Configuration.VNF_SWITCH_TEMPLATE:
+                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
                     continue
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if not is_attached:
@@ -139,7 +152,6 @@ class NetManager():
             :return:
             :rtype: list of Flow
             """
-            f = Flow()
             flow_rules = []
             for port in vnf.ports:
                 flow_rules = flow_rules + self.__get_flows_from_node("vnf:"+vnf.id+":"+port.id)
@@ -155,14 +167,14 @@ class NetManager():
 
         def __get_flows_from_node(self, node_id):
             flow_rules = []
-            for flow_rule in self.__nffg_flowrules:
+            for flow_rule in self.__nffg_flowrules.values():
                 if flow_rule.match.port_in == node_id:
                     flow_rules.append(flow_rule)
             return flow_rules
 
         def __get_flows_to_node(self, node_id):
             flow_rules = []
-            for flow_rule in self.__nffg_flowrules:
+            for flow_rule in self.__nffg_flowrules.values():
                 for action in flow_rule.actions:
                     if action.output == node_id:
                         flow_rules.append(flow_rule)

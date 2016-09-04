@@ -1,6 +1,7 @@
 import json, logging
 from collections import OrderedDict
 from do_core.config import Configuration
+from do_core.domain_info import DomainInfo
 from do_core.sql.graph_session import GraphSession
 
 class Singleton(type):
@@ -10,17 +11,17 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
     __filename = None
     __dict = None
     __endpoint_name_separator = "/"
     __save = True
-    
-    
+    __domain_info = DomainInfo()
+
     def __init__(self):
         return
-    
-    
+
     def loadFile(self,filename):
         if self.__filename == filename:
             return
@@ -29,14 +30,11 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         
         in_file = open(self.__filename,"r")
         read = in_file.read()
-        self.__dict = json.loads(read,object_hook=OrderedDict,object_pairs_hook=OrderedDict)
+        self.__dict = json.loads(read, object_hook=OrderedDict, object_pairs_hook=OrderedDict)
+        self.__domain_info.parse_dict(self.__dict)
         
-        # TODO: validate json
-        
-        self.__readEndpointsAndVlans()
-    
-    
-    
+        self.__read_endpoints_and_vlans()
+
     def updateAll(self):
         for endpoint_name in self.__endpoints:
             
@@ -47,9 +45,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
                     __tvlist.append(tv[0])
                 elif tv[0]<tv[1]:
                     __tvlist.append(str(tv[0])+".."+str(tv[1]))
-    
-    
-    
+
     def saveFile(self):
         '''
         To print a json file with the original order of keys,
@@ -61,9 +57,6 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         output_json = json.dumps(self.__dict,sort_keys=False,indent=2)
         out_file = open(self.__filename,"w")
         out_file.write(output_json)
-    
-    
-    
 
     def new_flowrule(self, fr_db_id):
         '''
@@ -89,10 +82,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         # ( 2 ) DISABLE ENDPOINT
         else:
             self.__disable_endpoint(fr.switch_id, match.port_in)
-    
-    
-    
-    
+
     def delete_flowrule(self, fr_db_id):
         '''
         Execute some update operations when a flowrule is removed.
@@ -107,7 +97,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         if match is None:
             return
         
-        if self.checkEndpoint(fr.switch_id, match.port_in)==False:
+        if not self.checkEndpoint(fr.switch_id, match.port_in):
             return
                 
         # ( 1 ) ADD TRUNK VLAN
@@ -117,149 +107,116 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         # ( 2 ) ENABLE ENDPOINT
         else:
             self.__enable_endpoint(fr.switch_id, match.port_in)
-                    
-        
 
-        
-    
-        
-    
-    
-    def __readEndpointsAndVlans(self):
+    def __read_endpoints_and_vlans(self):
         
         self.__endpoints = {}
-        
-        for interface in self.__dict["frog-domain:informations"]["frog-network-manager:informations"]["openconfig-interfaces:interfaces"]["openconfig-interfaces:interface"]:
-            name_split = interface['name'].split(self.__endpoint_name_separator)
-            if len(name_split)<2:
+
+        for interface in self.__domain_info.hardware_info.interfaces:
+            if interface.node is None:
                 continue
-            
-            interface_vlan = interface["openconfig-if-ethernet:ethernet"]["openconfig-vlan:vlan"]["openconfig-vlan:config"]
 
             ep = {}
-            ep['switch'] = name_split[0]
-            ep['port'] = name_split[1]
-            ep['enabled'] = interface['config']['enabled']
+            ep['switch'] = interface.node
+            ep['port'] = interface.name
+            ep['enabled'] = interface.enabled
             ep['trunk_vlans'] = None
-            ep['__trunk_vlans'] = interface_vlan["trunk-vlans"]
-            
-            if interface_vlan["interface-mode"] == "TRUNK":
-                if "trunk-vlans" not in interface_vlan:
-                    continue
-                ep['trunk_vlans'] = self.__set_trunk_vlan_list(interface_vlan["trunk-vlans"])
-                self.__endpoints[interface['name']] = ep
-    
-    
-    
+            ep['__trunk_vlans'] = interface.vlans_free
+
+            if interface.vlan and interface.vlan_mode == 'TRUNK':
+                ep['trunk_vlans'] = self.__set_trunk_vlan_list(interface.vlans_free)
+            self.__endpoints[interface.name] = ep
+
     def __add_trunk_vlan(self, switch_id, port_in, vlan_id):
         
-        def getKey(item):
+        def get_key(item):
             return item[0]
         
         vlan_id = int(vlan_id)
-        epname = switch_id+self.__endpoint_name_separator+port_in
+        ep_name = switch_id+self.__endpoint_name_separator+port_in
         
-        trunk_vlans = self.__endpoints[epname]['trunk_vlans']
+        trunk_vlans = self.__endpoints[ep_name]['trunk_vlans']
         
         i = -1
         for tv in trunk_vlans:
-            i = i+1
+            i += 1
             
             # add an outermost value
-            if (tv[0]-1)==vlan_id or (tv[1]+1)==vlan_id:
-                if (tv[0]-1)==vlan_id:
-                    tv[0] = tv[0]-1
+            if (tv[0]-1) == vlan_id or (tv[1]+1) == vlan_id:
+                if (tv[0]-1) == vlan_id:
+                    tv[0] -= 1
                 
-                if (tv[1]+1)==vlan_id:
-                    tv[1] = tv[1]+1
+                if (tv[1]+1) == vlan_id:
+                    tv[1] += 1
 
                 return
             
         # add a single value
-        trunk_vlans.append([vlan_id,vlan_id])
-        trunk_vlans = sorted(trunk_vlans, key=getKey)
+        trunk_vlans.append([vlan_id, vlan_id])
+        self.__endpoints[ep_name]['trunk_vlans'] = sorted(trunk_vlans, key=get_key)
         return
-            
-        
-    
-    
+
     def __remove_trunk_vlan(self, switch_id, port_in, vlan_id):
         
-        def getKey(item):
+        def get_Key(item):
             return item[0]
         
         vlan_id = int(vlan_id)
-        epname = switch_id+self.__endpoint_name_separator+port_in
+        ep_name = switch_id+self.__endpoint_name_separator+port_in
         
-        trunk_vlans = self.__endpoints[epname]['trunk_vlans']
-        #self.__endpoints[epname]
+        trunk_vlans = self.__endpoints[ep_name]['trunk_vlans']
+        # self.__endpoints[ep_name]
         
         i = -1
         for tv in trunk_vlans:
-            i = i+1
+            i += 1
             
             # remove an outermost value
-            if tv[0]==vlan_id or tv[1]==vlan_id:
-                if tv[0]==vlan_id:
-                    tv[0] = tv[0]+1
+            if tv[0] == vlan_id or tv[1] == vlan_id:
+                if tv[0] == vlan_id:
+                    tv[0] += 1
                 
-                if tv[1]==vlan_id:
-                    tv[1] = tv[1]-1
+                if tv[1] == vlan_id:
+                    tv[1] -= 1
                 
-                if tv[0]>tv[1]:
+                if tv[0] > tv[1]:
                     trunk_vlans.pop(i)
                 return
             
             # remove an inner value
-            if tv[0]<vlan_id and tv[1]>vlan_id:
-                trunk_vlans.append([tv[0],vlan_id-1])
-                trunk_vlans.append([vlan_id+1,tv[1]])
+            if tv[0] < vlan_id < tv[1]:
+                trunk_vlans.append([tv[0], vlan_id-1])
+                trunk_vlans.append([vlan_id+1, tv[1]])
                 trunk_vlans.pop(i)
-                trunk_vlans = sorted(trunk_vlans, key=getKey)
+                self.__endpoints[ep_name]['trunk_vlans'] = sorted(trunk_vlans, key=get_Key)
                 return
-    
-    
-    
+
     def __enable_endpoint(self, switch_id, port_in):
         
         epname = switch_id+self.__endpoint_name_separator+port_in
         trunk_vlans = self.__endpoints[epname]['enabled'] = True
-        
-        
-        
+
     def __disable_endpoint(self, switch_id, port_in):
         
         epname = switch_id+self.__endpoint_name_separator+port_in
         trunk_vlans = self.__endpoints[epname]['enabled'] = False
-            
-            
-            
-            
-        
-        
-        
-        
+
     def __set_trunk_vlan_list(self, trunk_vlans_list):
         
-        newlist = []
+        new_list = []
         
-        for tvid in trunk_vlans_list:
-            if isinstance(tvid, str):
-                range = tvid.split("..")
+        for tv_id in trunk_vlans_list:
+            if isinstance(tv_id, str):
+                range = tv_id.split("..")
                 if len(range)==2:
                     range[0] = int(range[0])
                     range[1] = int(range[1])
-                    newlist.append(range)
-            elif isinstance(tvid, int):
-                newlist.append([tvid,tvid])
+                    new_list.append(range)
+            elif isinstance(tv_id, int):
+                new_list.append([tv_id,tv_id])
         
-        return newlist
-        
-    
-    
-    
-    
-    
+        return new_list
+
     def checkEndpoint(self, switch, port):
         ep_name = switch+self.__endpoint_name_separator+port
         if ep_name not in self.__endpoints:
@@ -291,12 +248,10 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         trunk_vlans = ""
         for r in self.__endpoints[endpoint_name]['trunk_vlans']:
             if r[0]>r[1]:
-                trunk_vlans.append(str(r[0])+".."+str(r[1]))
+                trunk_vlans += (str(r[0])+".."+str(r[1]))
                 trunk_vlans = trunk_vlans+str(r[0])+"-"+str(r[1])+";"
             else:
                 trunk_vlans = trunk_vlans+str(r[0])+";"
         return trunk_vlans[:-1]
-    
-    
 
 ResourceDescription().loadFile(Configuration().MSG_RESDESC_FILE)
