@@ -208,7 +208,8 @@ class DO(object):
         '''
         # VNFs inspections
         # TODO this check is implemented through the 'template' information. I don't know if is the best approach
-        domain_info = DomainInfo.get_from_file(Configuration.MSG_RESDESC_FILE)
+        print(Configuration().MSG_RESDESC_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.tamplate)
@@ -418,7 +419,7 @@ class DO(object):
             logging.debug("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
             raise NffgUselessInformations("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
 
-        domain_info = DomainInfo.get_from_file(Configuration.MSG_RESDESC_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
 
         # [ SWITCH VNFs ]
         if len(self.NetManager.ProfileGraph.getSwitchesVnfs()) != 0:

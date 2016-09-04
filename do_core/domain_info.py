@@ -40,12 +40,11 @@ class DomainInfo(object):
         """
 
         :param file_name: name of json file in the /config folder
+        :type file_name: str
         :return: DomainInfo
         """
-        base_folder = os.path.realpath(os.path.abspath(
-            os.path.split(inspect.getfile(inspect.currentframe()))[0]
-        )).rpartition('/')[0]
-        json_data = open(base_folder+"/config/"+file_name).read()
+
+        json_data = open(file_name).read()
         domain_info_dict = json.loads(json_data)
         # TODO validation
         domain_info = DomainInfo()
