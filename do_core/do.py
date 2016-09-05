@@ -1,8 +1,9 @@
-'''
+"""
 @author: fabiomignini
 @author: vida
 @author: giacomoratta
-'''
+@author: gabrielecastellano
+"""
 
 from __future__ import division
 import logging, copy
@@ -314,11 +315,12 @@ class DO(object):
     '''
 
     def __NFFG_NC_deleteGraph(self):
-        '''
+        """
         Delete a whole graph, and set it as "ended".
         Delete all endpoints, and releated resources.
         Delete all flowrules from database and from the network controller.
-        '''
+        Deactivate all applications implementing graph vnf
+        """
 
         # Endpoints
         endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
@@ -332,16 +334,22 @@ class DO(object):
             for fr in flowrules:
                 self.__deleteFlowRule(fr)
 
+        # vnfs
+        vnfs = GraphSession().getVnfsBySessionID(self.__session_id)
+        if vnfs is not None:
+            for vnf in vnfs:
+                self.__deleteVnf(vnf)
+
         # End field
         GraphSession().updateEnded(self.__session_id)
 
     def __NFFG_NC_DeleteAndUpdate(self, updated_nffg):
-        '''
+        """
         Remove all endpoints and all flowrules which is marked as 'to_be_deleted'.
         For each flowrule marked as 'already_deployed' this function checks if the
-        releated endpoints are been updated: in this case the flowrule is deleted 
-        and it is set as 'new' in order that be installed again.   
-        '''
+        releated endpoints are been updated: in this case the flowrule is deleted
+        and it is set as 'new' in order that be installed again.
+        """
         # List of updated endpoints
         updated_endpoints = []
 
@@ -396,15 +404,11 @@ class DO(object):
             logging.debug("port_in: " + flowrule.match.port_in)
             port_in_id = self.__getEndpointIdFromString(flowrule.match.port_in)
             logging.debug("port_in_id: " + port_in_id)
-            # check if it is not an endpoint flow rule
-            if port_in_id.split(':')[0] != 'endpoint':
-                logging.debug("skipping '" + port_in_id.split(':')[0] + "' flow rule.")
-                continue
             in_endpoint = self.NetManager.ProfileGraph.getEndpoint(port_in_id)
 
             # Process flow rule with VLAN
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
-            logging.debug("instantiated flow rule: " + flowrule.getDict())
+            logging.debug("instantiated flow rule: " + str(flowrule.getDict()))
 
     def __NC_ApplicationsInstantiation(self, nffg):
         """
@@ -831,6 +835,15 @@ class DO(object):
                 self.__deletePortByID(eprs.resource_id)
         GraphSession().deleteEndpointByID(endpoint_id)
 
+    def __deleteVnf(self, vnf):
+        vnf_ports = GraphSession().getVnfPortsByVnfID(vnf.id)
+        for vnf_port in vnf_ports:
+            self.__deleteVnfPortByID(vnf_port.id)
+        GraphSession().deleteVnfByID(vnf.id)
+
+    def __deleteVnfPortByID(self, port_id):
+        GraphSession().deleteVnfPortByID(port_id)
+
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
         EXTERNAL FLOWRULE
@@ -864,7 +877,7 @@ class DO(object):
         self.__checkFlowname_externalFlowrule(efr)
 
         # NC/Switch: Add flow rule
-        sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
+        # sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
         sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
 
         # DATABASE: Add flow rule

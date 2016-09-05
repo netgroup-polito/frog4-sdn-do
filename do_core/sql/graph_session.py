@@ -1,9 +1,10 @@
-'''
+"""
 Created on Jun 20, 2015
 
 @author: fabiomignini
 @author: giacomoratta
-'''
+@author: gabrielecastellano
+"""
 
 import datetime, logging, uuid
 
@@ -224,7 +225,14 @@ class GraphSession(object):
             return ep
         except:
             return None
-    
+
+    def getVnfsBySessionID(self, session_id):
+        session = get_session()
+        try:
+            ep = session.query(VnfModel).filter_by(session_id=session_id).all()
+            return ep
+        except:
+            return None
     
     def getEndpointResourcesByEndpointID(self, endpoint_id):
         session = get_session()
@@ -298,8 +306,13 @@ class GraphSession(object):
         # Valid VLAN ID
         return (prev_vlan_in+1)
     
-    
-    
+    def getVnfPortsByVnfID(self, vnf_id):
+        try:
+            session = get_session()
+            return session.query(VnfPortModel).filter_by(vnf_id=vnf_id).all()
+        except:
+            return None
+
     def getNewUnivocalSessionID(self):
         '''
         Compute a new session id 32 byte long.
@@ -472,7 +485,24 @@ class GraphSession(object):
     '''
     
     def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None):   
-                  
+
+        # build flowrule type
+        flowrule_type = None
+        if flow_rule.match is not None:
+            if flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                flowrule_type = 'ep'
+            elif flow_rule.match.port_in.split(':')[0] == 'vnf':
+                flowrule_type = 'vnf'
+        if len(flow_rule.actions)>0:
+            for action in flow_rule.actions:
+                if action.output is not None:
+                    flowrule_type += '-to-'
+                    if action.output.split(':')[0] == 'endpoint':
+                        flowrule_type += 'ep'
+                    elif action.output.split(':')[0] == 'vnf':
+                        flowrule_type += 'vnf'
+        flow_rule.type = flowrule_type
+
         # FlowRule
         flow_rule_db_id = self.dbStoreFlowrule(session_id, flow_rule, None, switch_id)
         
@@ -620,7 +650,15 @@ class GraphSession(object):
             session.query(PortModel).filter_by(id = port_id).filter_by(session_id=session_id).delete()
             session.query(EndpointResourceModel).filter_by(resource_id=port_id).filter_by(resource_type='port').delete()
 
+    def deleteVnfByID(self, vnf_id):
+        session = get_session()
+        with session.begin():
+            session.query(VnfModel).filter_by(id=vnf_id).delete()
 
+    def deleteVnfPortByID(self, vnf_port_id):
+        session = get_session()
+        with session.begin():
+            session.query(VnfPortModel).filter_by(id=vnf_port_id).delete()
 
 
 
@@ -699,21 +737,17 @@ class GraphSession(object):
                                          session_id=session_id, name=name, type=_type)
             session.add(endpoint_ref)
             return endpoint_id
-    
-    
+
     def dbStoreEndpointResourcePort(self, endpoint_id, port_id):
         session = get_session()
         with session.begin():
             ep_res_ref = EndpointResourceModel(endpoint_id=endpoint_id, resource_type='port', resource_id=port_id)
             session.add(ep_res_ref)
-
-                
     def dbStoreEndpointResourceFlowrule(self, endpoint_id, flow_rule_id):
         session = get_session()
         with session.begin():
             ep_res_ref = EndpointResourceModel(endpoint_id=endpoint_id,resource_type='flow-rule',resource_id=flow_rule_id)
             session.add(ep_res_ref)
-    
 
     def dbStoreFlowrule(self, session_id, flow_rule, flow_rule_db_id, switch_id):
         session = get_session()
@@ -730,8 +764,7 @@ class GraphSession(object):
                                        creation_date=datetime.datetime.now(), last_update=datetime.datetime.now(), type=flow_rule.type)
             session.add(flow_rule_ref)
             return flow_rule_db_id
-    
-    
+
     def dbStoreGraphSessionFromNffgObject(self, session_id, user_id, nffg):
         session = get_session()
         with session.begin():
@@ -739,8 +772,7 @@ class GraphSession(object):
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
                                 last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
             session.add(graphsession_ref)
-    
-    
+
     def dbStoreMatch(self, match, flow_rule_db_id, match_db_id, port_in=None, port_in_type=None):
         session = get_session()
         with session.begin():
