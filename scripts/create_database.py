@@ -1,6 +1,7 @@
 import sqlite3, os
 from do_core.config import Configuration
 
+
 def session_create_database():
 
     db_filename = Configuration().DATABASE_CONNECTION

@@ -118,3 +118,18 @@ CREATE TABLE 'vlan' (
   "flow_rule_id" int(64), 
   PRIMARY KEY ("id") 
 );
+CREATE TABLE 'vnf' (
+  "id" int(64) NOT NULL,
+  "graph_vnf_id" varchar(64) NOT NULL,
+  "session_id" varchar(64) NOT NULL,
+  "name" varchar(64) NOT NULL,
+  "template" varchar(64) NOT NULL,
+  PRIMARY KEY ("id")
+);
+CREATE TABLE 'vnf_port' (
+  "id" int(64) NOT NULL,
+  "graph_port_id" varchar(64) NOT NULL,
+  "vnf_id" int(64) NOT NULL,
+  "name" varchar(64),
+  PRIMARY KEY ("id")
+)

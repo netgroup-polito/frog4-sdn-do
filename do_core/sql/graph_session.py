@@ -7,7 +7,7 @@ Created on Jun 20, 2015
 
 import datetime, logging, uuid
 
-from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action
+from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action, VNF, Port
 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func
 from sqlalchemy.ext.declarative import declarative_base
@@ -62,8 +62,7 @@ class EndpointModel(Base):
     name = Column(VARCHAR(64))  # name in the json [see "end-points" section]
     type = Column(VARCHAR(64))  # = ( internal | interface | interface-out | vlan | gre ) [see "end-points" section]
     session_id = Column(VARCHAR(64))
-    
-    
+
     
 class EndpointResourceModel(Base):
     '''
@@ -150,7 +149,6 @@ class ActionModel(Base):
     output_to_queue = Column(VARCHAR(64))
 
 
-
 class VlanModel(Base):
     __tablename__ = 'vlan'
     attributes = ['id', 'flow_rule_id', 'switch_id', 'port_in', 'vlan_in', 'port_out', 'vlan_out']
@@ -163,8 +161,26 @@ class VlanModel(Base):
     vlan_out = Column(Integer)
 
 
+class VnfModel(Base):
+    __tablename__ = 'vnf'
+    attributes = ['id', 'graph_vnf_id', 'session_id', 'name', 'template']
+    id = Column(Integer, primary_key=True)
+    graph_vnf_id = Column(VARCHAR(64))
+    session_id = Column(VARCHAR(64))
+    name = Column(VARCHAR(64))
+    template = Column(VARCHAR(64))
 
 
+class VnfPortModel(Base):
+    __tablename__ = 'vnf_port'
+    attributes = ['id', 'graph_port_id', 'vnf_id', 'name']
+    id = Column(Integer, primary_key=True)
+    graph_port_id = Column(VARCHAR(64))
+    vnf_id = Column(Integer)
+    name = Column(VARCHAR(64))
+
+
+# ------------------------------------------
 
 
 class GraphSession(object):
@@ -469,6 +485,11 @@ class GraphSession(object):
                 port_in_type = 'endpoint'
                 port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1]).db_id
                 self.dbStoreEndpointResourceFlowrule(port_in, flow_rule_db_id)
+            if flow_rule.match.port_in.split(':')[0] == 'vnf':
+                port_in_type = 'vnf'
+                vnf_id = flow_rule.match.port_in.split(':')[1]
+                port_id = flow_rule.match.port_in.split(':', 2)[2]
+                port_in = nffg.getVNF(vnf_id).getPort(port_id).db_id
             self.dbStoreMatch(flow_rule.match, flow_rule_db_id, match_db_id, port_in=port_in, port_in_type=port_in_type)
         
         # Actions
@@ -476,20 +497,23 @@ class GraphSession(object):
             for action in flow_rule.actions:
                 output_type = None
                 output_port = None
-                if action.output != None and action.output.split(':')[0] == 'endpoint':
+                if action.output is not None and action.output.split(':')[0] == 'endpoint':
                     output_type = 'endpoint'
                     output_port = nffg.getEndPoint(action.output.split(':')[1]).db_id
                     self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
+                if action.output is not None and action.output.split(':')[0] == 'vnf':
+                    output_type = 'vnf'
+                    vnf_id = action.output.split(':')[1]
+                    port_id = action.output.split(':', 2)[2]
+                    output_port = nffg.getVNF(vnf_id).getPort(port_id).db_id
                 self.dbStoreAction(action, flow_rule_db_id, None, output_to_port=output_port, output_type=output_type)
 
         return flow_rule_db_id
-    
-    
+
     def addPort(self, session_id, endpoint_id, port_id, graph_port_id, switch_id, vlan_id, status):
         port_id = self.dbStorePort(session_id, port_id, graph_port_id, switch_id, vlan_id, status)
         self.dbStoreEndpointResourcePort(endpoint_id, port_id)
-    
-    
+
     def addVlanTracking(self, flow_rule_id, switch_id, vlan_in, port_in, vlan_out, port_out):
         session = get_session()
         
@@ -503,10 +527,17 @@ class GraphSession(object):
             vlan_ref = VlanModel(id=max_id, flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_in=vlan_in, port_in=port_in, vlan_out=vlan_out, port_out=port_out)
             session.add(vlan_ref) 
 
+    def addVnf(self, session_id, switch_id, vnf, nffg=None):
 
+        # NFV
+        nfv_db_id = self.dbStoreVnf(session_id, vnf, None, switch_id)
 
+        # Ports
+        if nffg is not None and len(vnf.ports) > 0:
+            for port in vnf.ports:
+                self.dbStoreVnfPort(None, port.id, nfv_db_id, port.name)
 
-
+        return nfv_db_id
 
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -553,6 +584,8 @@ class GraphSession(object):
         session.query(PortModel).delete()
         session.query(VlanModel).delete()
         session.query(GraphSessionModel).delete()
+        session.query(VnfModel).delete()
+        session.query(VnfPortModel).delete()
     
     
     def deleteEndpointByID(self, endpoint_id):
@@ -625,6 +658,33 @@ class GraphSession(object):
             session.add(action_ref)
             return action_ref
 
+    def dbStoreVnf(self, session_id, vnf, vnf_db_id, switch_id):
+        session = get_session()
+        if vnf_db_id is None:
+            vnf_db_id = session.query(func.max(VnfModel.id).label("max_id")).one().max_id
+            if vnf_db_id is None:
+                vnf_db_id = 0
+            else:
+                vnf_db_id = int(vnf_db_id) + 1
+        with session.begin():
+            vnf_ref = VnfModel(id=vnf_db_id, graph_vnf_id=vnf.id,
+                               session_id=session_id, name=vnf.name, template=vnf.vnf_template_location)
+            session.add(vnf_ref)
+            return vnf_db_id
+
+    def dbStoreVnfPort(self, vnf_port_id, graph_vnf_port_id, vnf_db_id, name):
+        session = get_session()
+        if vnf_port_id is None:
+            vnf_port_id = session.query(func.max(VnfPortModel.id).label("max_id")).one().max_id
+            if vnf_port_id is None:
+                vnf_port_id = 0
+            else:
+                vnf_port_id = int(vnf_port_id) + 1
+        with session.begin():
+            vnf_port_ref = VnfPortModel(id=vnf_port_id, graph_port_id=graph_vnf_port_id,
+                                        vnf_id=vnf_db_id, name=name)
+            session.add(vnf_port_ref)
+            return vnf_port_id
 
     def dbStoreEndpoint(self, session_id, endpoint_id, graph_endpoint_id, name, _type):
         session = get_session()
@@ -721,11 +781,6 @@ class GraphSession(object):
             session.add(port_ref)
             return port_id
 
-
-
-
-
-
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
         MAIN FUNCTIONS
@@ -734,6 +789,14 @@ class GraphSession(object):
     '''
         
     def addNFFG(self, nffg, user_id):
+        """
+
+        :param nffg:
+        :param user_id:
+        :type nffg: NF_FG
+        :type user_id: str
+        :return:
+        """
             
         # New session id
         session_id = self.getNewUnivocalSessionID()
@@ -750,18 +813,21 @@ class GraphSession(object):
             
             # Add end-point resources
             # End-point attached to something that is not another graph
-            if endpoint.type=="interface" or endpoint.type=="vlan":
+            if endpoint.type == "interface" or endpoint.type == "vlan":
                 self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
+
+        # [ VNF ]
+        for vnf in nffg.vnfs:
+            vnf_id = self.addVnf(session_id, None, vnf, nffg)
+            vnf.db_id = vnf_id
 
         # [ FLOW RULES ]
         for flow_rule in nffg.flow_rules:
             self.addFlowrule(session_id, None, flow_rule, nffg)
             
         return session_id
-    
-    
-    
-    def updateNFFG(self, nffg, session_id):     
+
+    def updateNFFG(self, nffg, session_id):
                             
         # [ ENDPOINTS ]
         for endpoint in nffg.end_points:
@@ -793,8 +859,7 @@ class GraphSession(object):
         nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
         nffg.description = session_ref.description
-        
-        
+
         # [ ENDPOINTs ]
         end_points_ref = session.query(EndpointModel).filter_by(session_id=session_id).all()
         for end_point_ref in end_points_ref:
@@ -818,11 +883,24 @@ class GraphSession(object):
                         end_point.interface = port_ref.graph_port_id
                         end_point.vlan_id = port_ref.vlan_id
 
+        # [ VNFs ]
+        vnfs_ref = session.query(VnfModel).filter_by(session_id=session_id).all()
+        for vnf_ref in vnfs_ref:
+            # add vnf to NFFG
+            vnf = VNF(_id=vnf_ref.graph_vnf_id, name=vnf_ref.name, vnf_template_location=vnf_ref.template,
+                      db_id=vnf_ref.id)
+            nffg.addVNF(vnf)
+
+            # vnf ports
+            vnf_ports_ref = session.query(VnfPortModel).filter_by(vnf_id=vnf_ref.id).all()
+            for vnf_port_ref in vnf_ports_ref:
+                vnf_port = Port(_id=vnf_port_ref.graph_port_id, name=vnf_port_ref.name, db_id=vnf_port_ref.id)
+                vnf.addPort(vnf_port)
 
         # [ FLOW RULEs ]
         flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id=session_id).all()
         for flow_rule_ref in flow_rules_ref:
-            if flow_rule_ref.type is not None: # None or 'external'
+            if flow_rule_ref.type is not None:  # None or 'external'
                 continue
             
             # Add flow rule to NFFG
@@ -830,9 +908,8 @@ class GraphSession(object):
                                  priority=int(flow_rule_ref.priority), description=flow_rule_ref.description, 
                                  db_id=flow_rule_ref.id)
             nffg.addFlowRule(flow_rule)
-            
-            
-            # [ MATCH ]
+
+            # [ MATCHes ]
             try:
                 match_ref = session.query(MatchModel).filter_by(flow_rule_id=flow_rule_ref.id).one()
             except NoResultFound:
@@ -840,11 +917,13 @@ class GraphSession(object):
                 logging.debug("Found flowrule without a match")
 
             if match_ref is not None:
-                # Retrieve endpoint data
+                # Retrieve port data
                 port_in = None
                 if match_ref.port_in_type == 'endpoint':
                     end_point_ref = session.query(EndpointModel).filter_by(id=match_ref.port_in).first()
                     port_in = 'endpoint:'+end_point_ref.graph_endpoint_id
+                if match_ref.port_in_type == 'vnf':
+                    port_in = match_ref.port_in
                 
                 # Add match to this flow rule
                 match = Match(port_in=port_in, ether_type=match_ref.ether_type, vlan_id=match_ref.vlan_id,
@@ -853,11 +932,10 @@ class GraphSession(object):
                               tos_bits=match_ref.tos_bits, source_port=match_ref.source_port, dest_port=match_ref.dest_port,
                               protocol=match_ref.protocol, db_id=match_ref.id)
                 flow_rule.match = match
-                
 
             # [ ACTIONs ]
             actions_ref = session.query(ActionModel).filter_by(flow_rule_id=flow_rule_ref.id).all()
-            if len(actions_ref)==0:
+            if len(actions_ref) == 0:
                 logging.debug("Found flowrule without actions")
                 
             for action_ref in actions_ref:
@@ -866,7 +944,9 @@ class GraphSession(object):
                 if action_ref.output_type == 'endpoint':
                     end_point_ref = session.query(EndpointModel).filter_by(id = action_ref.output_to_port).first()
                     output_to_port = action_ref.output_type+':'+end_point_ref.graph_endpoint_id
-                
+                if action_ref.output_type == 'vnf':
+                    output_to_port = action_ref.output_to_port
+
                 # Add action to this flow rule
                 action = Action(output=output_to_port, controller=action_ref.output_to_controller, drop=action_ref._drop, 
                                 set_vlan_id=action_ref.set_vlan_id, set_vlan_priority=action_ref.set_vlan_priority, 

@@ -169,9 +169,9 @@ class DO_REST_NFFG_GPUD(MethodView):
             description: Not acceptable      
           500:
             description: Internal Error
-        """        
-        try:            
-            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+        """
+        try:
+            user_data = UserAuthentication().authenticateUserFromRESTRequest(request)
             
             request_body = request.data.decode('utf-8')
             nffg_dict = json.loads(request_body, 'utf-8')
@@ -179,71 +179,72 @@ class DO_REST_NFFG_GPUD(MethodView):
             ValidateNF_FG().validate(nffg_dict)
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
-            
-            NCDO = DO(userdata)
-            NCDO.NFFG_Validate(nffg)
-            NCDO.NFFG_Put(nffg)
+            nffg.id = nffg_id
+
+            nc_do = DO(user_data)
+            nc_do.NFFG_Validate(nffg)
+            nc_do.NFFG_Put(nffg)
     
-            return ("Graph correctly deployed", 202)
+            return "Graph correctly deployed", 202
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
             logging.exception(err)
-            return ("Bad Request", 400)
+            return "Bad Request", 400
                 
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except unauthorizedRequest as err:
             if request.headers.get("X-Auth-User") is not None:
                 logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
             logging.debug(err.message)
-            return ("Unauthorized", 401)             
+            return "Unauthorized", 401
         
         # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
         except UserTokenExpired as err:
             logging.exception(err)
-            return (err.message, 401)            
+            return err.message, 401
         
         # NFFG validation - raised by json.loads()
         except ValueError as err:
             logging.exception(err)
-            return ("ValueError", 406)            
+            return "ValueError", 406
         
         # NFFG validation - raised by ValidateNF_FG().validate
         except NF_FGValidationError as err:
             logging.exception(err)
-            return ("NF_FGValidationError", 406)                    
+            return "NF_FGValidationError", 406
         
         # NFFG validation - raised by the class DO()
         except GraphError as err:
             logging.exception(err)
-            return ("GraphError", 406)                 
+            return "GraphError", 406
         
         # Custom NFFG sub-validation - raised by DO().NFFG_Validate
         except NffgUselessInformations as err:
             logging.exception(err)
-            return (err.message, 406)
+            return err.message, 406
         
         # No Results
         except UserNotFound as err:
             logging.exception(err)
-            return ("UserNotFound", 404)            
+            return "UserNotFound", 404
         except TenantNotFound as err:
             logging.exception(err)
-            return ("TenantNotFound", 404)                        
+            return "TenantNotFound", 404
         except NoResultFound as err:
             logging.exception(err)
-            return ("NoResultFound", 404)              
+            return "NoResultFound", 404
         except sessionNotFound as err:
             logging.exception(err)
-            return ("sessionNotFound", 404)              
+            return "sessionNotFound", 404
         
         # Other errors
         except requests.HTTPError as err:
             logging.exception(err)
-            return (str(err), 500)            
+            return str(err), 500
         except Exception as err:
             logging.exception(err)
-            return (str(err), 500)
+            return str(err), 500
 
     def delete(self, nffg_id):
         """
@@ -354,7 +355,7 @@ class DO_REST_NFFG_GPUD(MethodView):
           500:
             description: Internal Error
         """        
-        try :
+        try:
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             NCDO = DO(userdata)
             

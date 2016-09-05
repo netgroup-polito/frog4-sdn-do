@@ -63,7 +63,6 @@ class DO(object):
             self.__NC_FlowsInstantiation(nffg)
             logging.debug("Flow rules instantiated!")
 
-            # TODO activate applications implementing the requested VNFs
             self.__NC_ApplicationsInstantiation(nffg)
             logging.debug("Applications activated!")
 
