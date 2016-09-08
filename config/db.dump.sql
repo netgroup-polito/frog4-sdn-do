@@ -124,6 +124,7 @@ CREATE TABLE 'vnf' (
   "session_id" varchar(64) NOT NULL,
   "name" varchar(64) NOT NULL,
   "template" varchar(64) NOT NULL,
+  "application_name" varchar(64),
   PRIMARY KEY ("id")
 );
 CREATE TABLE 'vnf_port' (

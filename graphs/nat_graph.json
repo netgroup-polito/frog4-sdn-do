@@ -7,7 +7,7 @@
         "ports": [
           {
             "name": "data-port",
-            "id": "User:1"
+            "id": "USER:1"
           },
           {
             "name": "data-port",
@@ -71,7 +71,7 @@
           },
           "actions": [
             {
-              "output_to_port": "vnf:00000001:User:1"
+              "output_to_port": "vnf:00000001:USER:1"
             }
           ],
           "priority": 1,
@@ -79,7 +79,7 @@
         },
         {
           "match": {
-            "port_in": "vnf:00000001:User:1"
+            "port_in": "vnf:00000001:USER:1"
           },
           "actions": [
             {

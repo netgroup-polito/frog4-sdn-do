@@ -71,7 +71,8 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         match = GraphSession().getMatchByFlowruleID(fr.id)
         if match is None:
             return
-        
+        print(fr.switch_id)
+        print(match.port_in)
         if self.checkEndpoint(fr.switch_id, match.port_in)==False:
             return
 

@@ -256,6 +256,19 @@ class NetManager:
 
         elif self.isONOS():
             ONOS_Rest(self.ct_version).deactivateApp(self.ct_endpoint, self.ct_username, self.ct_password, app_name)
+
+    def push_app_configuration(self, app_name, app_config_dict):
+
+        network_config = {'apps': {}}
+        network_config['apps'][app_name] = {}
+        network_config['apps'][app_name][app_name.split('.')[-1]] = app_config_dict
+        json_config = json.dumps(network_config)
+
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+        elif self.isONOS():
+            ONOS_Rest(self.ct_version).push_config(self.ct_endpoint, self.ct_username, self.ct_password, json_config)
         
     def getSwitchList(self):
         swList = list()

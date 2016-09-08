@@ -8,6 +8,8 @@ Created on Jun 20, 2015
 
 import datetime, logging, uuid
 
+from do_core.config import Configuration
+from do_core.domain_info import DomainInfo
 from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action, VNF, Port
 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func
@@ -164,12 +166,13 @@ class VlanModel(Base):
 
 class VnfModel(Base):
     __tablename__ = 'vnf'
-    attributes = ['id', 'graph_vnf_id', 'session_id', 'name', 'template']
+    attributes = ['id', 'graph_vnf_id', 'session_id', 'name', 'template', 'application_name']
     id = Column(Integer, primary_key=True)
     graph_vnf_id = Column(VARCHAR(64))
     session_id = Column(VARCHAR(64))
     name = Column(VARCHAR(64))
     template = Column(VARCHAR(64))
+    application_name = Column(VARCHAR(64))
 
 
 class VnfPortModel(Base):
@@ -557,10 +560,10 @@ class GraphSession(object):
             vlan_ref = VlanModel(id=max_id, flow_rule_id=flow_rule_id, switch_id=switch_id, vlan_in=vlan_in, port_in=port_in, vlan_out=vlan_out, port_out=port_out)
             session.add(vlan_ref) 
 
-    def addVnf(self, session_id, switch_id, vnf, nffg=None):
+    def addVnf(self, session_id, switch_id, vnf, nffg=None, application_name=None):
 
         # NFV
-        nfv_db_id = self.dbStoreVnf(session_id, vnf, None, switch_id)
+        nfv_db_id = self.dbStoreVnf(session_id, vnf, None, switch_id, application_name)
 
         # Ports
         if nffg is not None and len(vnf.ports) > 0:
@@ -696,7 +699,7 @@ class GraphSession(object):
             session.add(action_ref)
             return action_ref
 
-    def dbStoreVnf(self, session_id, vnf, vnf_db_id, switch_id):
+    def dbStoreVnf(self, session_id, vnf, vnf_db_id, switch_id, application_name):
         session = get_session()
         if vnf_db_id is None:
             vnf_db_id = session.query(func.max(VnfModel.id).label("max_id")).one().max_id
@@ -705,8 +708,8 @@ class GraphSession(object):
             else:
                 vnf_db_id = int(vnf_db_id) + 1
         with session.begin():
-            vnf_ref = VnfModel(id=vnf_db_id, graph_vnf_id=vnf.id,
-                               session_id=session_id, name=vnf.name, template=vnf.vnf_template_location)
+            vnf_ref = VnfModel(id=vnf_db_id, graph_vnf_id=vnf.id, session_id=session_id, name=vnf.name,
+                               template=vnf.vnf_template_location, application_name=application_name)
             session.add(vnf_ref)
             return vnf_db_id
 
@@ -850,7 +853,12 @@ class GraphSession(object):
 
         # [ VNF ]
         for vnf in nffg.vnfs:
-            vnf_id = self.addVnf(session_id, None, vnf, nffg)
+            domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
+            application_name = ""
+            for functional_capability in domain_info.capabilities.functional_capabilities:
+                if functional_capability.template == vnf.vnf_template_location:
+                    application_name = functional_capability.name
+            vnf_id = self.addVnf(session_id, None, vnf, nffg, application_name)
             vnf.db_id = vnf_id
 
         # [ FLOW RULES ]

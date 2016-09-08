@@ -18,6 +18,7 @@ class ONOS_Rest(RestInterface):
         self.rest_links_url = '/onos/v1/links'
         self.rest_flows_url = '/onos/v1/flows'  # /onos/v1/flows/{DeviceId}
         self.rest_apps_url = '/onos/v1/applications'
+        self.rest_network_config_url = '/onos/v1/network/configuration/'
 
     def __logging_debug(self, response, url, jsonFlow=None):
         log_string = "response: "+str(response.status_code)+", "+response.reason
@@ -135,5 +136,19 @@ class ONOS_Rest(RestInterface):
         response.raise_for_status()
         return response.text
 
+    def push_config(self, onos_endpoint, onos_user, onos_pass, json_config):
+        """
+        Push a configuration to onos through network config API
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param json_config: the configuration to push
+        :return:
+        """
+        headers = {'Accept': 'application/json', 'Content-type': 'application/json'}
+        url = onos_endpoint+self.rest_network_config_url
+        response = requests.post(url, json_config, headers=headers, auth=(onos_user, onos_pass))
 
-
+        self.__logging_debug(response, url, json_config)
+        response.raise_for_status()
+        return response.text

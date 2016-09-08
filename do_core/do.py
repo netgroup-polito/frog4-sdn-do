@@ -12,7 +12,7 @@ from do_core.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
 from do_core.config import Configuration
-from do_core.sql.graph_session import GraphSession
+from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.messaging import Messaging
@@ -322,6 +322,8 @@ class DO(object):
         Deactivate all applications implementing graph vnf
         """
 
+        # TODO the graph is deleted only from the DB, not from the NC
+
         # Endpoints
         endpoints = GraphSession().getEndpointsBySessionID(self.__session_id)
         if endpoints is not None:
@@ -339,6 +341,7 @@ class DO(object):
         if vnfs is not None:
             for vnf in vnfs:
                 self.__deleteVnf(vnf)
+                self.__NC_DeactivateApplication(vnf)
 
         # End field
         GraphSession().updateEnded(self.__session_id)
@@ -445,7 +448,7 @@ class DO(object):
 
         # [ ATTACHED VNFs ]
         if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
-            # TODO add support to emulate a L2 switch connecting the end points
+            # TODO add support to implement a vnf sending/receiving traffic to/from an other vnf
             raise_useless_info("Attached vnf not supported yet")
 
     def __NC_ProcessDetachedVnf(self, application_name, vnf):
@@ -457,21 +460,41 @@ class DO(object):
         :type vnf: VNF
         """
         flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
-        vnf_port_map = {}
+        vnf_port_map = {}   # key=graph port id, value=attached device/interface
 
         # get endpoints attached to vnf ports
         for flow in flows:
             for action in flow.actions:
                 if action.output is not None:
-                    vnf_port_map[flow.match.port_in.split(':')[2] + flow.match.port_in.split(':')[3]] = action.output
+                    vnf_port_map[flow.match.port_in.split(':', 2)[2]] = action.output
 
         # get interface names for endpoints
         for vnf_port in vnf_port_map:
             endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
-            vnf_port_map[vnf_port] = endpoint.interface
+            vnf_port_map[vnf_port] = {'device': endpoint.node_id, 'interface': endpoint.interface}
 
         self.NetManager.activate_app(application_name)
-        # TODO push configuration to set ports
+
+        # push configuration to set application ports
+        ports_configuration = {'ports': {}}
+        for port in vnf_port_map:
+            ports_configuration['ports'][port] = {
+                'device-id': vnf_port_map[port]['device'],
+                'port-number': self.NetManager.getPortByInterface(
+                    vnf_port_map[port]['device'],
+                    vnf_port_map[port]['interface']
+                )
+            }
+        self.NetManager.push_app_configuration(application_name, ports_configuration)
+
+    def __NC_DeactivateApplication(self, vnf):
+        """
+        Deactivate the application implementing the specified vnf
+        :param vnf: the VNF implemented by the application to deactivate
+        :type vnf: VnfModel
+        :return:
+        """
+        self.NetManager.deactivate_app(vnf.application_name)
 
     def __NC_ProcessFlowrule(self, in_endpoint, flowrule):
         '''
@@ -889,7 +912,7 @@ class DO(object):
         GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
 
         # RESOURCE DESCRIPTION
-        ResourceDescription().new_flowrule(flow_rule_db_id)
+        #ResourceDescription().new_flowrule(flow_rule_db_id)
 
         # PRINT
         self.__print("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
