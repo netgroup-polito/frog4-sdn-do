@@ -15,7 +15,7 @@ from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
-from do_core.messaging import Messaging
+from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
 
@@ -77,7 +77,7 @@ class DO(object):
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
 
-            Messaging().PublishDomainConfig()
+            Messaging().publish_domain_description()
 
             return self.__session_id
 
@@ -127,7 +127,7 @@ class DO(object):
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
 
-            Messaging().PublishDomainConfig()
+            Messaging().publish_domain_description()
 
         except Exception as ex:
             logging.error("Update NF-FG: ", ex)
@@ -154,7 +154,7 @@ class DO(object):
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
 
-            Messaging().PublishDomainConfig()
+            Messaging().publish_domain_description()
 
         except Exception as ex:
             logging.error("Delete NF-FG: ", ex)
@@ -210,7 +210,7 @@ class DO(object):
         '''
         # VNFs inspections
         # TODO this check is implemented through the 'template' information. I don't know if is the best approach
-        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.template)
@@ -428,7 +428,7 @@ class DO(object):
             logging.debug("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
             raise NffgUselessInformations("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
 
-        domain_info = DomainInfo.get_from_file(Configuration().MSG_RESDESC_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
 
         # [ SWITCH VNFs ]
         if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:

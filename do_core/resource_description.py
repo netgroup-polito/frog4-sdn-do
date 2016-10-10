@@ -1,11 +1,14 @@
 import json, logging
 from collections import OrderedDict
 from do_core.config import Configuration
-from do_core.domain_info import DomainInfo
+from do_core.domain_info import DomainInfo, FunctionalCapability
 from do_core.sql.graph_session import GraphSession
 
+
 class Singleton(type):
+
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
@@ -22,7 +25,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
     def __init__(self):
         return
 
-    def loadFile(self,filename):
+    def loadFile(self, filename):
         if self.__filename == filename:
             return
         
@@ -52,10 +55,10 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         load the json into a OrderedDict (that stores the original order)
         and we dump the json without sorting the keys (sort_keys=False).
         '''
-        if self.__save == False:
+        if not self.__save:
             return
-        output_json = json.dumps(self.__dict,sort_keys=False,indent=2)
-        out_file = open(self.__filename,"w")
+        output_json = json.dumps(self.__dict, sort_keys=False, indent=2)
+        out_file = open(self.__filename, "w")
         out_file.write(output_json)
 
     def new_flowrule(self, fr_db_id):
@@ -224,15 +227,13 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
             return False
         return True
     
-    
     def VlanID_isAvailable(self, vlan_id, switch_id, port_id):
         endpoint_name = switch_id+self.__endpoint_name_separator+port_id 
         for r in self.__endpoints[endpoint_name]['trunk_vlans']:
             if vlan_id>=r[0] and vlan_id<=r[1]:
                 return True
         return False
-    
-    
+
     def VlanID_getAvailables(self, switch_id, port_id):
         endpoint_name = switch_id+self.__endpoint_name_separator+port_id
         trunk_vlans = []
@@ -242,8 +243,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
             else:
                 trunk_vlans.append(r[0])
         return trunk_vlans
-    
-    
+
     def VlanID_getAvailables_asString(self, switch_id, port_id):
         endpoint_name = switch_id+self.__endpoint_name_separator+port_id
         trunk_vlans = ""
@@ -255,4 +255,35 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
                 trunk_vlans = trunk_vlans+str(r[0])+";"
         return trunk_vlans[:-1]
 
-ResourceDescription().loadFile(Configuration().MSG_RESDESC_FILE)
+    def clear_functional_capabilities(self):
+        self.__domain_info.capabilities.functional_capabilities = []
+        self.__dict = self.__domain_info.get_dict()
+
+    def add_functional_capability(self, fc):
+
+        self.__domain_info.capabilities.functional_capabilities.append(fc)
+        self.__dict = self.__domain_info.get_dict()
+
+    # these three are not used for now, capabilities are always pushed together
+    def remove_functional_capability(self, fc_name):
+        for fc in self.__domain_info.capabilities.functional_capabilities:
+            if fc.name == fc_name:
+                self.__domain_info.capabilities.functional_capabilities.remove(fc)
+                break
+        self.__dict = self.__domain_info.get_dict()
+
+    def enable_functional_capability(self, fc_name):
+        for fc in self.__domain_info.capabilities.functional_capabilities:
+            if fc.name == fc_name:
+                fc.ready = True
+                break
+        self.__dict = self.__domain_info.get_dict()
+
+    def disable_functional_capability(self, fc_name):
+        for fc in self.__domain_info.capabilities.functional_capabilities:
+            if fc.name == fc_name:
+                fc.ready = False
+                break
+        self.__dict = self.__domain_info.get_dict()
+
+ResourceDescription().loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)

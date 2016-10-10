@@ -66,3 +66,38 @@ class RestInterface:
         :return:
         """
         pass
+
+    @abstractmethod
+    def push_config(self, onos_endpoint, onos_user, onos_pass, json_config):
+        """
+        Push a configuration to onos through network config API
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param json_config: the configuration to push
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_applications_capabilities(self, onos_endpoint, onos_user, onos_pass):
+        """
+        Return the whole set of applications capabilities
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_application_capability(self, onos_endpoint, onos_user, onos_pass, app_name):
+        """
+        Return the capability of a specific application if any
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application name
+        :return:
+        """
+        pass

@@ -8,7 +8,7 @@ import logging
 from do_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 #from do_core.resource_description import ResourceDescription
-from do_core.messaging import Messaging
+from do_core.domain_information_manager import Messaging
 from do_core.netmanager import NetManager
 
 

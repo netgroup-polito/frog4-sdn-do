@@ -19,6 +19,8 @@ Script phases:
 '''
 
 import logging
+from threading import Thread
+
 from flask import Flask
 from flasgger import Swagger
 
@@ -34,7 +36,7 @@ from do_core.rest_interface import DO_REST_NFFG_Status
 from do_core.rest_interface import DO_UserAuthentication
 from do_core.rest_interface import DO_NetworkTopology
 
-from do_core.messaging import Messaging
+from do_core.domain_information_manager import DomainInformationManager
 
 # Database connection test
 try_session()
@@ -121,4 +123,6 @@ app.add_url_rule(
 logging.info("Flask Successfully started")
 print("Welcome to 'Network Controller Domain Orchestrator'")
 
-Messaging().PublishDomainConfig()
+domain_information_manager = DomainInformationManager()
+thread = Thread(target=domain_information_manager.start)
+thread.start()

@@ -8,6 +8,7 @@ import json
 import networkx as nx
 
 from do_core.config import Configuration
+from do_core.domain_info import FunctionalCapability
 from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
@@ -269,6 +270,43 @@ class NetManager:
             pass
         elif self.isONOS():
             ONOS_Rest(self.ct_version).push_config(self.ct_endpoint, self.ct_username, self.ct_password, json_config)
+
+    def get_apps_capabilities(self):
+
+        functional_capabilities = []
+
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).get_applications_capabilities(
+                self.ct_endpoint, self.ct_username, self.ct_password
+            )
+            capabilities_dict = json.loads(json_data)
+            capabilities_array = capabilities_dict['functional-capabilities']
+            for capability_dict in capabilities_array:
+                functional_capability = FunctionalCapability()
+                functional_capability.parse_dict(capability_dict)
+                functional_capabilities.append(functional_capability)
+
+        return functional_capabilities
+
+    def get_app_capability(self, app_name):
+
+        functional_capability = FunctionalCapability()
+
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).get_application_capability(
+                self.ct_endpoint, self.ct_username, self.ct_password, app_name
+            )
+            functional_capability.parse_dict(json.loads(json_data))
+
+        return functional_capability
         
     def getSwitchList(self):
         swList = list()
