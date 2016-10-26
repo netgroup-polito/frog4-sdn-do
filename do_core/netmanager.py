@@ -94,19 +94,10 @@ class NetManager:
                     ep_flowrules.append(flowrule)
             return ep_flowrules
 
-        def get_switch_vnfs(self):
-            switches_vnfs = []
-            for vnf in self.__nffg_vnfs.values():
-                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
-                    switches_vnfs.append(vnf)
-            return switches_vnfs
-
         def get_detached_vnfs(self):
             detached_vnfs = []
             for vnf in self.__nffg_vnfs.values():
                 is_detached = True
-                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
-                    continue
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if is_detached:
                         for action in flow_from.actions:
@@ -127,8 +118,6 @@ class NetManager:
             attached_vnfs = []
             for vnf in self.__nffg_vnfs.values():
                 is_attached = False
-                if vnf.template == Configuration().VNF_SWITCH_TEMPLATE:
-                    continue
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if not is_attached:
                         for action in flow_from.actions:

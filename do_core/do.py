@@ -64,10 +64,9 @@ class DO(object):
             self.__NC_FlowsInstantiation(nffg)
             logging.debug("Flow rules instantiated!")
 
+            # activate needed applications
             self.__NC_ApplicationsInstantiation(nffg)
             logging.debug("Applications activated!")
-
-            # TODO configure applications to match vnf involving flow rules
 
             logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
@@ -417,7 +416,6 @@ class DO(object):
         """
         Instantiate applications on the controller implementing VNFs of the NF_FG.
         The vnf are categorized in three groups:
-        SWITCH: vnfs that implement a L2 bridge connecting endpoints
         DETACHED: vnfs that have flows just to/from endpoints
         ATTACHED: vnfs that have flows to/from an other vnf
         :param nffg:
@@ -429,11 +427,6 @@ class DO(object):
             raise NffgUselessInformations("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
 
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
-
-        # [ SWITCH VNFs ]
-        if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
-            # TODO add support to emulate a L2 switch connecting the end points
-            raise_useless_info("Switch vnf not supported yet")
 
         # [ DETACHED VNFs ]
         for vnf in self.NetManager.ProfileGraph.get_detached_vnfs():
@@ -453,12 +446,13 @@ class DO(object):
 
     def __NC_ProcessDetachedVnf(self, application_name, vnf):
         """
-
+        Activate the application and push the port configuration in order to match the vnf setup
         :param application_name: application implementing the vnf
         :param vnf: vnf to emulate
         :type application_name: str
         :type vnf: VNF
         """
+        # TODO I am assuming that flows are all bidirectional
         flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
         vnf_port_map = {}   # key=graph port id, value=attached device/interface
 

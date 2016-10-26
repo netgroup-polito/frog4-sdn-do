@@ -82,13 +82,10 @@ class Configuration(object):
             # self.__DD_TENANT_KEY = self.__abs_path + "/" + config.get('messaging', 'dd_tenant_key')
             self.__DD_TENANT_KEY = config.get('messaging', 'dd_tenant_key')
 
-            # [resource_description_topic]
+            # [domain_description]
             self.__DOMAIN_DESCRIPTION_TOPIC = config.get('domain_description', 'domain_description_topic')
             self.__DOMAIN_DESCRIPTION_FILE = self.__abs_path + "/" + config.get('domain_description',
                                                                                 'domain_description_file')
-
-            # [vnf_emulation]
-            self.__VNF_SWITCH_TEMPLATE = config.get('vnf_emulation', 'vnf_switch_template')
 
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
@@ -254,10 +251,6 @@ class Configuration(object):
     @property
     def DOMAIN_DESCRIPTION_FILE(self):
         return self.__DOMAIN_DESCRIPTION_FILE
-
-    @property
-    def VNF_SWITCH_TEMPLATE(self):
-        return self.__VNF_SWITCH_TEMPLATE
 
     @property
     def OO_CONSOLE_PRINT(self):
