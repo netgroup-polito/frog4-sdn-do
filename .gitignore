@@ -17,3 +17,10 @@ db.sqlite3
 /config/config.ini
 /config/ResourceDescription*
 .idea/
+__pycache__/
+do_core/__pycache__/
+do_core/controller_interface/__pycache__/
+do_core/onos/__pycache__/
+do_core/sql/__pycache__/
+keys/public-keys.json
+scripts/__pycache__/
