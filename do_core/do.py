@@ -440,7 +440,7 @@ class DO(object):
             logging.debug("Activated application: " + application_name)
 
         # [ ATTACHED VNFs ]
-        if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
+        if len(self.NetManager.ProfileGraph.get_attached_vnfs()) != 0:
             # TODO add support to implement a vnf sending/receiving traffic to/from an other vnf
             raise_useless_info("Attached vnf not supported yet")
 
