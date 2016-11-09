@@ -40,8 +40,10 @@ def session_create_database():
         cursor = conn.cursor()
         cursor.executescript(sqldump)
         conn.close()
-        
-    print("Database created successfully.\n\n")
+        print("Database created successfully.\n\n")
+    else:
+        print("Error creating database.\n\n")
+
     return
 
 
