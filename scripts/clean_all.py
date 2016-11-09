@@ -46,7 +46,7 @@ def do_core_clean_all():
     
     #ResourceDescription().updateAll()
     #ResourceDescription().saveFile()
-    Messaging().PublishDomainConfig()
+    #Messaging().PublishDomainConfig()
     logging.info("Resource description file updated!")
     
     print("Cleaning database and switches completed!")
