@@ -72,6 +72,9 @@ Edit [./default-config.ini](/config/default-config.ini) and rename it in "config
 
 Pay attention to all paths: they must be relative paths (respect of 'frog4-openflow-do' directory).
 
+In the config folder, make a new copy of the file OnosResourceDescription_static.json and rename it (e.g. OnosResourceDescription.json).
+Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
+
 
 ### Set the SDN Controller
 
@@ -85,7 +88,7 @@ to specify version, endpoint and credentials.
 
 ### Create the database
 ```sh
-	$ python3 ./scripts/create_database.py
+	$ python3 -m scripts.create_database
 ```
 Set full permissions on the database file:
 ```sh
