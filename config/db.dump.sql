@@ -133,4 +133,4 @@ CREATE TABLE 'vnf_port' (
   "vnf_id" int(64) NOT NULL,
   "name" varchar(64),
   PRIMARY KEY ("id")
-)
+);
