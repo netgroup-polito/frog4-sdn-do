@@ -85,7 +85,7 @@ to specify version, endpoint and credentials.
 
 ### Create the database
 ```sh
-	$ python3 ./scripts/create_database.py
+	$ python3 -m scripts.create_database
 ```
 Set full permissions on the database file:
 ```sh
