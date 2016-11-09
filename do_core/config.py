@@ -6,7 +6,7 @@ Created on Oct 1, 2014
 
 '''
 
-import configparser, os, inspect, logging
+import configparser, os, inspect, logging, json
 from do_core.exception import WrongConfigurationFile
 
 
@@ -34,6 +34,7 @@ class Configuration(object):
         '''
 
         try:
+            # TODO add config file as parameter
             config.read(self.__abs_path + '/config/config.ini')
 
             # [domain_orchestrator]
@@ -49,6 +50,10 @@ class Configuration(object):
             # [vlan]
             self.__VLAN_AVAILABLE_IDS = config.get('vlan', 'available_ids')
             self.__ALLOWED_VLANS = self.__set_available_vlan_ids_array(self.__VLAN_AVAILABLE_IDS)
+
+            # [physical_ports]
+            ports_json = config.get('physical_ports', 'ports')
+            self.__PORTS = json.loads(ports_json)
 
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication', 'token_expiration')
@@ -74,6 +79,11 @@ class Configuration(object):
             self.__ONOS_ENDPOINT = config.get('onos', 'onos_endpoint')
             self.__ONOS_VERSION = config.get('onos', 'onos_version')
 
+            # [ovsdb]
+            self.__OVSDB_NODE_IP = config.get('ovsdb', 'ovsdb_node_ip')
+            self.__OVSDB_NODE_PORT = config.get('ovsdb', 'ovsdb_node_port')
+            self.__OVSDB_IP = config.get('ovsdb', 'ovsdb_ip')
+
             # [messaging]
             self.__DD_ACTIVATE = config.getboolean('messaging', 'dd_activate')
             self.__DD_NAME = config.get('messaging', 'dd_name')
@@ -86,9 +96,12 @@ class Configuration(object):
             self.__DOMAIN_DESCRIPTION_TOPIC = config.get('domain_description', 'domain_description_topic')
             self.__DOMAIN_DESCRIPTION_FILE = self.__abs_path + "/" + config.get('domain_description',
                                                                                 'domain_description_file')
+            self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
 
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
+
+            print(self.__PORTS)
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -114,8 +127,8 @@ class Configuration(object):
     def __set_available_vlan_ids_array(self, vid_ranges):
 
         '''
-		Expected vid_ranges = "280-289,62,737,90-95,290-299,13-56,92,57-82,2-5,12"
-		'''
+        Expected vid_ranges = "280-289,62,737,90-95,290-299,13-56,92,57-82,2-5,12"
+        '''
 
         def __getKey(item):
             return item[0]
@@ -163,6 +176,10 @@ class Configuration(object):
     @property
     def ALLOWED_VLANS(self):
         return self.__ALLOWED_VLANS
+
+    @property
+    def PORTS(self):
+        return self.__PORTS
 
     @property
     def AUTH_TOKEN_EXPIRATION(self):
@@ -225,6 +242,18 @@ class Configuration(object):
         return self.__ONOS_VERSION
 
     @property
+    def OVSDB_NODE_IP(self):
+        return self.__OVSDB_NODE_IP
+
+    @property
+    def OVSDB_NODE_PORT(self):
+        return self.__OVSDB_NODE_PORT
+
+    @property
+    def OVSDB_IP(self):
+        return self.__OVSDB_IP
+
+    @property
     def DD_ACTIVATE(self):
         return self.__DD_ACTIVATE
 
@@ -251,6 +280,10 @@ class Configuration(object):
     @property
     def DOMAIN_DESCRIPTION_FILE(self):
         return self.__DOMAIN_DESCRIPTION_FILE
+
+    @property
+    def CAPABILITIES_APP_NAME(self):
+        return self.__CAPABILITIES_APP_NAME
 
     @property
     def OO_CONSOLE_PRINT(self):

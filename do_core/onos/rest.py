@@ -1,9 +1,13 @@
-'''
+"""
 Created on 2/feb/2016
 
 @author: giacomoratta
-'''
-import requests, logging
+@author: gabrielecastellano
+"""
+
+import requests
+import logging
+import json
 from do_core.controller_interface.rest import RestInterface
 
 
@@ -20,6 +24,7 @@ class ONOS_Rest(RestInterface):
         self.rest_apps_url = '/onos/v1/applications'
         self.rest_network_config_url = '/onos/v1/network/configuration/'
         self.apps_capabilities_url = '/onos/apps-capabilities/capability'
+        self.ovsdbrest_url = '/onos/ovsdb/config/bridge'
 
     def __logging_debug(self, response, url, jsonFlow=None):
         log_string = "response: "+str(response.status_code)+", "+response.reason
@@ -71,7 +76,7 @@ class ONOS_Rest(RestInterface):
         Exceptions:
             raise the requests.HTTPError exception connected to the REST call in case of HTTP error
         '''
-        headers = {'Accept': 'application/json', 'Content-type':'application/json'}
+        headers = {'Accept': 'application/json', 'Content-type': 'application/json'}
         url = onos_endpoint+self.rest_flows_url+"/"+str(switch_id)
         response = requests.post(url,jsonFlow,headers=headers, auth=(onos_user, onos_pass))
         
@@ -189,3 +194,37 @@ class ONOS_Rest(RestInterface):
         self.__logging_debug(response, url)
         response.raise_for_status()
         return response.text
+
+    def check_ovsdbrest(self, onos_endpoint, onos_user, onos_pass):
+        """
+        Return OK if ovsdbrest API are at the moment available on the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :return:
+        """
+        headers = {'Accept': 'application/json'}
+        url = onos_endpoint+self.ovsdbrest_url+"/test"
+
+        response = requests.get(url, headers=headers, auth=(onos_user, onos_pass))
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+
+    def add_port(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name):
+        """
+        Add a physical port to an existing bridge through ovsdb
+        :param onos_endpoint:
+        :param onos_user:
+        :param onos_pass:
+        :param ovsdb_ip:
+        :param bridge_name:
+        :param port_name:
+        :return:
+        """
+        headers = {'Content-type': 'application/json'}
+        url = onos_endpoint+self.ovsdbrest_url+"/port"
+        body_dict = {'ovsdb-ip': ovsdb_ip, 'bridge-name': bridge_name, 'port-name': port_name}
+
+        response = requests.post(url, json.dumps(body_dict), headers=headers, auth=(onos_user, onos_pass))
+        self.__logging_debug(response, url)
+        response.raise_for_status()

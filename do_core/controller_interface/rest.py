@@ -101,3 +101,28 @@ class RestInterface:
         :return:
         """
         pass
+
+    @abstractmethod
+    def check_ovsdbrest(self, onos_endpoint, onos_user, onos_pass):
+        """
+        Return OK if ovsdbrest API are at the moment available on the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def add_port(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name):
+        """
+        Add a physical port to an existing bridge through ovsdb
+        :param onos_endpoint:
+        :param onos_user:
+        :param onos_pass:
+        :param ovsdb_ip:
+        :param bridge_name:
+        :param port_name:
+        :return:
+        """
+        pass

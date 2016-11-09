@@ -1,4 +1,4 @@
-'''
+"""
 Created on Dic 7, 2015
 
 @author: fabiomignini
@@ -16,7 +16,7 @@ Script phases:
    1) Load configuration;
    2) start flask web framework;
    3) add api paths.
-'''
+"""
 
 import logging
 from threading import Thread
@@ -37,6 +37,7 @@ from do_core.rest_interface import DO_UserAuthentication
 from do_core.rest_interface import DO_NetworkTopology
 
 from do_core.domain_information_manager import DomainInformationManager
+from do_core.netmanager import NetManager, OvsdbRest
 
 # Database connection test
 try_session()
@@ -87,9 +88,9 @@ swagger_config = {
             "route": '/v1/spec',
         }
     ],
-        "static_url_path": "/apidocs",
-        "static_folder": "swaggerui",
-        "specs_route": "/specs"
+    "static_url_path": "/apidocs",
+    "static_folder": "swaggerui",
+    "specs_route": "/specs"
 }
 
 Swagger(app, config=swagger_config)
@@ -123,6 +124,20 @@ app.add_url_rule(
 logging.info("Flask Successfully started")
 print("Welcome to 'Network Controller Domain Orchestrator'")
 
+
+# adding physical interfaces if any
+try:
+    OvsdbRest().activate_ovsdbrest()
+    OvsdbRest().configure_ovsdbrest()
+    # physical interfaces
+    ports = Configuration().PORTS
+    for port in ports:
+        OvsdbRest().add_port(ports[port], port)
+except Exception as ex:
+    logging.exception(ex)
+    logging.warning('Application ovsdbrest is not available')
+
+# starting DomainInformationManager
 domain_information_manager = DomainInformationManager()
 thread = Thread(target=domain_information_manager.start)
 thread.start()

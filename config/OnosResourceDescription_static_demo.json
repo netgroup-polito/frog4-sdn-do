@@ -1,0 +1,188 @@
+{
+  "netgroup-domain:informations": {
+    "id": "00000001",
+    "name": "onos_domain",
+    "type": "ONOS",
+    "management-address": "127.0.0.1:10000",
+    "hardware-informations": {
+      "interfaces": {
+        "interface": [
+          {
+            "name": "s2-eth1",
+            "netgroup-if-side:side": "edge",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on device 02",
+              "enabled": true
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "config": {
+                    "name": "eth1",
+                    "description": "something",
+                    "enabled": true
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "host1",
+                  "remote-interface": "10.0.0.1/eth0"
+                }
+              ]
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              }
+            }
+          },
+          {
+            "name": "s2-eth2",
+            "netgroup-if-side:side": "edge",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on device 02",
+              "enabled": true
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "config": {
+                    "name": "eth2",
+                    "description": "something",
+                    "enabled": true
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "host2",
+                  "remote-interface": "10.0.0.2/eth0"
+                }
+              ]
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              }
+            }
+          },
+          {
+            "name": "s3-eth1",
+            "netgroup-if-side:side": "edge",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on device 03",
+              "enabled": true
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "config": {
+                    "name": "s3-eth1",
+                    "description": "something",
+                    "enabled": true
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "host3",
+                  "remote-interface": "10.0.0.3/eth0"
+                }
+              ]
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              }
+            }
+          },
+          {
+            "name": "s3-eth2",
+            "netgroup-if-side:side": "edge",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on device 03",
+              "enabled": true
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "config": {
+                    "name": "s3-eth2",
+                    "description": "something",
+                    "enabled": true
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "host4",
+                  "remote-interface": "10.0.0.4/eth0"
+                }
+              ]
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "capabilities": {
+      "infrastructural-capabilities": {
+        "infrastructural-capability": [
+          {
+            "type": "cpu_architecture",
+            "name": "x86-64"
+          },
+          {
+            "type": "sdn_controller",
+            "name": "onos"
+          }
+        ]
+      }
+    }
+  }
+}
