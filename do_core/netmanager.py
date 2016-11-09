@@ -271,6 +271,8 @@ class NetManager:
         elif self.isONOS():
             ONOS_Rest(self.ct_version).push_config(self.ct_endpoint, self.ct_username, self.ct_password, json_config)
 
+    # [CAPABILITIES]
+
     def get_apps_capabilities(self):
 
         functional_capabilities = []
@@ -687,5 +689,58 @@ class NetManager:
             base_action = Action()
             return base_action.getNffgAction(self.__actions, self.__nffg_flowrule)
 
+'''
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    CLASS - OVSDBREST
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+'''
 
 
+class OvsdbRest(object):
+
+    def __init__(self):
+        self.net_manager = NetManager()
+        self.ovsdb_ip = Configuration().OVSDB_IP
+
+    def activate_ovsdbrest(self):
+
+        if self.net_manager.isODL():
+            # TODO activate here ODL ovsdbrest API
+            pass
+        elif self.net_manager.isONOS():
+            self.net_manager.activate_app('org.onosproject.ovsdbrest')
+
+    def is_ovsdbrest_running(self):
+
+        if self.net_manager.isODL():
+            # TODO activate here ODL ovsdbrest API
+            pass
+        elif self.net_manager.isONOS():
+            try:
+                ONOS_Rest(self.net_manager.ct_version).check_ovsdbrest(self.net_manager.ct_endpoint,
+                                                                       self.net_manager.ct_username,
+                                                                       self.net_manager.ct_password)
+                return true
+            except requests.HTTPError as err:
+                return false
+
+    def configure_ovsdbrest(self):
+
+        if self.net_manager.isODL():
+            # TODO configure ODL ovsdbrest API
+            pass
+        elif self.net_manager.isONOS():
+            config_dict = {
+                'nodes': [{'ovsdbIp': Configuration().OVSDB_NODE_IP, 'ovsdbPort': Configuration().OVSDB_NODE_PORT}]
+            }
+            self.net_manager.push_app_configuration('org.onosproject.ovsdbrest', config_dict)
+
+    def add_port(self, device_id, port_name):
+
+        if self.net_manager.isODL():
+            # TODO call ODL ovsdb rest API here
+            pass
+        elif self.net_manager.isONOS():
+            ONOS_Rest(self.net_manager.ct_version)\
+                .add_port(self.net_manager.ct_endpoint, self.net_manager.ct_username,
+                          self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name)
