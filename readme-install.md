@@ -129,10 +129,10 @@ Now you can run gunicorn on https:
 
 * Reset database and clean every switch.
 ```sh
-	$ python3 ./scripts/clean_all.py
+	$ python3 -m scripts.clean_all
 ```
 
 * Print the network topology detected by OpenFlow Domain Orchestrator.
 ```sh
-	$ python3 ./scripts/network_topology.py
+	$ python3 -m scripts.network_topology
 ```
