@@ -9,21 +9,21 @@
 
 ONOS requires JAVA 8:
 ```sh
-	sudo add-apt-repository ppa:webupd8team/java
-	sudo apt-get update
-	sudo apt-get install oracle-java8-installer
+	$ sudo add-apt-repository ppa:webupd8team/java
+	$ sudo apt-get update
+	$ sudo apt-get install oracle-java8-installer
 ```
 
 OpenDayLight requires JAVA 7:
 ```sh
-	sudo add-apt-repository ppa:webupd8team/java
-	sudo apt-get update
-	sudo apt-get install oracle-java7-installer
+	$ sudo add-apt-repository ppa:webupd8team/java
+	$ sudo apt-get update
+	$ sudo apt-get install oracle-java7-installer
 ```
 
 Note: both versions can coexist, but you must choose what version to enable:
 ```sh
-	sudo update-alternatives --config java
+	$ sudo update-alternatives --config java
 ```
 
 
@@ -61,9 +61,9 @@ To check if a module is already installed and its version:
 ### Clone the code
 
 ```sh
-	git clone https://github.com/netgroup-polito/frog4-openflow-do.git
-	cd frog4-openflow-do
-	git submodule init && git submodule update
+	$ git clone https://github.com/netgroup-polito/frog4-openflow-do.git
+	$ cd frog4-openflow-do
+	$ git submodule init && git submodule update
 ```
 
 ### Write your own configuration
@@ -103,7 +103,10 @@ All the tables will be empty, except "user" and "tenant".
 ```sh
 	$ gunicorn -b 0.0.0.0:9000 -t 500 main:app
 ```
-
+or
+```sh
+	$ ./start.sh
+```
 ### Start the Domain Orchestrator (HTTPS)
 
 In this case a certificate is needed.
