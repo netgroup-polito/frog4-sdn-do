@@ -122,7 +122,7 @@ class Configuration(object):
             log_level = logging.WARNING
         logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format,
                             datefmt='%m/%d/%Y %I:%M:%S %p:%r')
-        logging.info("[CONFIG] Logging just starded!")
+        logging.info("[CONFIG] Logging just started!")
 
     def __set_available_vlan_ids_array(self, vid_ranges):
 
