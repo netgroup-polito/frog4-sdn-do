@@ -72,19 +72,18 @@ class DO(object):
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
-            # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
-
-            Messaging().publish_domain_description()
-
-            return self.__session_id
-
         except Exception as ex:
             logging.error(ex)
             self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
+
+        # Update the resource description .json
+        ResourceDescription().updateAll()
+        ResourceDescription().saveFile()
+        Messaging().publish_domain_description()
+
+        return self.__session_id
 
     def NFFG_Update(self, new_nffg):
 
