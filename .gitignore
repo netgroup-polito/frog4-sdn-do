@@ -16,4 +16,13 @@ db.sqlite3
 /scripts/main1.py
 /config/config.ini
 /config/ResourceDescription*
+/config/OnosResourceDescription.json
 .idea/
+__pycache__/
+do_core/__pycache__/
+do_core/controller_interface/__pycache__/
+do_core/onos/__pycache__/
+do_core/sql/__pycache__/
+keys/public-keys.json
+scripts/__pycache__/
+keys/broker-keys.json

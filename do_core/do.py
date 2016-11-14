@@ -72,19 +72,18 @@ class DO(object):
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
-            # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
-
-            Messaging().publish_domain_description()
-
-            return self.__session_id
-
         except Exception as ex:
             logging.error(ex)
             self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
+
+        # Update the resource description .json
+        ResourceDescription().updateAll()
+        ResourceDescription().saveFile()
+        Messaging().publish_domain_description()
+
+        return self.__session_id
 
     def NFFG_Update(self, new_nffg):
 
@@ -440,7 +439,7 @@ class DO(object):
             logging.debug("Activated application: " + application_name)
 
         # [ ATTACHED VNFs ]
-        if len(self.NetManager.ProfileGraph.get_switch_vnfs()) != 0:
+        if len(self.NetManager.ProfileGraph.get_attached_vnfs()) != 0:
             # TODO add support to implement a vnf sending/receiving traffic to/from an other vnf
             raise_useless_info("Attached vnf not supported yet")
 
