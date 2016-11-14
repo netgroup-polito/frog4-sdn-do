@@ -19,6 +19,7 @@ Script phases:
 """
 
 import logging
+import time
 from threading import Thread
 
 from flask import Flask
@@ -129,6 +130,7 @@ print("Welcome to 'Network Controller Domain Orchestrator'")
 try:
     OvsdbRest().activate_ovsdbrest()
     OvsdbRest().configure_ovsdbrest()
+    time.sleep(2)
     # physical interfaces
     ports = Configuration().PORTS
     for port in ports:

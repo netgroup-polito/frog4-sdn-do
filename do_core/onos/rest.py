@@ -22,9 +22,9 @@ class ONOS_Rest(RestInterface):
         self.rest_links_url = '/onos/v1/links'
         self.rest_flows_url = '/onos/v1/flows'  # /onos/v1/flows/{DeviceId}
         self.rest_apps_url = '/onos/v1/applications'
-        self.rest_network_config_url = '/onos/v1/network/configuration/'
+        self.rest_network_config_url = '/onos/v1/network/configuration'
         self.apps_capabilities_url = '/onos/apps-capabilities/capability'
-        self.ovsdbrest_url = '/onos/ovsdb/config/bridge'
+        self.ovsdbrest_url = '/onos/ovsdb'
 
     def __logging_debug(self, response, url, jsonFlow=None):
         log_string = "response: "+str(response.status_code)+", "+response.reason
@@ -222,9 +222,8 @@ class ONOS_Rest(RestInterface):
         :return:
         """
         headers = {'Content-type': 'application/json'}
-        url = onos_endpoint+self.ovsdbrest_url+"/port"
-        body_dict = {'ovsdb-ip': ovsdb_ip, 'bridge-name': bridge_name, 'port-name': port_name}
+        url = onos_endpoint+self.ovsdbrest_url+"/"+ovsdb_ip+"/bridge/"+bridge_name+"/port/"+port_name
 
-        response = requests.post(url, json.dumps(body_dict), headers=headers, auth=(onos_user, onos_pass))
+        response = requests.post(url, headers=headers, auth=(onos_user, onos_pass))
         self.__logging_debug(response, url)
         response.raise_for_status()

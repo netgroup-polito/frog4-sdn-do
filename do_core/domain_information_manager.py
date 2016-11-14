@@ -99,6 +99,7 @@ class DomainInformationManager(object):
         # activate capabilities application on controller
         try:
             NetManager().activate_app(Configuration().CAPABILITIES_APP_NAME)
+            time.sleep(2)
         except:
             logging.warning("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
                             ", no functional capabilities will be exported.")
