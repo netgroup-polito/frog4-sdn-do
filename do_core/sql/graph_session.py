@@ -55,8 +55,7 @@ class PortModel(Base):
     creation_date = Column(DateTime)
     last_update = Column(DateTime, default=func.now())
     
-    
-    
+
 class EndpointModel(Base):
     __tablename__ = 'endpoint'
     attributes = ['id', 'graph_endpoint_id','name','type','session_id']
@@ -75,9 +74,8 @@ class EndpointResourceModel(Base):
     __tablename__ = 'endpoint_resource'
     attributes = ['endpoint_id', 'resource_type', 'resource_id']
     endpoint_id = Column(Integer, primary_key=True)
-    resource_type = Column(VARCHAR(64), primary_key=True) # = ( port | flow-rule )
+    resource_type = Column(VARCHAR(64), primary_key=True)  # = ( port | flow-rule )
     resource_id = Column(Integer, primary_key=True)
-    
     
 
 class FlowRuleModel(Base):
@@ -97,8 +95,7 @@ class FlowRuleModel(Base):
     last_update = Column(DateTime, default=func.now())
     description = Column(VARCHAR(128))
     
-    
-    
+
 class MatchModel(Base):
     __tablename__ = 'match'
     attributes = ['id', 'flow_rule_id', 'port_in_type', 'port_in', 'ether_type','vlan_id','vlan_priority', 'source_mac','dest_mac','source_ip',
@@ -120,7 +117,6 @@ class MatchModel(Base):
     source_port = Column(VARCHAR(64))
     dest_port = Column(VARCHAR(64))
     protocol = Column(VARCHAR(64))
-    
     
 
 class ActionModel(Base):
@@ -463,9 +459,7 @@ class GraphSession(object):
         if len(qref)>0:
             return qref
         return None
-    
-        
-    
+
     def getBusyVlanInOnTheSwitch(self, switch_id, port_in, nffg_match):
         qref = self.getFlowruleMatchesOnTheSwitch(switch_id, port_in, nffg_match)
         
@@ -476,10 +470,25 @@ class GraphSession(object):
                 if fr.MatchModel.vlan_id is not None:
                     busy_vlan_ids.append(int(fr.MatchModel.vlan_id))
         return busy_vlan_ids
-    
-    
-    
-    
+
+    def getPort(self, graph_endpoint_id):
+        session = get_session()
+        endpoint = session.query(EndpointModel).filter_by(graph_endpoint_id=graph_endpoint_id).one()
+        endpoint_resource = session.query(EndpointResourceModel)\
+            .filter_by(endpoint_id=endpoint.id)\
+            .filter_by(resource_type='port').one()
+
+        return session.query(PortModel).filter_by(id=endpoint_resource.resource_id).one()
+
+    def getNextGreInterfaceName(self):
+        session = get_session()
+        ports = session.query(PortModel).order_by(asc(PortModel.graph_port_id)).all()
+        last_gre_interface_name = "gre-1"
+        for port in ports:
+            if 'gre' in port.graph_port_id:
+                last_gre_interface_name = port.graph_port_id
+        return 'gre' + str(int(last_gre_interface_name.replace('gre', '')) + 1)
+
     
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -594,10 +603,6 @@ class GraphSession(object):
         session = get_session()
         with session.begin():
             session.query(GraphSessionModel).filter_by(session_id=session_id).update({"last_update":datetime.datetime.now(), 'status':status})
-
-
-
-
 
 
     '''
@@ -796,7 +801,6 @@ class GraphSession(object):
             session.add(match_ref)
             return match_ref
     
-    
     def dbStorePort(self, session_id, port_id, graph_port_id, switch_id, vlan_id, status):
         session = get_session()
         if port_id is None:
@@ -850,6 +854,8 @@ class GraphSession(object):
             # End-point attached to something that is not another graph
             if endpoint.type == "interface" or endpoint.type == "vlan":
                 self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
+            elif endpoint.type == "gre-tunnel":
+                self.addPort(session_id, endpoint_id, None, self.getNextGreInterfaceName(), Configuration().GRE_BRIDGE_ID, endpoint.vlan_id, 'complete')
 
         # [ VNF ]
         for vnf in nffg.vnfs:

@@ -39,7 +39,7 @@ def do_core_clean_all():
         logging.debug("Deleted flowrules: "+flowrules_separator.join(deleted_flowrules)+".")
     
     if len(notfound_flowrules)>0:
-        logging.debug("Not found flowrules: "+flowrules_separator.join(notfound_flowrules)+".")  
+        logging.debug("Not found flowrules: "+flowrules_separator.join(notfound_flowrules)+".")
     
     GraphSession().cleanAll()
     logging.info("Cleaning database and switches completed!")

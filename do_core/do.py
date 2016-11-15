@@ -6,7 +6,8 @@
 """
 
 from __future__ import division
-import logging, copy
+import logging
+import copy
 
 from do_core.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
@@ -15,6 +16,7 @@ from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
+from do_core.netmanager import OvsdbRest
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
@@ -37,6 +39,7 @@ class DO(object):
 
         # NetManager
         self.NetManager = NetManager()
+        self.ovsdb = OvsdbRest()
 
     def __print(self, msg):
         if self.__print_enabled:
@@ -59,6 +62,9 @@ class DO(object):
 
             # Build the Profile Graph
             self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
+
+            # Set up GRE tunnels if any
+            self.__NC_TunnelSetUp(nffg)
 
             # Send flow rules to Network Controller
             self.__NC_FlowsInstantiation(nffg)
@@ -207,7 +213,7 @@ class DO(object):
         domain), else raise an error.
         '''
         # VNFs inspections
-        # TODO this check is implemented through the 'template' information. I don't know if is the best approach
+        # TODO this check is implemented through the 'template' information. I don't know if it is the best approach
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
@@ -226,8 +232,10 @@ class DO(object):
 
         # END POINTs inspections
         for ep in nffg.end_points:
-            if ep.type is not None and ep.type != "interface" and ep.type != "vlan":
-                raise_useless_info("'end-points.type' must be 'interface' or 'vlan' (not '" + ep.type + "')")
+            if ep.type is not None and ep.type != "interface" and ep.type != "vlan" and ep.type != "gre-tunnel":
+                raise_useless_info("'end-points.type' must be 'interface', 'vlan' or 'gre-tunnel'" +
+                                   " (not '" + ep.type + "')")
+            '''
             if ep.remote_endpoint_id is not None:
                 raise_useless_info("presence of 'end-points.remote_endpoint_id'")
             if ep.remote_ip is not None:
@@ -236,6 +244,7 @@ class DO(object):
                 raise_useless_info("presence of 'end-points.local-ip'")
             if ep.gre_key is not None:
                 raise_useless_info("presence of 'gre-key'")
+            '''
             if ep.ttl is not None:
                 raise_useless_info("presence of 'ttl'")
             if ep.prepare_connection_to_remote_endpoint_id is not None:
@@ -391,6 +400,20 @@ class DO(object):
         if port2_type == 'endpoint':
             return port2_id
         return None
+
+    def __NC_TunnelSetUp(self, nffg):
+
+        # check for tunnel end points
+        for ep in nffg.end_points:
+            if ep.type == 'gre-tunnel':
+                # set up tunnel through controller library
+                # TODO database & port name
+                port = GraphSession().getPort(ep.id)
+                self.ovsdb.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id, ep.local_ip, ep.local_ip, ep.gre_key)
+                # change endpoint to an interface endpoint on the new gre interface
+                ep.type = 'interface'
+                ep.interface = port.graph_port_id
+                ep.node_id = port.switch_id
 
     def __NC_FlowsInstantiation(self, nffg):
 
