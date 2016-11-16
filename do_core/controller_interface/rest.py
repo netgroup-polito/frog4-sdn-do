@@ -131,7 +131,7 @@ class RestInterface:
     def add_gre_tunnel(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name, local_ip, remote_ip,
                        key):
         """
-        Add a physical port to an existing bridge through ovsdb and set up a gre tunnel on it
+        Add a port to an existing bridge through ovsdb and set up a gre tunnel on it
         :param onos_endpoint:
         :param onos_user:
         :param onos_pass:
@@ -141,6 +141,19 @@ class RestInterface:
         :param local_ip:
         :param remote_ip:
         :param key:
+        :return:
+        """
+        pass
+
+    def delete_gre_tunnel(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name):
+        """
+        Delete a gre port from a bridge through ovsdb
+        :param onos_endpoint:
+        :param onos_user:
+        :param onos_pass:
+        :param ovsdb_ip:
+        :param bridge_name:
+        :param port_name:
         :return:
         """
         pass

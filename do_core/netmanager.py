@@ -744,3 +744,13 @@ class OvsdbRest(object):
                 .add_gre_tunnel(self.net_manager.ct_endpoint, self.net_manager.ct_username,
                                 self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name,
                                 local_ip, remote_ip, key)
+
+    def delete_gre_tunnel(self, device_id, port_name):
+
+        if self.net_manager.isODL():
+            # TODO call ODL ovsdb rest API here
+            pass
+        elif self.net_manager.isONOS():
+            ONOS_Rest(self.net_manager.ct_version)\
+                .delete_gre_tunnel(self.net_manager.ct_endpoint, self.net_manager.ct_username,
+                                   self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name)

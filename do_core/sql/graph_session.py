@@ -206,7 +206,14 @@ class GraphSession(object):
     def getAllExternalFlowrules(self):
         session = get_session()
         return session.query(FlowRuleModel).filter_by(type = 'external').all()
-    
+
+    def getEndpointByID(self, endpoint_id):
+        session = get_session()
+        try:
+            ep = session.query(EndpointModel).filter_by(id = endpoint_id).one()
+            return ep
+        except:
+            return None
     
     def getEndpointByGraphID(self, graph_endpoint_id, session_id):
         session = get_session()
@@ -240,16 +247,24 @@ class GraphSession(object):
             return eprs
         except:
             return None
-    
-    
+
+    def getEndpointResourcesPortByEndpointID(self, endpoint_id):
+        session = get_session()
+        try:
+            eprs = session.query(EndpointResourceModel)\
+                .filter_by(endpoint_id=endpoint_id)\
+                .filter_by(resource_type='port')\
+                .one()
+            return eprs
+        except:
+            return None
+
     def getFlowruleByID(self, flow_rule_id=None):
         try:
             session = get_session()
             return session.query(FlowRuleModel).filter_by(id=flow_rule_id).one()
         except:
             return None
-        return None
-    
     
     def getFlowruleByInternalID(self, internal_id=None):
         try:
@@ -471,6 +486,10 @@ class GraphSession(object):
                     busy_vlan_ids.append(int(fr.MatchModel.vlan_id))
         return busy_vlan_ids
 
+    def getPortById(self, port_id):
+        session = get_session()
+        return session.query(PortModel).filter_by(id=port_id).one()
+
     def getPort(self, graph_endpoint_id):
         session = get_session()
         endpoint = session.query(EndpointModel).filter_by(graph_endpoint_id=graph_endpoint_id).one()
@@ -499,21 +518,22 @@ class GraphSession(object):
     def addFlowrule(self, session_id, switch_id, flow_rule, nffg=None):   
 
         # build flowrule type
-        flowrule_type = None
-        if flow_rule.match is not None:
-            if flow_rule.match.port_in.split(':')[0] == 'endpoint':
-                flowrule_type = 'ep'
-            elif flow_rule.match.port_in.split(':')[0] == 'vnf':
-                flowrule_type = 'vnf'
-        if len(flow_rule.actions)>0:
-            for action in flow_rule.actions:
-                if action.output is not None:
-                    flowrule_type += '-to-'
-                    if action.output.split(':')[0] == 'endpoint':
-                        flowrule_type += 'ep'
-                    elif action.output.split(':')[0] == 'vnf':
-                        flowrule_type += 'vnf'
-        flow_rule.type = flowrule_type
+        if flow_rule.type != 'external':
+            flowrule_type = None
+            if flow_rule.match is not None:
+                if flow_rule.match.port_in.split(':')[0] == 'endpoint':
+                    flowrule_type = 'ep'
+                elif flow_rule.match.port_in.split(':')[0] == 'vnf':
+                    flowrule_type = 'vnf'
+            if len(flow_rule.actions) > 0:
+                for action in flow_rule.actions:
+                    if action.output is not None:
+                        flowrule_type += '-to-'
+                        if action.output.split(':')[0] == 'endpoint':
+                            flowrule_type += 'ep'
+                        elif action.output.split(':')[0] == 'vnf':
+                            flowrule_type += 'vnf'
+            flow_rule.type = flowrule_type
 
         # FlowRule
         flow_rule_db_id = self.dbStoreFlowrule(session_id, flow_rule, None, switch_id)
