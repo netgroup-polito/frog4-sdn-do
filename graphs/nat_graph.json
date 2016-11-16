@@ -3,7 +3,7 @@
     "name": "ISP-Graph",
     "VNFs": [
       {
-        "name": "nat-i",
+        "name": "NAT",
         "ports": [
           {
             "name": "data-port",
