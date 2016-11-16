@@ -38,7 +38,7 @@ from do_core.rest_interface import DO_UserAuthentication
 from do_core.rest_interface import DO_NetworkTopology
 
 from do_core.domain_information_manager import DomainInformationManager
-from do_core.netmanager import NetManager, OvsdbRest
+from do_core.netmanager import NetManager, OvsdbManager
 
 # Database connection test
 try_session()
@@ -128,13 +128,13 @@ print("Welcome to 'Network Controller Domain Orchestrator'")
 
 # adding physical interfaces if any
 try:
-    OvsdbRest().activate_ovsdbrest()
-    OvsdbRest().configure_ovsdbrest()
+    OvsdbManager().activate_ovsdbrest()
+    OvsdbManager().configure_ovsdbrest()
     time.sleep(2)
     # physical interfaces
     ports = Configuration().PORTS
     for port in ports:
-        OvsdbRest().add_port(ports[port], port)
+        OvsdbManager().add_port(ports[port], port)
 except Exception as ex:
     logging.exception(ex)
     logging.warning('Application ovsdbrest is not available')

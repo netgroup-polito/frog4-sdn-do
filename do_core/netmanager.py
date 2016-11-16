@@ -685,7 +685,7 @@ class NetManager:
 '''
 
 
-class OvsdbRest(object):
+class OvsdbManager(object):
 
     def __init__(self):
         self.net_manager = NetManager()

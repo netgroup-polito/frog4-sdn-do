@@ -16,7 +16,7 @@ from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
-from do_core.netmanager import OvsdbRest
+from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
@@ -39,7 +39,7 @@ class DO(object):
 
         # NetManager
         self.NetManager = NetManager()
-        self.ovsdb = OvsdbRest()
+        self.ovsdb = OvsdbManager()
 
     def __print(self, msg):
         if self.__print_enabled:
@@ -215,15 +215,14 @@ class DO(object):
         domain), else raise an error.
         '''
         # VNFs inspections
-        # TODO this check is implemented through the 'template' information. I don't know if it is the best approach
+        # TODO this check is implemented comparing vnf name with fc type, in the future nffg should have vnf type
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
-            available_functions.append(functional_capability.template)
+            available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
-            if vnf.vnf_template_location not in available_functions:
-                raise_useless_info("The VNF '" + vnf.name + "' with template '" +
-                                   vnf.template + "' cannot be implemented on this domain")
+            if vnf.name not in available_functions:
+                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -460,7 +459,7 @@ class DO(object):
             # get the name of the application
             application_name = ""
             for capability in domain_info.capabilities.functional_capabilities:
-                if capability.template == vnf.vnf_template_location:
+                if capability.type == vnf.name:
                     application_name = capability.name
             # we just need to activate the application and to pass as configuration the interfaces
             self.__NC_ProcessDetachedVnf(application_name, vnf)
