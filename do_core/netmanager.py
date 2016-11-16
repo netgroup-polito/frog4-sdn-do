@@ -12,7 +12,7 @@ from do_core.domain_info import FunctionalCapability
 from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
-    from do_core.odl.objects import Flow, Match ,Action
+    from do_core.odl.objects import Flow, Match, Action
     from do_core.odl.rest import ODL_Rest
     
 elif Configuration().CONTROLLER_NAME == "ONOS":
@@ -685,7 +685,7 @@ class NetManager:
 '''
 
 
-class OvsdbRest(object):
+class OvsdbManager(object):
 
     def __init__(self):
         self.net_manager = NetManager()
@@ -716,7 +716,7 @@ class OvsdbRest(object):
     def configure_ovsdbrest(self):
 
         if self.net_manager.isODL():
-            # TODO configure ODL ovsdbrest API
+            # TODO configure ODL ovsdb rest API
             pass
         elif self.net_manager.isONOS():
             config_dict = {
@@ -733,3 +733,24 @@ class OvsdbRest(object):
             ONOS_Rest(self.net_manager.ct_version)\
                 .add_port(self.net_manager.ct_endpoint, self.net_manager.ct_username,
                           self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name)
+
+    def add_gre_tunnel(self, device_id, port_name, local_ip, remote_ip, key):
+
+        if self.net_manager.isODL():
+            # TODO call ODL ovsdb rest API here
+            pass
+        elif self.net_manager.isONOS():
+            ONOS_Rest(self.net_manager.ct_version)\
+                .add_gre_tunnel(self.net_manager.ct_endpoint, self.net_manager.ct_username,
+                                self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name,
+                                local_ip, remote_ip, key)
+
+    def delete_gre_tunnel(self, device_id, port_name):
+
+        if self.net_manager.isODL():
+            # TODO call ODL ovsdb rest API here
+            pass
+        elif self.net_manager.isONOS():
+            ONOS_Rest(self.net_manager.ct_version)\
+                .delete_gre_tunnel(self.net_manager.ct_endpoint, self.net_manager.ct_username,
+                                   self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name)

@@ -57,7 +57,7 @@ class Messaging(object, metaclass=Singleton):
         self.dd_class = DDClient(
             name=Configuration().DD_NAME,
             dealerurl=Configuration().DD_BROKER_ADDRESS,
-            customer=Configuration().DD_TENANT_KEY,     # bug in dd?? should be DD_TENANT_NAME
+            customer=Configuration().DD_TENANT_NAME,     # bug in dd?? should be DD_TENANT_NAME
             keyfile=Configuration().DD_TENANT_KEY,
             topic=Configuration().DOMAIN_DESCRIPTION_TOPIC,
             message=message
@@ -99,6 +99,7 @@ class DomainInformationManager(object):
         # activate capabilities application on controller
         try:
             NetManager().activate_app(Configuration().CAPABILITIES_APP_NAME)
+            time.sleep(2)
         except:
             logging.warning("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
                             ", no functional capabilities will be exported.")

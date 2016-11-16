@@ -54,6 +54,8 @@ class Configuration(object):
             # [physical_ports]
             ports_json = config.get('physical_ports', 'ports')
             self.__PORTS = json.loads(ports_json)
+            self.__GRE_BRIDGE = config.get('physical_ports', 'gre_bridge')
+            self.__GRE_BRIDGE_ID = config.get('physical_ports', 'gre_bridge_id')
 
             # [authentication]
             self.__AUTH_TOKEN_EXPIRATION = config.get('authentication', 'token_expiration')
@@ -180,6 +182,14 @@ class Configuration(object):
     @property
     def PORTS(self):
         return self.__PORTS
+
+    @property
+    def GRE_BRIDGE(self):
+        return self.__GRE_BRIDGE
+
+    @property
+    def GRE_BRIDGE_ID(self):
+        return self.__GRE_BRIDGE_ID
 
     @property
     def AUTH_TOKEN_EXPIRATION(self):

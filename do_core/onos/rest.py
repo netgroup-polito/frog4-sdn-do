@@ -22,9 +22,9 @@ class ONOS_Rest(RestInterface):
         self.rest_links_url = '/onos/v1/links'
         self.rest_flows_url = '/onos/v1/flows'  # /onos/v1/flows/{DeviceId}
         self.rest_apps_url = '/onos/v1/applications'
-        self.rest_network_config_url = '/onos/v1/network/configuration/'
+        self.rest_network_config_url = '/onos/v1/network/configuration'
         self.apps_capabilities_url = '/onos/apps-capabilities/capability'
-        self.ovsdbrest_url = '/onos/ovsdb/config/bridge'
+        self.ovsdbrest_url = '/onos/ovsdb'
 
     def __logging_debug(self, response, url, jsonFlow=None):
         log_string = "response: "+str(response.status_code)+", "+response.reason
@@ -195,6 +195,8 @@ class ONOS_Rest(RestInterface):
         response.raise_for_status()
         return response.text
 
+    # [OVSDBREST]
+
     def check_ovsdbrest(self, onos_endpoint, onos_user, onos_pass):
         """
         Return OK if ovsdbrest API are at the moment available on the controller
@@ -221,10 +223,47 @@ class ONOS_Rest(RestInterface):
         :param port_name:
         :return:
         """
-        headers = {'Content-type': 'application/json'}
-        url = onos_endpoint+self.ovsdbrest_url+"/port"
-        body_dict = {'ovsdb-ip': ovsdb_ip, 'bridge-name': bridge_name, 'port-name': port_name}
+        url = onos_endpoint+self.ovsdbrest_url+"/"+ovsdb_ip+"/bridge/"+bridge_name+"/port/"+port_name
 
-        response = requests.post(url, json.dumps(body_dict), headers=headers, auth=(onos_user, onos_pass))
+        response = requests.post(url, auth=(onos_user, onos_pass))
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+
+    def add_gre_tunnel(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name, local_ip, remote_ip,
+                       key):
+        """
+        Add a port to an existing bridge through ovsdb and set up a gre tunnel on it
+        :param onos_endpoint:
+        :param onos_user:
+        :param onos_pass:
+        :param ovsdb_ip:
+        :param bridge_name:
+        :param port_name:
+        :param local_ip:
+        :param remote_ip:
+        :param key:
+        :return:
+        """
+        url = onos_endpoint+self.ovsdbrest_url+"/"+ovsdb_ip+"/bridge/"+bridge_name+"/port/"+port_name
+        url += "/gre/"+local_ip+"/"+remote_ip+"/"+key
+
+        response = requests.post(url, auth=(onos_user, onos_pass))
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+
+    def delete_gre_tunnel(self, onos_endpoint, onos_user, onos_pass, ovsdb_ip, bridge_name, port_name):
+        """
+        Delete a gre port from a bridge through ovsdb
+        :param onos_endpoint:
+        :param onos_user:
+        :param onos_pass:
+        :param ovsdb_ip:
+        :param bridge_name:
+        :param port_name:
+        :return:
+        """
+        url = onos_endpoint+self.ovsdbrest_url+"/"+ovsdb_ip+"/bridge/"+bridge_name+"/port/"+port_name+"/gre"
+
+        response = requests.delete(url, auth=(onos_user, onos_pass))
         self.__logging_debug(response, url)
         response.raise_for_status()

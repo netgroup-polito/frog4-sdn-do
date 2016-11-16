@@ -6,7 +6,8 @@
 """
 
 from __future__ import division
-import logging, copy
+import logging
+import copy
 
 from do_core.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
@@ -15,6 +16,7 @@ from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
+from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
 from requests.exceptions import HTTPError
@@ -37,6 +39,7 @@ class DO(object):
 
         # NetManager
         self.NetManager = NetManager()
+        self.ovsdb = OvsdbManager()
 
     def __print(self, msg):
         if self.__print_enabled:
@@ -60,6 +63,9 @@ class DO(object):
             # Build the Profile Graph
             self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
 
+            # Set up GRE tunnels if any
+            self.__NC_TunnelSetUp(nffg)
+
             # Send flow rules to Network Controller
             self.__NC_FlowsInstantiation(nffg)
             logging.debug("Flow rules instantiated!")
@@ -72,18 +78,20 @@ class DO(object):
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
+            # Update the resource description .json
+            ResourceDescription().updateAll()
+            ResourceDescription().saveFile()
+            Messaging().publish_domain_description()
+
+            return self.__session_id
+
         except Exception as ex:
             logging.error(ex)
             self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
 
-        # Update the resource description .json
-        ResourceDescription().updateAll()
-        ResourceDescription().saveFile()
-        Messaging().publish_domain_description()
 
-        return self.__session_id
 
     def NFFG_Update(self, new_nffg):
 
@@ -207,15 +215,14 @@ class DO(object):
         domain), else raise an error.
         '''
         # VNFs inspections
-        # TODO this check is implemented through the 'template' information. I don't know if is the best approach
+        # TODO this check is implemented comparing vnf name with fc type, in the future nffg should have vnf type
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
-            available_functions.append(functional_capability.template)
+            available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
-            if vnf.vnf_template_location not in available_functions:
-                raise_useless_info("The VNF '" + vnf.name + "' with template '" +
-                                   vnf.template + "' cannot be implemented on this domain")
+            if vnf.name not in available_functions:
+                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -226,8 +233,10 @@ class DO(object):
 
         # END POINTs inspections
         for ep in nffg.end_points:
-            if ep.type is not None and ep.type != "interface" and ep.type != "vlan":
-                raise_useless_info("'end-points.type' must be 'interface' or 'vlan' (not '" + ep.type + "')")
+            if ep.type is not None and ep.type != "interface" and ep.type != "vlan" and ep.type != "gre-tunnel":
+                raise_useless_info("'end-points.type' must be 'interface', 'vlan' or 'gre-tunnel'" +
+                                   " (not '" + ep.type + "')")
+            '''
             if ep.remote_endpoint_id is not None:
                 raise_useless_info("presence of 'end-points.remote_endpoint_id'")
             if ep.remote_ip is not None:
@@ -236,6 +245,7 @@ class DO(object):
                 raise_useless_info("presence of 'end-points.local-ip'")
             if ep.gre_key is not None:
                 raise_useless_info("presence of 'gre-key'")
+            '''
             if ep.ttl is not None:
                 raise_useless_info("presence of 'ttl'")
             if ep.prepare_connection_to_remote_endpoint_id is not None:
@@ -315,7 +325,7 @@ class DO(object):
     def __NFFG_NC_deleteGraph(self):
         """
         Delete a whole graph, and set it as "ended".
-        Delete all endpoints, and releated resources.
+        Delete all endpoints, and related resources.
         Delete all flowrules from database and from the network controller.
         Deactivate all applications implementing graph vnf
         """
@@ -392,6 +402,23 @@ class DO(object):
             return port2_id
         return None
 
+    def __NC_TunnelSetUp(self, nffg):
+
+        # check for tunnel end points
+        for ep in nffg.end_points:
+            if ep.type == 'gre-tunnel':
+                # set up tunnel through controller library
+                port = GraphSession().getPort(ep.id)
+
+                print("[New Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+                logging.info("[New Gre] device:'"+port.switch_id+"' port:'"+port.graph_port_id+"'")
+                self.ovsdb.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id,
+                                          ep.local_ip, ep.remote_ip, ep.gre_key)
+                # change endpoint to an interface endpoint on the new gre interface
+                ep.type = 'interface'
+                ep.interface = port.graph_port_id
+                ep.node_id = port.switch_id
+
     def __NC_FlowsInstantiation(self, nffg):
 
         # [ FLOW RULEs ]
@@ -432,7 +459,7 @@ class DO(object):
             # get the name of the application
             application_name = ""
             for capability in domain_info.capabilities.functional_capabilities:
-                if capability.template == vnf.vnf_template_location:
+                if capability.type == vnf.name:
                     application_name = capability.name
             # we just need to activate the application and to pass as configuration the interfaces
             self.__NC_ProcessDetachedVnf(application_name, vnf)
@@ -804,9 +831,9 @@ class DO(object):
         fr = GraphSession().getFlowruleByID(flow_rule_id)
         if fr is None:
             return
-        if fr.internal_id is not None and fr.type is not None:
-            self.__deleteFlowRule(fr)
-        self.__deleteFlowRuleByGraphID(fr.graph_flow_rule_id)
+        # if fr.internal_id is not None and fr.type is not None:
+        #     self.__deleteFlowRule(fr)
+        self.__deleteFlowRule(fr)
 
     # Database + Controller
     def __deleteFlowRule(self, flow_rule_ref):
@@ -816,7 +843,8 @@ class DO(object):
                 # PRINT
                 self.__print(
                     "[Remove Flow] id:'" + flow_rule_ref.internal_id + "' device:'" + flow_rule_ref.switch_id + "'")
-
+                logging.info(
+                    "[Remove Flow] id:'" + flow_rule_ref.internal_id + "' device:'" + flow_rule_ref.switch_id + "'")
                 # RESOURCE DESCRIPTION
                 ResourceDescription().delete_flowrule(flow_rule_ref.id)
 
@@ -841,6 +869,10 @@ class DO(object):
             self.__deleteEndpointByID(ep.id)
 
     def __deleteEndpointByID(self, endpoint_id):
+
+        endpoint = GraphSession().getEndpointByID(endpoint_id)
+        if endpoint.type == 'gre-tunnel':
+                self.__deleteGreTunnel(endpoint_id)
         ep_resources = GraphSession().getEndpointResourcesByEndpointID(endpoint_id)
         if ep_resources is None:
             return
@@ -850,6 +882,15 @@ class DO(object):
             elif eprs.resource_type == 'port':
                 self.__deletePortByID(eprs.resource_id)
         GraphSession().deleteEndpointByID(endpoint_id)
+
+    def __deleteGreTunnel(self, endpoint_id):
+        ep_resources = GraphSession().getEndpointResourcesPortByEndpointID(endpoint_id)
+        if ep_resources is not None:  # <- non ci entra (?)
+            port = GraphSession().getPortById(ep_resources.resource_id)
+            # delete from controller
+            print("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+            logging.info("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+            self.ovsdb.delete_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id)
 
     def __deleteVnf(self, vnf):
         vnf_ports = GraphSession().getVnfPortsByVnfID(vnf.id)
@@ -898,8 +939,7 @@ class DO(object):
 
         # DATABASE: Add flow rule
         flow_rule = NffgFlowrule(_id=efr.get_flow_id(), node_id=efr.get_switch_id(), _type='external',
-                                 status='complete',
-                                 priority=efr.get_priority(), internal_id=sw_flow_name)
+                                 status='complete', priority=efr.get_priority(), internal_id=sw_flow_name)
         flow_rule_db_id = GraphSession().addFlowrule(self.__session_id, efr.get_switch_id(), flow_rule)
         GraphSession().dbStoreMatch(nffg_match, flow_rule_db_id, flow_rule_db_id)
         GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
@@ -909,6 +949,7 @@ class DO(object):
 
         # PRINT
         self.__print("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
+        logging.info("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
 
     def __checkFlowname_externalFlowrule(self, efr):
         '''
