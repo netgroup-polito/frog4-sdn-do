@@ -718,7 +718,7 @@ class DO(object):
                 efr.set_actions(list(base_actions))
 
                 # Force the vlan out to be equal to the original
-                if pop_vlan_flag == False and original_vlan_out is not None:
+                if pop_vlan_flag is False and original_vlan_out is not None:
                     vlan_out = original_vlan_out
 
             # Middle way switch
