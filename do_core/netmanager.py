@@ -372,10 +372,11 @@ class NetManager:
                     json_ports = ONOS_Rest(self.ct_version).getDevicePorts(self.ct_endpoint, self.ct_username, self.ct_password, device_info["id"])
                     ports = json.loads(json_ports)['ports']
                     for port in ports:
-                        device['ports'].append({
-                            'port_id': port['port'],
-                            'interface': port['annotations']['portName']
-                        })
+                        if port['isEnabled']:
+                            device['ports'].append({
+                                'port_id': port['port'],
+                                'interface': port['annotations']['portName']
+                            })
                     return device
 
     def getSwitchLinksList(self):
