@@ -882,7 +882,7 @@ class GraphSession(object):
             domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
             application_name = ""
             for functional_capability in domain_info.capabilities.functional_capabilities:
-                if functional_capability.template == vnf.vnf_template_location:
+                if functional_capability.type == vnf.name:
                     application_name = functional_capability.name
             vnf_id = self.addVnf(session_id, None, vnf, nffg, application_name)
             vnf.db_id = vnf_id
