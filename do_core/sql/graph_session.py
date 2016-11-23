@@ -319,7 +319,14 @@ class GraphSession(object):
         
         # Valid VLAN ID
         return (prev_vlan_in+1)
-    
+
+    def getVnfByID(self, vnf_id):
+        try:
+            session = get_session()
+            return session.query(VnfModel).filter_by(vnf_id=vnf_id).one()
+        except:
+            return None
+
     def getVnfPortsByVnfID(self, vnf_id):
         try:
             session = get_session()
@@ -894,7 +901,16 @@ class GraphSession(object):
         return session_id
 
     def updateNFFG(self, nffg, session_id):
-                            
+        """
+
+        :param nffg:
+        :param session_id:
+        :type nffg: NF_FG
+        :return:
+        """
+
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+
         # [ ENDPOINTS ]
         for endpoint in nffg.end_points:
             
@@ -905,7 +921,7 @@ class GraphSession(object):
 
                 # Add end-point resources
                 # End-point attached to something that is not another graph
-                if endpoint.type=="interface" or endpoint.type=="vlan":
+                if endpoint.type == "interface" or endpoint.type=="vlan":
                     self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
         
         # [ FLOW RULES ]
@@ -913,8 +929,15 @@ class GraphSession(object):
             if flow_rule.status == 'new' or flow_rule.status is None:
                 self.addFlowrule(session_id, None, flow_rule, nffg)
 
-
-
+        # [ VNF ]
+        for vnf in nffg.vnfs:
+            if vnf.status == 'new' or vnf.status is None:
+                application_name = ""
+                for functional_capability in domain_info.capabilities.functional_capabilities:
+                    if functional_capability.type == vnf.name:
+                        application_name = functional_capability.name
+                vnf_id = self.addVnf(session_id, None, vnf, nffg, application_name)
+                vnf.db_id = vnf_id
 
     def getNFFG(self, session_id):
         session = get_session()
