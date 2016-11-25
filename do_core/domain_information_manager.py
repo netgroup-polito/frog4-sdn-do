@@ -77,7 +77,6 @@ class Messaging(object, metaclass=Singleton):
             self.dd_client.publish(Configuration().DOMAIN_DESCRIPTION_TOPIC, message)
             logging.info("Publishing domain information: " + json.dumps(json.loads(message)))
         except ConnectionError:
-            # TODO raise proper exception
             raise MessagingError("DD client not registered") from None
 
     @staticmethod

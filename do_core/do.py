@@ -192,7 +192,15 @@ class DO(object):
 
         self.__session_id = session.session_id
         logging.debug("Getting session: " + str(self.__session_id))
-        return GraphSession().getNFFG(self.__session_id).getJSON()
+        return GraphSession().getNFFG(self.__session_id)
+
+    def NFFG_Get_All(self):
+
+        logging.debug("Getting all graphs")
+        nffgs = {'NF-FG': []}
+        for nffg in GraphSession().getAllNFFG():
+            nffgs['NF-FG'].append(nffg.getDict())
+        return nffgs
 
     def NFFG_Status(self, nffg_id):
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)

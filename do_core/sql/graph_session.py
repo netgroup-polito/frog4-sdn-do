@@ -40,7 +40,7 @@ class GraphSessionModel(Base):
 class PortModel(Base):
     __tablename__ = 'port'
     attributes = ['id', 'graph_port_id', 'status', 'switch_id', 'session_id'
-                  'mac_address', 'ipv4_address', 'vlan_id','gre_key', 'creation_date','last_update' ]
+                  'mac_address', 'ipv4_address', 'tunnel_remote_ip', 'vlan_id', 'gre_key', 'creation_date','last_update' ]
     id = Column(Integer, primary_key=True)
     graph_port_id = Column(VARCHAR(64)) # endpoint interface in the json [see "interface" section]
     status = Column(VARCHAR(64))        # = ( initialization | complete | error )
@@ -50,6 +50,7 @@ class PortModel(Base):
     # port characteristics
     mac_address = Column(VARCHAR(64))
     ipv4_address = Column(VARCHAR(64))
+    tunnel_remote_ip = Column(VARCHAR(64))
     vlan_id = Column(VARCHAR(64))
     gre_key = Column(VARCHAR(64))
     creation_date = Column(DateTime)
@@ -579,8 +580,8 @@ class GraphSession(object):
 
         return flow_rule_db_id
 
-    def addPort(self, session_id, endpoint_id, port_id, graph_port_id, switch_id, vlan_id, status):
-        port_id = self.dbStorePort(session_id, port_id, graph_port_id, switch_id, vlan_id, status)
+    def addPort(self, session_id, endpoint_id, port_id, graph_port_id, switch_id, vlan_id, status, local_ip, remote_ip, gre_key):
+        port_id = self.dbStorePort(session_id, port_id, graph_port_id, switch_id, vlan_id, status, local_ip, remote_ip, gre_key)
         self.dbStoreEndpointResourcePort(endpoint_id, port_id)
 
     def addVlanTracking(self, flow_rule_id, switch_id, vlan_in, port_in, vlan_out, port_out):
@@ -828,7 +829,7 @@ class GraphSession(object):
             session.add(match_ref)
             return match_ref
     
-    def dbStorePort(self, session_id, port_id, graph_port_id, switch_id, vlan_id, status):
+    def dbStorePort(self, session_id, port_id, graph_port_id, switch_id, vlan_id, status, local_ip, remote_ip, gre_key):
         session = get_session()
         if port_id is None:
             port_id = session.query(func.max(PortModel.id).label("max_id")).one().max_id
@@ -842,6 +843,9 @@ class GraphSession(object):
                                  session_id=session_id, status=status, 
                                  switch_id=switch_id,
                                  vlan_id=vlan_id,
+                                 ipv4_address=local_ip,
+                                 tunnel_remote_ip=remote_ip,
+                                 gre_key=gre_key,
                                  creation_date=datetime.datetime.now(), 
                                  last_update=datetime.datetime.now())
             session.add(port_ref)
@@ -880,9 +884,9 @@ class GraphSession(object):
             # Add end-point resources
             # End-point attached to something that is not another graph
             if endpoint.type == "interface" or endpoint.type == "vlan":
-                self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
+                self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete', None, None, None)
             elif endpoint.type == "gre-tunnel":
-                self.addPort(session_id, endpoint_id, None, self.getNextGreInterfaceName(), Configuration().GRE_BRIDGE_ID, endpoint.vlan_id, 'complete')
+                self.addPort(session_id, endpoint_id, None, self.getNextGreInterfaceName(), Configuration().GRE_BRIDGE_ID, endpoint.vlan_id, 'complete', endpoint.local_ip, endpoint.remote_ip, endpoint.gre_key)
 
         # [ VNF ]
         for vnf in nffg.vnfs:
@@ -922,7 +926,9 @@ class GraphSession(object):
                 # Add end-point resources
                 # End-point attached to something that is not another graph
                 if endpoint.type == "interface" or endpoint.type=="vlan":
-                    self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete')
+                    self.addPort(session_id, endpoint_id, None, endpoint.interface, endpoint.node_id, endpoint.vlan_id, 'complete', None, None, None)
+                elif endpoint.type == "gre-tunnel":
+                    self.addPort(session_id, endpoint_id, None, self.getNextGreInterfaceName(), Configuration().GRE_BRIDGE_ID, endpoint.vlan_id, 'complete', endpoint.local_ip, endpoint.remote_ip, endpoint.gre_key)
         
         # [ FLOW RULES ]
         for flow_rule in nffg.flow_rules:
@@ -971,6 +977,10 @@ class GraphSession(object):
                         end_point.switch_id = port_ref.switch_id
                         end_point.interface = port_ref.graph_port_id
                         end_point.vlan_id = port_ref.vlan_id
+                        end_point.node_id = port_ref.switch_id
+                        end_point.local_ip = port_ref.ipv4_address
+                        end_point.remote_ip = port_ref.tunnel_remote_ip
+                        end_point.gre_key = port_ref.gre_key
 
         # [ VNFs ]
         vnfs_ref = session.query(VnfModel).filter_by(session_id=session_id).all()
@@ -989,7 +999,7 @@ class GraphSession(object):
         # [ FLOW RULEs ]
         flow_rules_ref = session.query(FlowRuleModel).filter_by(session_id=session_id).all()
         for flow_rule_ref in flow_rules_ref:
-            if flow_rule_ref.type is not None:  # None or 'external'
+            if flow_rule_ref.type == 'external':  # None or 'external'
                 continue
             
             # Add flow rule to NFFG
@@ -1049,3 +1059,18 @@ class GraphSession(object):
                 flow_rule.actions.append(action)
         
         return nffg    
+
+    def getAllNFFG(self):
+        session = get_session()
+        session_refs = session.query(GraphSessionModel).all()
+        nffgs = []
+        for session in session_refs:
+            if session.status == 'complete':
+                nffgs.append(self.getNFFG(session.session_id))
+        return nffgs
+
+
+
+
+
+
