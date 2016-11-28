@@ -22,7 +22,7 @@ from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
 from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
-    UserNotFound, TenantNotFound, UserTokenExpired, GraphError
+    UserNotFound, TenantNotFound, UserTokenExpired, GraphError, VNFNotFound
 from flask.views import MethodView
 
 
@@ -727,6 +727,92 @@ class DO_NetworkTopology(MethodView):
         except requests.HTTPError as err:
             logging.exception(err)
             return (str(err), 500)            
+        except Exception as err:
+            logging.exception(err)
+            return (str(err), 500)
+
+
+class DO_VNF_Repository(MethodView):
+    def get(self, name):
+        """
+        Get the specified vnf
+        ---
+        tags:
+          - vnf
+        produces:
+          - application/json
+        parameters:
+          - name: X-Auth-Token
+            in: header
+            description: Authentication token
+            required: true
+            type: string
+
+        responses:
+          200:
+            description: vnf correctly retrieved
+          400:
+            description: Bad request
+          401:
+            description: Unauthorized
+          404:
+            description: vnf not found
+          500:
+            description: Internal Error
+        """
+        try:
+            userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
+            NCDO = DO(userdata)
+
+            logging.debug("VNF Name: %s", name)
+            response = NCDO.get_VNF(name)
+            logging.debug("Passato di qui11111111111111. Response: %s", response)
+            if response is False:
+                logging.debug("Passato di qui22222222222")
+                raise VNFNotFound("Error! Vnf not found in the VNF Repository!")
+            if response is True:
+                logging.debug("Passato di qui3333333333333")
+                return ("VNF Found", 200)
+            #return jsonify(vnf_mng.get_VNF(name))
+
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            logging.exception(err)
+            return ("Bad Request", 400)
+
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except unauthorizedRequest as err:
+            if request.headers.get("X-Auth-User") is not None:
+                logging.debug("Unauthorized access attempt from user " + request.headers.get("X-Auth-User"))
+            logging.debug(err.message)
+            return ("Unauthorized", 401)
+
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            logging.exception(err)
+            return (err.message, 401)
+
+        # No Results
+        except UserNotFound as err:
+            logging.exception(err)
+            return ("UserNotFound", 404)
+        except TenantNotFound as err:
+            logging.exception(err)
+            return ("TenantNotFound", 404)
+        except NoResultFound as err:
+            logging.exception(err)
+            return ("NoResultFound", 404)
+        except sessionNotFound as err:
+            logging.exception(err)
+            return ("sessionNotFound", 404)
+        except VNFNotFound as err:
+            logging.exception(err)
+            return ("VNFNotFound", 404)
+
+        # Other errors
+        except requests.HTTPError as err:
+            logging.exception(err)
+            return (str(err), 500)
         except Exception as err:
             logging.exception(err)
             return (str(err), 500)

@@ -14,7 +14,8 @@ from do_core.controller_interface.rest import RestInterface
 class VNF_Repository_Rest(RestInterface):
     version = ""
 
-    def __init__(self, version):
+    def __init__(self):
+        self.vnf_repository_url = '/vnf'
         pass
 
     def __logging_debug(self, response, url, jsonFlow=None):
@@ -37,7 +38,7 @@ class VNF_Repository_Rest(RestInterface):
         url = vnf_repository_endpoint + self.vnf_repository_url + "/" + str(vnf_name)
 
         #response = requests.get(url, headers=headers, auth=(vnf_repository_user, vnf_repository_pass))
-        response = False
+        response = True
 
         #self.__logging_debug(response, url)
         #response.raise_for_status()

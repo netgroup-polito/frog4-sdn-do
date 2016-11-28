@@ -36,6 +36,7 @@ from do_core.rest_interface import DO_REST_NFFG_GPUD
 from do_core.rest_interface import DO_REST_NFFG_Status
 from do_core.rest_interface import DO_UserAuthentication
 from do_core.rest_interface import DO_NetworkTopology
+from do_core.rest_interface import DO_VNF_Repository
 
 from do_core.domain_information_manager import DomainInformationManager
 from do_core.netmanager import NetManager, OvsdbManager
@@ -120,6 +121,13 @@ network_topology = DO_NetworkTopology.as_view('network_topology')
 app.add_url_rule(
     '/topology',
     view_func=network_topology,
+    methods=["GET"]
+)
+
+vnf_repository = DO_VNF_Repository.as_view('vnf_repository')
+app.add_url_rule(
+    '/vnf/<name>',
+    view_func=vnf_repository,
     methods=["GET"]
 )
 logging.info("Flask Successfully started")

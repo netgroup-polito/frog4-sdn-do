@@ -9,6 +9,7 @@ import networkx as nx
 
 from do_core.config import Configuration
 from do_core.domain_info import FunctionalCapability
+from do_core.vnf_repository.rest import VNF_Repository_Rest
 from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
@@ -754,3 +755,4 @@ class OvsdbManager(object):
             ONOS_Rest(self.net_manager.ct_version)\
                 .delete_gre_tunnel(self.net_manager.ct_endpoint, self.net_manager.ct_username,
                                    self.net_manager.ct_password, self.ovsdb_ip, device_id, port_name)
+

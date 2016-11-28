@@ -10,6 +10,7 @@ import logging
 import copy
 
 from do_core.domain_info import DomainInfo
+from do_core.vnf_repository.rest import VNF_Repository_Rest
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
 from do_core.config import Configuration
@@ -975,3 +976,12 @@ class DO(object):
                 continue
             break
         efr.inc_flow_name()
+
+    '''
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    VNF_REPOSITORY
+    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    '''
+    def get_VNF(self, vnf_name):
+            vnf_repository_endpoint=Configuration().VNF_REPOSITORY_ENDPOINT
+            return VNF_Repository_Rest().get_vnf(vnf_repository_endpoint, vnf_name)

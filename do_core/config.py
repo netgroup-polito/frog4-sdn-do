@@ -103,6 +103,9 @@ class Configuration(object):
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
 
+            # [vnf_repository]
+            self.__VNF_REPOSITORY_ENDPOINT = config.get('vnf_repository', 'vnf_repository_endpoint')
+
             print(self.__PORTS)
 
         except Exception as ex:
@@ -298,6 +301,10 @@ class Configuration(object):
     @property
     def OO_CONSOLE_PRINT(self):
         return self.__OO_CONSOLE_PRINT
+
+    @property
+    def VNF_REPOSITORY_ENDPOINT(self):
+        return self.__VNF_REPOSITORY_ENDPOINT
 
 
 conf = Configuration()
