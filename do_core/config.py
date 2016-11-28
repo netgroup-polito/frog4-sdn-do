@@ -10,39 +10,41 @@ import configparser, os, inspect, logging, json
 from do_core.exception import WrongConfigurationFile
 
 
-class Configuration(object):
-    _instance = None
+class Singleton(type):
+    _instances = {}
 
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(Configuration, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Configuration(object, metaclass=Singleton):
 
     def __init__(self):
-        return
+        if os.getenv("FROG4_SDN_DO_CONF") is not None:
+            self.conf_file = os.environ["FROG4_SDN_DO_CONF"]
+        else:
+            self.conf_file = "config/default-config.ini"
+
+        self.initialize()
 
     def initialize(self):
-        config = configparser.RawConfigParser()
 
-        self.__abs_path = \
-            os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])).rpartition(
-                '/')[0]
-        '''
-        The absolute path of the main directory (it ends without '/')
-        will be added to every 'path-like' configuration string.
-        Using absolute paths avoids a lot of kinds of problems.
-        '''
+        config = configparser.RawConfigParser()
+        base_folder = os.path.realpath(
+            os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])
+        ).rpartition('/')[0]
 
         try:
-            # TODO add config file as parameter
-            config.read(self.__abs_path + '/config/config.ini')
+            config.read(base_folder + '/' + self.conf_file)
 
             # [domain_orchestrator]
             self.__ORCHESTRATOR_PORT = config.get('domain_orchestrator', 'port')
             self.__ORCHESTRATOR_IP = config.get('domain_orchestrator', 'ip')
 
             # [log]
-            self.__LOG_FILE = self.__abs_path + "/" + config.get('log', 'file')
+            self.__LOG_FILE = base_folder + "/" + config.get('log', 'file')
             self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
             self.__LOG_DEBUG = config.getboolean('log', 'debug')
             self.log_configuration()
@@ -63,8 +65,8 @@ class Configuration(object):
             # [database]
             self.__DATABASE_CONNECTION = config.get('database', 'connection')
             db_file = os.path.basename(self.__DATABASE_CONNECTION)
-            self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file, self.__abs_path + "/" + db_file)
-            self.__DATABASE_DUMP_FILE = self.__abs_path + "/" + config.get('database', 'database_name')
+            self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file, base_folder + "/" + db_file)
+            self.__DATABASE_DUMP_FILE = base_folder + "/" + config.get('database', 'database_name')
 
             # [network_controller]
             self.__CONTROLLER_NAME = config.get('network_controller', 'controller_name')
@@ -91,19 +93,16 @@ class Configuration(object):
             self.__DD_NAME = config.get('messaging', 'dd_name')
             self.__DD_BROKER_ADDRESS = config.get('messaging', 'dd_broker_address')
             self.__DD_TENANT_NAME = config.get('messaging', 'dd_tenant_name')
-            # self.__DD_TENANT_KEY = self.__abs_path + "/" + config.get('messaging', 'dd_tenant_key')
             self.__DD_TENANT_KEY = config.get('messaging', 'dd_tenant_key')
 
             # [domain_description]
             self.__DOMAIN_DESCRIPTION_TOPIC = config.get('domain_description', 'domain_description_topic')
-            self.__DOMAIN_DESCRIPTION_FILE = self.__abs_path + "/" + config.get('domain_description',
-                                                                                'domain_description_file')
+            self.__DOMAIN_DESCRIPTION_FILE = base_folder + "/" + config.get('domain_description',
+                                                                            'domain_description_file')
             self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
 
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
-
-            print(self.__PORTS)
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -128,9 +127,9 @@ class Configuration(object):
 
     def __set_available_vlan_ids_array(self, vid_ranges):
 
-        '''
+        """
         Expected vid_ranges = "280-289,62,737,90-95,290-299,13-56,92,57-82,2-5,12"
-        '''
+        """
 
         def __getKey(item):
             return item[0]
@@ -298,7 +297,3 @@ class Configuration(object):
     @property
     def OO_CONSOLE_PRINT(self):
         return self.__OO_CONSOLE_PRINT
-
-
-conf = Configuration()
-conf.initialize()
