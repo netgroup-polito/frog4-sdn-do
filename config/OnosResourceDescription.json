@@ -59,8 +59,8 @@
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
-                  "interface-mode": "TRUNK",
-                  "trunk-vlans": []
+                  "trunk-vlans": [],
+                  "interface-mode": "TRUNK"
                 }
               }
             },
@@ -95,8 +95,8 @@
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
-                  "interface-mode": "TRUNK",
-                  "trunk-vlans": []
+                  "trunk-vlans": [],
+                  "interface-mode": "TRUNK"
                 }
               }
             },

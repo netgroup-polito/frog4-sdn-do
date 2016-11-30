@@ -174,6 +174,7 @@ class UserAuthentication(object):
         Reads the header fields that starts with "X-Auth-" and 
         call the proper methods to check the user authentication.
         '''
+
         username = request.headers.get("X-Auth-User")
         password = request.headers.get("X-Auth-Pass")
         #tenant = rrequest.headers.get("X-Auth-Tenant")
@@ -190,4 +191,3 @@ class UserAuthentication(object):
             return self.authenticateUserFromCredentials(username, password, None)
         
         raise wrongRequest('Wrong authentication request: send user/password or token')
-

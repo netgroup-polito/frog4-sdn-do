@@ -104,6 +104,13 @@ app.add_url_rule(
     methods=["GET", "PUT", "DELETE"]
 )
 
+app.add_url_rule(
+    '/NF-FG/',
+    view_func=orch,
+    methods=["GET"]
+)
+
+
 nffg_status = DO_REST_NFFG_Status.as_view('NFFGStatus')
 app.add_url_rule(
     '/NF-FG/status/<nffg_id>',

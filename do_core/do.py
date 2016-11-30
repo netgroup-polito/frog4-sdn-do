@@ -19,7 +19,9 @@ from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging
-from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, VNFNotFound
+
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound
+
 from requests.exceptions import HTTPError
 
 
@@ -86,6 +88,9 @@ class DO(object):
 
             return self.__session_id
 
+        except MessagingError as err:
+            logging.error(err.message)
+            logging.error(err)
         except Exception as ex:
             logging.error(ex)
             self.__NFFG_NC_deleteGraph()
@@ -110,6 +115,9 @@ class DO(object):
                 "Update NF-FG: updating session " + self.__session_id + " from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
             GraphSession().updateStatus(self.__session_id, 'updating')
 
+            # Build the Profile Graph
+            self.NetManager.ProfileGraph_BuildFromNFFG(new_nffg)
+
             # Get the old NFFG
             old_nffg = GraphSession().getNFFG(self.__session_id)
             logging.debug("Update NF-FG: the old session: " + old_nffg.getJSON())
@@ -124,9 +132,16 @@ class DO(object):
             # Update database
             GraphSession().updateNFFG(updated_nffg, self.__session_id)
 
+            # Set up GRE tunnels if any
+            self.__NC_TunnelSetUp(nffg)
+
             # Send flowrules to Network Controller
             self.__NC_FlowsInstantiation(updated_nffg)
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
+
+            # activate needed applications
+            self.__NC_ApplicationsInstantiation(nffg)
+            logging.debug("Applications activated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
@@ -136,6 +151,9 @@ class DO(object):
 
             Messaging().publish_domain_description()
 
+        except MessagingError as err:
+            logging.error(err.message)
+            logging.error(err)
         except Exception as ex:
             logging.error("Update NF-FG: ", ex)
             self.__NFFG_NC_deleteGraph()
@@ -163,6 +181,9 @@ class DO(object):
 
             Messaging().publish_domain_description()
 
+        except MessagingError as err:
+            logging.error(err.message)
+            logging.error(err)
         except Exception as ex:
             logging.error("Delete NF-FG: ", ex)
             raise ex
@@ -174,7 +195,15 @@ class DO(object):
 
         self.__session_id = session.session_id
         logging.debug("Getting session: " + str(self.__session_id))
-        return GraphSession().getNFFG(self.__session_id).getJSON()
+        return GraphSession().getNFFG(self.__session_id)
+
+    def NFFG_Get_All(self):
+
+        logging.debug("Getting all graphs")
+        nffgs = {'NF-FG': []}
+        for nffg in GraphSession().getAllNFFG():
+            nffgs['NF-FG'].append(nffg.getDict())
+        return nffgs
 
     def NFFG_Status(self, nffg_id):
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
@@ -361,18 +390,21 @@ class DO(object):
         if vnfs is not None:
             for vnf in vnfs:
                 self.__deleteVnf(vnf)
-                self.__NC_DeactivateApplication(vnf)
+                self.__NC_DeactivateApplication(vnf.application_name)
 
         # End field
         GraphSession().updateEnded(self.__session_id)
 
     def __NFFG_NC_DeleteAndUpdate(self, updated_nffg):
         """
-        Remove all endpoints and all flowrules which is marked as 'to_be_deleted'.
-        For each flowrule marked as 'already_deployed' this function checks if the
-        releated endpoints are been updated: in this case the flowrule is deleted
+        Remove all endpoints, flowrules and nf which are marked as 'to_be_deleted'.
+        For each flowrule and vnf marked as 'already_deployed' this function checks if the
+        releated endpoints are been updated: in this case the flowrule or vnf is deleted
         and it is set as 'new' in order that be installed again.
         """
+        # Get domain informations from file
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+
         # List of updated endpoints
         updated_endpoints = []
 
@@ -402,6 +434,38 @@ class DO(object):
                         ep_out = self.__getEndpointIdFromString(a.output)
                         if ep_out is not None and ep_out in updated_endpoints:
                             flowrule.status = 'new'
+
+        # Delete the vnfs 'to_be_deleted'
+        for vnf in updated_nffg.vnfs[:]:  # "[:]" keep in memory deleted items during the loop.
+            if vnf.status == 'to_be_deleted':
+                vnf_model = GraphSession().getVnfByID(vnf.id)
+                self.__NC_DeactivateApplication(vnf_model.application_name)
+                self.__deleteVnf(vnf)
+                updated_nffg.vnfs.remove(vnf)
+            elif vnf.status == 'already_deployed':
+                # check if there are ports to update
+                for port in vnf.ports[:]:
+                    if port.status == 'new':
+                        vnf.status = 'new'
+                    elif port.status == 'to_be_deleted':
+                        vnf.ports.remove(port)
+                        vnf.status = 'new'
+                # check if there are updated endpoints attached to the vnf
+                flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
+                vnf_port_map = {}
+                # get endpoints attached to vnf ports
+                for flow in flows:
+                    for action in flow.actions:
+                        if action.output is not None:
+                            vnf_port_map[flow.match.port_in.split(':', 2)[2]] = action.output
+                # get interface names for endpoints
+                for vnf_port in vnf_port_map:
+                    endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
+                    if endpoint in updated_endpoints:
+                        vnf_model = GraphSession().getVnfByID(vnf.id)
+                        self.__NC_DeactivateApplication(vnf_model.application_name)
+                        self.__deleteVnf(vnf)
+                        vnf.status = 'new'
 
     def __getEndpointIdFromString(self, endpoint_string):
         if endpoint_string is None:
@@ -490,6 +554,28 @@ class DO(object):
         :type application_name: str
         :type vnf: VNF
         """
+        self.__NC_ActivateApplication(application_name)
+        self.__NC_ConfigureVnfPorts(application_name, vnf)
+
+    def __NC_ActivateApplication(self, application_name):
+        """
+        Activate the given application on the Network Controller
+        :param application_name:
+        :return:
+        """
+        self.NetManager.activate_app(application_name)
+        print("[Activated App] app-name:'"+application_name+"'")
+        logging.info("[Activated App] app-name:'"+application_name+"'")
+
+    def __NC_ConfigureVnfPorts(self, application_name, vnf):
+        """
+        push the port configuration to an application in order to match the vnf setup
+        :param application_name: application implementing the vnf
+        :param vnf: vnf to emulate
+        :type application_name: str
+        :type vnf: VNF
+        :return:
+        """
         # TODO I am assuming that flows are all bidirectional
         flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
         vnf_port_map = {}   # key=graph port id, value=attached device/interface
@@ -505,8 +591,6 @@ class DO(object):
             endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
             vnf_port_map[vnf_port] = {'device': endpoint.node_id, 'interface': endpoint.interface}
 
-        self.NetManager.activate_app(application_name)
-
         # push configuration to set application ports
         ports_configuration = {'ports': {}}
         for port in vnf_port_map:
@@ -518,15 +602,19 @@ class DO(object):
                 )
             }
         self.NetManager.push_app_configuration(application_name, ports_configuration)
+        print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
+        logging.info("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
 
-    def __NC_DeactivateApplication(self, vnf):
+    def __NC_DeactivateApplication(self, application_name):
         """
         Deactivate the application implementing the specified vnf
-        :param vnf: the VNF implemented by the application to deactivate
-        :type vnf: VnfModel
+        :param application_name: the application to deactivate
+        :type application_name: str
         :return:
         """
-        self.NetManager.deactivate_app(vnf.application_name)
+        self.NetManager.deactivate_app(application_name)
+        print("[Deactivated App] app-name:'"+application_name+"'")
+        logging.info("[Deactivated App] app-name:'"+application_name+"'")
 
     def __NC_ProcessFlowrule(self, in_endpoint, flowrule):
         '''
@@ -730,7 +818,7 @@ class DO(object):
                 efr.set_actions(list(base_actions))
 
                 # Force the vlan out to be equal to the original
-                if pop_vlan_flag == False and original_vlan_out is not None:
+                if pop_vlan_flag is False and original_vlan_out is not None:
                     vlan_out = original_vlan_out
 
             # Middle way switch

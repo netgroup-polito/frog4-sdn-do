@@ -9,6 +9,7 @@ from threading import Thread
 
 from do_core.netmanager import NetManager
 from do_core.resource_description import Singleton, ResourceDescription
+from do_core.exception import MessagingError
 
 
 class DDClient(ClientSafe):
@@ -47,22 +48,21 @@ class DDClient(ClientSafe):
 class Messaging(object, metaclass=Singleton):
 
     def __init__(self):
-        self.dd_class = None
+        self.dd_client = None
         self.working_thread = None
         self.first_start = True
 
     def _cold_start(self):
-        print(Configuration().DD_TENANT_KEY)
         message = self.read_domain_description_file()
-        self.dd_class = DDClient(
+        self.dd_client = DDClient(
             name=Configuration().DD_NAME,
             dealerurl=Configuration().DD_BROKER_ADDRESS,
-            customer=Configuration().DD_TENANT_KEY,     # bug in dd?? should be DD_TENANT_NAME
+            customer=Configuration().DD_TENANT_NAME,     # bug in dd?? should be DD_TENANT_NAME
             keyfile=Configuration().DD_TENANT_KEY,
             topic=Configuration().DOMAIN_DESCRIPTION_TOPIC,
             message=message
         )
-        self.working_thread = Thread(target=self.dd_class.start)
+        self.working_thread = Thread(target=self.dd_client.start)
         self.working_thread.start()
         logging.info("DoubleDecker client started!")
         logging.info("Publishing domain information: " + message)
@@ -74,11 +74,10 @@ class Messaging(object, metaclass=Singleton):
             return
         message = self.read_domain_description_file()
         try:
-            self.dd_class.publish(Configuration().DOMAIN_DESCRIPTION_TOPIC, message)
-            logging.info("Publishing domain information: " + message)
+            self.dd_client.publish(Configuration().DOMAIN_DESCRIPTION_TOPIC, message)
+            logging.info("Publishing domain information: " + json.dumps(json.loads(message)))
         except ConnectionError:
-            # TODO raise proper exception
-            raise Exception("DD client not registered") from None
+            raise MessagingError("DD client not registered") from None
 
     @staticmethod
     def read_domain_description_file():

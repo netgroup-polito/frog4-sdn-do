@@ -322,8 +322,7 @@ class DO_REST_NFFG_GPUD(MethodView):
             logging.exception(err)
             return (str(err), 500)
 
-    
-    def get(self, nffg_id):
+    def get(self, nffg_id=None):
         """
         Get a graph
         Returns an already deployed graph
@@ -358,8 +357,12 @@ class DO_REST_NFFG_GPUD(MethodView):
         try:
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request)
             NCDO = DO(userdata)
-            
-            resp = Response(response=NCDO.NFFG_Get(nffg_id), status=200, mimetype="application/json")
+
+            if nffg_id is None:
+                # return all NFFGs
+                resp = Response(response=json.dumps(NCDO.NFFG_Get_All()), status=200, mimetype="application/json")
+            else:
+                resp = Response(response=NCDO.NFFG_Get(nffg_id).getJSON(), status=200, mimetype="application/json")
             return resp            
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -531,7 +534,7 @@ class DO_UserAuthentication(MethodView):
             
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
             
-            return userdata.token #userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
+            return userdata.token, 200, {'Content-Type': 'application/token'} #userdata.getResponseJSON() #self._json_response(falcon.HTTP_200, "User "+userdata.username+" found.", userdata=userdata.getResponseJSON())
         
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
