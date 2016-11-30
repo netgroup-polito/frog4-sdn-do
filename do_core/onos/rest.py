@@ -9,6 +9,7 @@ import requests
 import logging
 import json
 from do_core.controller_interface.rest import RestInterface
+import os
 
 
 class ONOS_Rest(RestInterface):
@@ -104,6 +105,28 @@ class ONOS_Rest(RestInterface):
         url = onos_endpoint+self.rest_flows_url+"/"+str(switch_id)+"/"+str(flow_id)
         response = requests.delete(url,headers=headers, auth=(onos_user, onos_pass))
         
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response.text
+
+    def installApp(self, onos_endpoint, onos_user, onos_pass, app_filename):
+        """
+        Activate an application on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_name: the application to activate
+        :return:
+        """
+        headers = {'Accept': 'application/json'}
+        url = onos_endpoint+self.rest_apps_url
+        cur_path = os.getcwd()
+        #logging.debug("Current path: %s", cur_path)
+        filename = os.path.join(cur_path, 'bundles', app_filename)
+        logging.debug("Path for reading the file: %s", filename)
+        f = open(filename, 'rb')
+        response = requests.post(url, headers=headers, auth=(onos_user, onos_pass), data=f)
+
         self.__logging_debug(response, url)
         response.raise_for_status()
         return response.text

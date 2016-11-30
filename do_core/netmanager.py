@@ -231,6 +231,14 @@ class NetManager:
         
         elif self.isONOS():
             ONOS_Rest(self.ct_version).deleteFlow(self.ct_endpoint, self.ct_username, self.ct_password, switch_id, flowname)
+
+    def install_app(self, app_filename):
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            ONOS_Rest(self.ct_version).installApp(self.ct_endpoint, self.ct_username, self.ct_password, app_filename)
             
     def activate_app(self, app_name):
         if self.isODL():

@@ -766,6 +766,8 @@ class DO_VNF_Repository(MethodView):
 
             logging.debug("VNF Name: %s", name)
             response = NCDO.get_VNF(name)
+
+
             logging.debug("Passato di qui11111111111111. Response: %s", response)
             if response is False:
                 logging.debug("Passato di qui22222222222")

@@ -44,6 +44,18 @@ class RestInterface:
         pass
 
     @abstractmethod
+    def installApp(self, onos_endpoint, onos_user, onos_pass, app_filename):
+        """
+        Activate an application on top of the controller
+        :param onos_endpoint: controller REST API address
+        :param onos_user: controller user
+        :param onos_pass: controller password for user
+        :param app_filename: the name of the file to install
+        :return:
+        """
+        pass
+
+    @abstractmethod
     def activateApp(self, onos_endpoint, onos_user, onos_pass, app_name):
         """
         Activate an application on top of the controller

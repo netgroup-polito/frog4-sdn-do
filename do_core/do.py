@@ -19,7 +19,7 @@ from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging
-from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, VNFNotFound
 from requests.exceptions import HTTPError
 
 
@@ -223,7 +223,18 @@ class DO(object):
             available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
             if vnf.name not in available_functions:
-                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
+                response = self.get_VNF(vnf.name)#check again if the vnf repository has the VNF
+                #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
+                if response is False:
+                    logging.debug("Passato di qui. do.py risposta falsa. lancio errore")
+                    raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain. VNF not found in the VNF Repository!")
+                if response is True:
+                    logging.debug("Passato di qui. do.py risposta true. installo app.")
+                    try:
+                        app_name = self.get_vnf_image_from_uri("http://127.0.0.1:8080/v2/nf_image/nat-1.0-SNAPSHOT.oar")
+                    except:
+                        raise NffgUselessInformations("Error! Cannot download vnf image from uri")
+                    self.NetManager.install_app(app_name)
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -985,3 +996,6 @@ class DO(object):
     def get_VNF(self, vnf_name):
             vnf_repository_endpoint=Configuration().VNF_REPOSITORY_ENDPOINT
             return VNF_Repository_Rest().get_vnf(vnf_repository_endpoint, vnf_name)
+
+    def get_vnf_image_from_uri(self, vnf_image_uri):
+        return VNF_Repository_Rest().get_vnf_image_from_uri(vnf_image_uri)
