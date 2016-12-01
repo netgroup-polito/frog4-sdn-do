@@ -25,7 +25,7 @@ class Configuration(object, metaclass=Singleton):
         if os.getenv("FROG4_SDN_DO_CONF") is not None:
             self.conf_file = os.environ["FROG4_SDN_DO_CONF"]
         else:
-            self.conf_file = "config/default-config.ini"
+            self.conf_file = "config/config.ini"
 
         self.initialize()
 
@@ -126,7 +126,7 @@ class Configuration(object, metaclass=Singleton):
             requests_log.setLevel(logging.WARNING)
         else:
             log_level = logging.WARNING
-        logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format,
+        logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format, filemode='w',
                             datefmt='%m/%d/%Y %I:%M:%S %p:%r')
         logging.info("[CONFIG] Logging just started!")
 

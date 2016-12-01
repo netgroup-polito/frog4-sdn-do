@@ -26,3 +26,4 @@ do_core/sql/__pycache__/
 keys/public-keys.json
 scripts/__pycache__/
 keys/broker-keys.json
+bundles/*

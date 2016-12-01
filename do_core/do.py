@@ -18,7 +18,7 @@ from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.netmanager import OvsdbManager
-from do_core.domain_information_manager import Messaging
+from do_core.domain_information_manager import Messaging, DomainInformationManager
 
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound
 
@@ -133,14 +133,14 @@ class DO(object):
             GraphSession().updateNFFG(updated_nffg, self.__session_id)
 
             # Set up GRE tunnels if any
-            self.__NC_TunnelSetUp(nffg)
+            self.__NC_TunnelSetUp(new_nffg)
 
             # Send flowrules to Network Controller
             self.__NC_FlowsInstantiation(updated_nffg)
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
 
             # activate needed applications
-            self.__NC_ApplicationsInstantiation(nffg)
+            self.__NC_ApplicationsInstantiation(new_nffg)
             logging.debug("Applications activated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
@@ -252,7 +252,7 @@ class DO(object):
             available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
             if vnf.name not in available_functions:
-                response = self.get_VNF(vnf.name)#check again if the vnf repository has the VNF
+                response = self.get_VNF(vnf.name)  # check again if the vnf repository has the VNF
                 #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
                 if response is False:
                     logging.debug("Passato di qui. do.py risposta falsa. lancio errore")
@@ -264,6 +264,8 @@ class DO(object):
                     except:
                         raise NffgUselessInformations("Error! Cannot download vnf image from uri")
                     self.NetManager.install_app(app_name)
+                    DomainInformationManager().fetch_functional_capabilities(vnf.name)
+
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for

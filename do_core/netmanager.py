@@ -723,9 +723,9 @@ class OvsdbManager(object):
                 ONOS_Rest(self.net_manager.ct_version).check_ovsdbrest(self.net_manager.ct_endpoint,
                                                                        self.net_manager.ct_username,
                                                                        self.net_manager.ct_password)
-                return true
-            except requests.HTTPError as err:
-                return false
+                return True
+            except Exception:
+                return False
 
     def configure_ovsdbrest(self):
 

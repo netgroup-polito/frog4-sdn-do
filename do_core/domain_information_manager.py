@@ -57,7 +57,7 @@ class Messaging(object, metaclass=Singleton):
         self.dd_client = DDClient(
             name=Configuration().DD_NAME,
             dealerurl=Configuration().DD_BROKER_ADDRESS,
-            customer=Configuration().DD_TENANT_NAME,     # bug in dd?? should be DD_TENANT_NAME
+            customer=Configuration().DD_TENANT_KEY,     # bug in dd?? should be DD_TENANT_NAME
             keyfile=Configuration().DD_TENANT_KEY,
             topic=Configuration().DOMAIN_DESCRIPTION_TOPIC,
             message=message
@@ -122,6 +122,12 @@ class DomainInformationManager(object):
         # periodically check for updates
         while Messaging().working_thread.isAlive():
             time.sleep(5)
+            self.fetch_functional_capabilities()
+
+    def fetch_functional_capabilities(self, wait_fc=None):
+
+        fetching = True
+        while fetching:
             # get current capabilities from controller
             functional_capabilities = NetManager().get_apps_capabilities()
             # check if there are changes
@@ -132,11 +138,16 @@ class DomainInformationManager(object):
                 # update description with new capabilities
                 ResourceDescription().clear_functional_capabilities()
                 for functional_capability in functional_capabilities:
+                    logging.debug("New FC: " + functional_capability.type)
                     ResourceDescription().add_functional_capability(functional_capability)
+                    if wait_fc == None or functional_capability.type == wait_fc:
+                        fetching = False
                 # save new file
                 ResourceDescription().saveFile()
                 # send updated domain informations
                 Messaging().publish_domain_description()
+            if fetching:
+                time.sleep(1)
 
     @staticmethod
     def _calculate_capabilities_digest(functional_capabilities):
