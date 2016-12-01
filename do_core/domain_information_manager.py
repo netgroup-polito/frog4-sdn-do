@@ -122,7 +122,10 @@ class DomainInformationManager(object):
         # periodically check for updates
         while Messaging().working_thread.isAlive():
             time.sleep(5)
-            # get current capabilities from controller
+            self.fetch_functional_capabilities()
+
+    def fetch_functional_capabilities(self):
+        # get current capabilities from controller
             functional_capabilities = NetManager().get_apps_capabilities()
             # check if there are changes
             new_digest = self._calculate_capabilities_digest(functional_capabilities)

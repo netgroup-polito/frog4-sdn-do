@@ -94,8 +94,6 @@ class DO(object):
             GraphSession().updateError(self.__session_id)
             raise ex
 
-
-
     def NFFG_Update(self, new_nffg):
 
         # Check and get the session id for this user-graph couple
@@ -130,14 +128,14 @@ class DO(object):
             GraphSession().updateNFFG(updated_nffg, self.__session_id)
 
             # Set up GRE tunnels if any
-            self.__NC_TunnelSetUp(nffg)
+            self.__NC_TunnelSetUp(new_nffg)
 
             # Send flowrules to Network Controller
             self.__NC_FlowsInstantiation(updated_nffg)
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
 
             # activate needed applications
-            self.__NC_ApplicationsInstantiation(nffg)
+            self.__NC_ApplicationsInstantiation(new_nffg)
             logging.debug("Applications activated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
