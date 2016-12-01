@@ -26,7 +26,7 @@ class VNF_Repository_Rest(RestInterface):
             log_string = log_string + "\n" + jsonFlow
         logging.debug(log_string)
 
-    def get_vnf(self, vnf_repository_endpoint, vnf_name):
+    def get_vnfs_list(self, vnf_repository_endpoint, vnf_name):
         """
         Return the information of a specific vnf if any
         :param onos_endpoint: controller REST API address
@@ -38,12 +38,11 @@ class VNF_Repository_Rest(RestInterface):
         headers = {'Accept': 'application/json'}
         url = vnf_repository_endpoint + self.vnf_get_capability_url + "/" + str(vnf_name.lower()) + "/"
 
-        #response = requests.get(url, headers=headers)
-        response = True
+        response = requests.get(url, headers=headers)
+        #response = True
 
-        #self.__logging_debug(response, url)
-        #response.raise_for_status()
-        #return response.text
+        self.__logging_debug(response, url)
+        response.raise_for_status()
         return response
 
 
@@ -67,8 +66,12 @@ class VNF_Repository_Rest(RestInterface):
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
+        bundledir = os.path.join(cur_path, 'bundles')
         filename = os.path.join(cur_path, 'bundles', vnf_image_filename)
         logging.debug("Path for downloading file: %s", filename)
+
+        if not os.path.exists(bundledir): #if the folder bundles doesn't exists, create it
+            os.makedirs(bundledir)
 
         with open(filename, 'wb') as fd:
             for chunk in response.iter_content(chunk_size=1024):

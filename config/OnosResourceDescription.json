@@ -1,32 +1,31 @@
 {
   "netgroup-domain:informations": {
     "name": "onos_domain",
-    "management-address": "127.0.0.1:10000",
     "hardware-informations": {
       "interfaces": {
         "interface": [
           {
             "name": "s2-eth1",
-            "subinterfaces": {
-              "subinterface": [
-                {
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  },
-                  "config": {
-                    "name": "s2-eth1"
-                  },
-                  "netgroup-if-gre:gre": []
-                }
-              ]
-            },
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
-                  "interface-mode": "TRUNK",
-                  "trunk-vlans": []
+                  "trunk-vlans": [],
+                  "interface-mode": "TRUNK"
                 }
               }
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "s2-eth1"
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
             },
             "config": {
               "enabled": true
@@ -34,28 +33,15 @@
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "neighbor-type": "IP",
+                  "domain-name": "host1",
                   "remote-interface": "10.0.0.1/eth0",
-                  "domain-name": "host1"
+                  "neighbor-type": "IP"
                 }
               ]
             }
           },
           {
             "name": "s2-eth2",
-            "subinterfaces": {
-              "subinterface": [
-                {
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  },
-                  "config": {
-                    "name": "s2-eth2"
-                  },
-                  "netgroup-if-gre:gre": []
-                }
-              ]
-            },
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
@@ -64,34 +50,34 @@
                 }
               }
             },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "s2-eth2"
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
             "config": {
               "enabled": true
             },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "neighbor-type": "IP",
+                  "domain-name": "host2",
                   "remote-interface": "10.0.0.2/eth0",
-                  "domain-name": "host2"
+                  "neighbor-type": "IP"
                 }
               ]
             }
           },
           {
             "name": "s3-eth1",
-            "subinterfaces": {
-              "subinterface": [
-                {
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  },
-                  "config": {
-                    "name": "s3-eth1"
-                  },
-                  "netgroup-if-gre:gre": []
-                }
-              ]
-            },
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
@@ -100,41 +86,54 @@
                 }
               }
             },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "s3-eth1"
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
             "config": {
               "enabled": true
             },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "neighbor-type": "IP",
+                  "domain-name": "host3",
                   "remote-interface": "10.0.0.3/eth0",
-                  "domain-name": "host3"
+                  "neighbor-type": "IP"
                 }
               ]
             }
           },
           {
             "name": "s3-eth2",
-            "subinterfaces": {
-              "subinterface": [
-                {
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  },
-                  "config": {
-                    "name": "s3-eth2"
-                  },
-                  "netgroup-if-gre:gre": []
-                }
-              ]
-            },
             "openconfig-if-ethernet:ethernet": {
               "openconfig-vlan:vlan": {
                 "openconfig-vlan:config": {
-                  "interface-mode": "TRUNK",
-                  "trunk-vlans": []
+                  "trunk-vlans": [],
+                  "interface-mode": "TRUNK"
                 }
               }
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "s3-eth2"
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
             },
             "config": {
               "enabled": true
@@ -142,9 +141,9 @@
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "neighbor-type": "IP",
+                  "domain-name": "host4",
                   "remote-interface": "10.0.0.4/eth0",
-                  "domain-name": "host4"
+                  "neighbor-type": "IP"
                 }
               ]
             }
@@ -170,7 +169,8 @@
           {
             "name": "it.polito.onosapp.nat",
             "family": "Network",
-            "template": "isp_nat.json",
+            "type": "NAT",
+            "ready": true,
             "function-specifications": {
               "function-specification": [
                 {
@@ -181,25 +181,25 @@
                 },
                 {
                   "name": "port-range",
-                  "mean": "upper_bound",
-                  "value": "30000",
+                  "mean": "lower_bound",
+                  "value": "10000",
                   "unit": "-"
                 },
                 {
                   "name": "port-range",
-                  "mean": "lower_bound",
-                  "value": "10000",
+                  "mean": "upper_bound",
+                  "value": "30000",
                   "unit": "-"
                 }
               ]
             },
-            "type": "NAT",
-            "ready": true
+            "template": "isp_nat.json"
           }
         ]
       }
     },
+    "type": "ONOS",
     "id": "00000001",
-    "type": "ONOS"
+    "management-address": "127.0.0.1:10000"
   }
 }

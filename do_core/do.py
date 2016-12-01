@@ -8,6 +8,7 @@
 from __future__ import division
 import logging
 import copy
+import json
 
 from do_core.domain_info import DomainInfo
 from do_core.vnf_repository.rest import VNF_Repository_Rest
@@ -20,9 +21,12 @@ from do_core.netmanager import NetManager
 from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging, DomainInformationManager
 
-from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound, VNFImageNotFound
 
 from requests.exceptions import HTTPError
+
+from vnf_template_library.template import Template
+from vnf_template_library.validator import ValidateTemplate
 
 
 class DO(object):
@@ -252,19 +256,17 @@ class DO(object):
             available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
             if vnf.name not in available_functions:
-                response = self.get_VNF(vnf.name)  # check again if the vnf repository has the VNF
-                #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
-                if response is False:
-                    logging.debug("Passato di qui. do.py risposta falsa. lancio errore")
-                    raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain. VNF not found in the VNF Repository!")
-                if response is True:
+                try:
+                    app_uri = self.get_app_uri_from_VNF_name(vnf.name)  # check again if the vnf repository has the VNF
+                    logging.debug("App uri from parsed template: %s.", app_uri)
+                    #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
                     logging.debug("Passato di qui. do.py risposta true. installo app.")
-                    try:
-                        app_name = self.get_vnf_image_from_uri("http://127.0.0.1:8080/v2/nf_image/nat-1.0-SNAPSHOT.oar")
-                    except:
-                        raise NffgUselessInformations("Error! Cannot download vnf image from uri")
+                    app_name = self.get_vnf_image_from_uri(app_uri)
                     self.NetManager.install_app(app_name)
                     DomainInformationManager().fetch_functional_capabilities(vnf.name)
+                except Exception as err:
+                    raise err
+
 
 
         '''
@@ -1083,9 +1085,34 @@ class DO(object):
     VNF_REPOSITORY
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     '''
-    def get_VNF(self, vnf_name):
+    def get_app_uri_from_VNF_name(self, vnf_name):
+        try:
             vnf_repository_endpoint=Configuration().VNF_REPOSITORY_ENDPOINT
-            return VNF_Repository_Rest().get_vnf(vnf_repository_endpoint, vnf_name)
+            resp = VNF_Repository_Rest().get_vnfs_list(vnf_repository_endpoint, vnf_name) #in resp si trova una lista di template
+            resp.raise_for_status()
+            logging.debug(resp.text)
+            response_dict = json.loads(resp.text)
+            onosApplicationFound = False
+            for template_element_dict in response_dict["list"]: #accedo al campo list della risposta
+                template_dict = template_element_dict["template"] #accedo al campo template
+                logging.debug("Template_dict: %s",str(template_dict))
+                ValidateTemplate().validate(template_dict)
+                template = Template()
+                template.parseDict(template_dict)
+                logging.debug("Get Template completed")
+                if template.vnf_type == "onos-application": # se trovo una onos-application prendo la prima che trovo ed esco dal ciclo
+                    onosApplicationFound = True
+                    uri_vnf_to_download = template.uri
+                    return uri_vnf_to_download
+            if onosApplicationFound is False:
+                raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
+
+        except Exception as err:
+            raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
+
 
     def get_vnf_image_from_uri(self, vnf_image_uri):
-        return VNF_Repository_Rest().get_vnf_image_from_uri(vnf_image_uri)
+        try:
+            return VNF_Repository_Rest().get_vnf_image_from_uri(vnf_image_uri)
+        except Exception as err:
+            raise VNFImageNotFound("Error! VNF image not found in the VNF Repository")
