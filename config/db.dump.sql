@@ -123,7 +123,7 @@ CREATE TABLE 'vnf' (
   "graph_vnf_id" varchar(64) NOT NULL,
   "session_id" varchar(64) NOT NULL,
   "name" varchar(64) NOT NULL,
-  "template" varchar(64) NOT NULL,
+  "template" varchar(64),
   "application_name" varchar(64),
   PRIMARY KEY ("id")
 );
