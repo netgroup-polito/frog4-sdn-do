@@ -21,7 +21,7 @@ from do_core.netmanager import NetManager
 from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging, DomainInformationManager
 
-from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound, VNFImageNotFound
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, VNFNotFound, VNFImageNotFound, VNFTemplateNotFound
 
 from requests.exceptions import HTTPError
 
@@ -255,17 +255,29 @@ class DO(object):
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
-            if vnf.name not in available_functions:
+            if vnf.vnf_template_location is not None:
                 try:
-                    app_uri = self.get_app_uri_from_VNF_name(vnf.name)  # check again if the vnf repository has the VNF
+                    app_uri = self.get_template_from_uri(vnf.vnf_template_location)  # get the specified template in the vnf_template field of the graph
                     logging.debug("App uri from parsed template: %s.", app_uri)
-                    #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
+                    # TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
                     logging.debug("Passato di qui. do.py risposta true. installo app.")
                     app_name = self.get_vnf_image_from_uri(app_uri)
                     self.NetManager.install_app(app_name)
                     DomainInformationManager().fetch_functional_capabilities(vnf.name)
                 except Exception as err:
                     raise err
+            else:
+                if vnf.name not in available_functions:
+                    try:
+                        app_uri = self.get_app_uri_from_VNF_name(vnf.name)  # check again if the vnf repository has the VNF
+                        logging.debug("App uri from parsed template: %s.", app_uri)
+                        #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
+                        logging.debug("Passato di qui. do.py risposta true. installo app.")
+                        app_name = self.get_vnf_image_from_uri(app_uri)
+                        self.NetManager.install_app(app_name)
+                        DomainInformationManager().fetch_functional_capabilities(vnf.name)
+                    except Exception as err:
+                        raise err
 
 
 
@@ -1110,6 +1122,26 @@ class DO(object):
         except Exception as err:
             raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
 
+    def get_template_from_uri(self, template_uri):
+        try:
+            resp = VNF_Repository_Rest().get_vnf_template(template_uri)  # in resp si trova una lista di template
+            resp.raise_for_status()
+            logging.debug(resp.text)
+            template_dict = json.loads(resp.text)
+            logging.debug("Template_dict: %s", str(template_dict))
+            ValidateTemplate().validate(template_dict)
+            template = Template()
+            template.parseDict(template_dict)
+            logging.debug("Get Template completed")
+            onosApplicationFound = False
+            if template.vnf_type == "onos-application":  # se trovo una onos-application prendo la prima che trovo ed esco dal ciclo
+                onosApplicationFound = True
+                uri_vnf_to_download = template.uri
+                return uri_vnf_to_download
+            if onosApplicationFound is False:
+                raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
+        except Exception as err:
+            raise VNFTemplateNotFound("Error! The specified VNF template not found in the VNF Repository")
 
     def get_vnf_image_from_uri(self, vnf_image_uri):
         try:

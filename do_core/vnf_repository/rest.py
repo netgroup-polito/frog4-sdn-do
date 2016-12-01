@@ -26,6 +26,22 @@ class VNF_Repository_Rest(RestInterface):
             log_string = log_string + "\n" + jsonFlow
         logging.debug(log_string)
 
+    def get_vnf_template(self, template_uri):
+        """
+               Return the template from the specified uri
+               :param template_uri: the uri of the template
+               :return:
+               """
+        headers = {'Accept': 'application/json'}
+        url = template_uri
+
+        response = requests.get(url, headers=headers)
+        # response = True
+
+        self.__logging_debug(response, url)
+        response.raise_for_status()
+        return response
+
     def get_vnfs_list(self, vnf_repository_endpoint, vnf_name):
         """
         Return the information of a specific vnf if any

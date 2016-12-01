@@ -6,6 +6,7 @@ from do_core.do import DO
 
 from nffg_library.validator import ValidateNF_FG
 from nffg_library.nffg import NF_FG
+import logging
 
 
 Configuration().log_configuration()
