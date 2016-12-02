@@ -255,25 +255,25 @@ class DO(object):
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.type)
         for vnf in nffg.vnfs:
-            if vnf.vnf_template_location is not None:
-                try:
-                    app_uri = self.get_template_from_uri(vnf.vnf_template_location)  # get the specified template in the vnf_template field of the graph
-                    logging.debug("App uri from parsed template: %s.", app_uri)
-                    # TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
-                    logging.debug("Passato di qui. do.py risposta true. installo app.")
-                    app_name = self.get_vnf_image_from_uri(app_uri)
-                    self.NetManager.install_app(app_name)
-                    DomainInformationManager().fetch_functional_capabilities(vnf.name)
-                except Exception as err:
-                    raise err
-            else:
-                if vnf.name not in available_functions:
+            if vnf.name not in available_functions: #if no functional capabilities available
+                if vnf.vnf_template_location is not None and vnf.vnf_template_location is not "": #if the vnf template is specified and is not a void string
+                    try:
+                        app_uri = self.get_template_from_uri(vnf.vnf_template_location)  # get the specified template in the vnf_template field of the graph
+                        logging.debug("App uri from parsed template: %s.", app_uri)
+                        # TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
+                        app_name = self.get_vnf_image_from_uri(app_uri)
+                        logging.debug("Ok! Onos application found. Installing: %s.", app_name)
+                        self.NetManager.install_app(app_name)
+                        DomainInformationManager().fetch_functional_capabilities(vnf.name)
+                    except Exception as err:
+                        raise err
+                else: # if the vnf template field is missing or is a void string
                     try:
                         app_uri = self.get_app_uri_from_VNF_name(vnf.name)  # check again if the vnf repository has the VNF
                         logging.debug("App uri from parsed template: %s.", app_uri)
                         #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
-                        logging.debug("Passato di qui. do.py risposta true. installo app.")
                         app_name = self.get_vnf_image_from_uri(app_uri)
+                        logging.debug("Ok! Onos application found. Installing the first app found: %s.", app_name)
                         self.NetManager.install_app(app_name)
                         DomainInformationManager().fetch_functional_capabilities(vnf.name)
                     except Exception as err:
@@ -1120,7 +1120,8 @@ class DO(object):
                     return uri_vnf_to_download
             if onosApplicationFound is False:
                 raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
-
+        except VNFNotFound as err:
+            raise err
         except Exception as err:
             raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
 
@@ -1136,12 +1137,14 @@ class DO(object):
             template.parseDict(template_dict)
             logging.debug("Get Template completed")
             onosApplicationFound = False
-            if template.vnf_type == "onos-application":  # se trovo una onos-application prendo la prima che trovo ed esco dal ciclo
+            if template.vnf_type == "onos-application":  # if the vnf type of the specified template is an onos application return the uri of the vnf image
                 onosApplicationFound = True
                 uri_vnf_to_download = template.uri
                 return uri_vnf_to_download
             if onosApplicationFound is False:
-                raise VNFNotFound("Error! Not a single onos application for the required VNF has been found!")
+                raise VNFNotFound("Error! The vnf type of the specified template is not an onos application!")
+        except VNFNotFound as err:
+            raise err
         except Exception as err:
             raise VNFTemplateNotFound("Error! The specified VNF template not found in the VNF Repository")
 
