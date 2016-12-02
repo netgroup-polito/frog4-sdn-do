@@ -22,7 +22,7 @@ from nffg_library.exception import NF_FGValidationError
 
 # Exceptions
 from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations,\
-    UserNotFound, TenantNotFound, UserTokenExpired, GraphError, VNFNotFound, VNFImageNotFound
+    UserNotFound, TenantNotFound, UserTokenExpired, GraphError, VNFNotFound, VNFImageNotFound, VNFTemplateNotFound
 from flask.views import MethodView
 
 
@@ -237,6 +237,16 @@ class DO_REST_NFFG_GPUD(MethodView):
         except sessionNotFound as err:
             logging.exception(err)
             return "sessionNotFound", 404
+        except VNFNotFound as err:
+            logging.exception(err)
+            return "VNFNotFound", 404
+        except VNFImageNotFound as err:
+            logging.exception(err)
+            return "VNFImageNotFound", 404
+        except VNFTemplateNotFound as err:
+            logging.exception(err)
+            return ("VNFTemplateNotFound", 404)
+
         
         # Other errors
         except requests.HTTPError as err:
@@ -770,7 +780,7 @@ class DO_VNF_Repository(MethodView):
             logging.debug("VNF Name: %s", name)
 
             response = NCDO.get_app_uri_from_VNF_name(name) #response is the uri of the vnf image
-            logging.debug("Passato di qui11111111111111. Ok! VNF as onos application found! Response: %s", response)
+            logging.debug("Ok! VNF as onos application found! Response: %s", response)
             return ("VNF Found", 200)
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -809,6 +819,10 @@ class DO_VNF_Repository(MethodView):
         except VNFImageNotFound as err:
             logging.exception(err)
             return ("VNFImageNotFound", 404)
+        except VNFTemplateNotFound as err:
+            logging.exception(err)
+            return ("VNFTemplateNotFound", 404)
+
 
         # Other errors
         except requests.HTTPError as err:
