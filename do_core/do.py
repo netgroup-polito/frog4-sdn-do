@@ -260,7 +260,6 @@ class DO(object):
                     try:
                         app_uri = self.get_template_from_uri(vnf.vnf_template_location)  # get the specified template in the vnf_template field of the graph
                         logging.debug("App uri from parsed template: %s.", app_uri)
-                        # TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
                         app_name = self.get_vnf_image_from_uri(app_uri)
                         logging.debug("Ok! Onos application found. Installing: %s.", app_name)
                         self.NetManager.install_app(app_name)
@@ -271,7 +270,6 @@ class DO(object):
                     try:
                         app_uri = self.get_app_uri_from_VNF_name(vnf.name)  # check again if the vnf repository has the VNF
                         logging.debug("App uri from parsed template: %s.", app_uri)
-                        #TODO: logica che sceglie tra i template ritornati, scarica l'immagine e installa l'app
                         app_name = self.get_vnf_image_from_uri(app_uri)
                         logging.debug("Ok! Onos application found. Installing the first app found: %s.", app_name)
                         self.NetManager.install_app(app_name)
@@ -1102,19 +1100,19 @@ class DO(object):
     def get_app_uri_from_VNF_name(self, vnf_name):
         try:
             vnf_repository_endpoint=Configuration().VNF_REPOSITORY_ENDPOINT
-            resp = VNF_Repository_Rest().get_vnfs_list(vnf_repository_endpoint, vnf_name) #in resp si trova una lista di template
+            resp = VNF_Repository_Rest().get_vnfs_list(vnf_repository_endpoint, vnf_name) # resp = list of templates
             resp.raise_for_status()
             logging.debug(resp.text)
             response_dict = json.loads(resp.text)
             onosApplicationFound = False
-            for template_element_dict in response_dict["list"]: #accedo al campo list della risposta
-                template_dict = template_element_dict["template"] #accedo al campo template
+            for template_element_dict in response_dict["list"]: # enter the field "list" of the response
+                template_dict = template_element_dict["template"] # enter the field "template"
                 logging.debug("Template_dict: %s",str(template_dict))
                 ValidateTemplate().validate(template_dict)
                 template = Template()
                 template.parseDict(template_dict)
                 logging.debug("Get Template completed")
-                if template.vnf_type == "onos-application": # se trovo una onos-application prendo la prima che trovo ed esco dal ciclo
+                if template.vnf_type == "onos-application": # if an onos-application is found, fetch the first and exits the cicle
                     onosApplicationFound = True
                     uri_vnf_to_download = template.uri
                     return uri_vnf_to_download
@@ -1127,7 +1125,7 @@ class DO(object):
 
     def get_template_from_uri(self, template_uri):
         try:
-            resp = VNF_Repository_Rest().get_vnf_template(template_uri)  # in resp si trova una lista di template
+            resp = VNF_Repository_Rest().get_vnf_template(template_uri)  # resp = list of templates
             resp.raise_for_status()
             logging.debug(resp.text)
             template_dict = json.loads(resp.text)
