@@ -28,10 +28,10 @@ class VNF_Repository_Rest(RestInterface):
 
     def get_vnf_template(self, template_uri):
         """
-               Return the template from the specified uri
-               :param template_uri: the uri of the template
-               :return:
-               """
+        Return the template from the specified uri
+        :param template_uri: the uri of the template
+        :return:
+        """
         headers = {'Accept': 'application/json'}
         url = template_uri
 
@@ -44,7 +44,7 @@ class VNF_Repository_Rest(RestInterface):
 
     def get_vnfs_list(self, vnf_repository_endpoint, vnf_name):
         """
-        Return the information of a specific vnf if any
+        Return the list of templates for the specified vnf
         :param onos_endpoint: controller REST API address
         :param onos_user: controller user
         :param onos_pass: controller password for user
@@ -64,7 +64,7 @@ class VNF_Repository_Rest(RestInterface):
 
     def get_vnf_image_from_uri(self, vnf_image_uri):
         """
-        Return the information of a specific vnf if any
+        Return the name of the vnf image downloaded from the specified uri
         :param onos_endpoint: controller REST API address
         :param onos_user: controller user
         :param onos_pass: controller password for user
