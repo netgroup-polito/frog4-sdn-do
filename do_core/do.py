@@ -271,13 +271,16 @@ class DO(object):
             if ep.gre_key is not None:
                 raise_useless_info("presence of 'gre-key'")
             '''
+
             if ep.ttl is not None:
                 raise_useless_info("presence of 'ttl'")
+            '''
             if ep.prepare_connection_to_remote_endpoint_id is not None:
                 raise_useless_info("presence of connection to remote endpoint")
             if ep.prepare_connection_to_remote_endpoint_ids is not None and len(
                     ep.prepare_connection_to_remote_endpoint_ids) > 0:
                 raise_useless_info("presence of connection to remote endpoints")
+            '''
             """
             # Check endpoints in ResourceDescription.json (switch/port)
             if ResourceDescription().checkEndpoint(ep.node_id, ep.interface)==False:

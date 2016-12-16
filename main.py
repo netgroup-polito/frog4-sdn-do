@@ -47,7 +47,7 @@ try_session()
 Configuration().log_configuration()
 
 # START NETWORK CONTROLLER DOMAIN ORCHESTRATOR
-logging.debug("Network Controller Domain Orchestrator Starting...")
+logging.debug("SDN Domain Orchestrator Starting...")
 """
 # Falcon
 logging.info("Starting server application")
@@ -130,7 +130,7 @@ app.add_url_rule(
     methods=["GET"]
 )
 logging.info("Flask Successfully started")
-print("Welcome to 'Network Controller Domain Orchestrator'")
+print("Welcome to 'SDN Domain Orchestrator'")
 
 
 # adding physical interfaces if any
