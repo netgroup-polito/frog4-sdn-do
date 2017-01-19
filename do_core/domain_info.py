@@ -71,7 +71,8 @@ class DomainInfo(object):
 
         :param file_name: name of json file in the /config folder
         :type file_name: str
-        :return: DomainInfo
+        :return: DomainInfo object
+        :rtype: DomainInfo
         """
 
         json_data = open(file_name).read()
@@ -196,6 +197,7 @@ class Cpu(object):
 
         return cpu_dict
 
+
 class Memory(object):
     def __init__(self, size=None, frequency=None, latency=None, free=None):
         """
@@ -313,7 +315,7 @@ class Interface(object):
                 if subinterface_dict['config']['name'] == self.name:
                     if subinterface_dict['netgroup-if-capabilities:capabilities']['gre']:
                         self.gre = True
-                        if 'frog-if-gre:gre' in subinterface_dict:
+                        if 'netgroup-if-gre:gre' in subinterface_dict:
                             for gre_dict in subinterface_dict['netgroup-if-gre:gre']:
                                 gre_tunnel = GreTunnel()
                                 gre_tunnel.parse_dict(gre_dict)
@@ -324,10 +326,14 @@ class Interface(object):
                 neighbor.parse_dict(neighbor_dict)
                 self.neighbors.append(neighbor)
 
-        if 'openconfig-if-ethernet:ethernet' in interface_dict:
-            if 'openconfig-vlan:vlan' in interface_dict['openconfig-if-ethernet:ethernet']:
+        if 'netgroup-if-ethernet:ethernet' in interface_dict:
+            if 'netgroup-vlan:vlans' in interface_dict['netgroup-if-ethernet:ethernet']:
                 self.vlan = True
-                if 'openconfig-vlan:config' in interface_dict['openconfig-if-ethernet:ethernet'][
+                for vlan_dict in interface_dict['netgroup-if-ethernet:ethernet']['netgroup-vlan:vlans'][
+                        'netgroup-vlan:vlan']:
+                    self.vlans_free.append(vlan_dict['vlan-id'])
+                ''' - old way, does not follow openconfig model
+                if 'netgroup-vlan:config' in interface_dict['openconfig-if-ethernet:ethernet'][
                         'openconfig-vlan:vlan']:
                     vlan_config = interface_dict['openconfig-if-ethernet:ethernet']['openconfig-vlan:vlan'][
                             'openconfig-vlan:config']
@@ -335,6 +341,7 @@ class Interface(object):
                     if vlan_config['interface-mode'] == 'TRUNK':
                         for vlan in vlan_config['trunk-vlans']:
                             self.vlans_free.append(vlan)
+                '''
 
     def get_dict(self):
         interface_dict = {}
@@ -369,6 +376,7 @@ class Interface(object):
             interface_dict['netgroup-neighbor:neighbors']['netgroup-neighbor:neighbor'] = neighbors
 
         if self.vlan:
+            ''' - old way, does not follow openconfig model
             if self.vlan_mode:
                 config_dict = {}
                 config_dict['interface-mode'] = self.vlan_mode
@@ -381,6 +389,16 @@ class Interface(object):
                 interface_dict['openconfig-if-ethernet:ethernet']['openconfig-vlan:vlan'] = {}
                 interface_dict['openconfig-if-ethernet:ethernet']['openconfig-vlan:vlan'][
                     'openconfig-vlan:config'] = config_dict
+            '''
+            interface_dict['netgroup-if-ethernet:ethernet'] = {}
+            vlans = []
+            for vlan_id in self.vlans_free:
+                vlan_dict = {'netgroup-vlan:vlan-id': vlan_id}
+                config_dict = {'netgroup-vlan:vlan-id': vlan_id}
+                vlan_dict['netgroup-vlan:config'] = config_dict
+                vlans.append(vlan_dict)
+            interface_dict['netgroup-if-ethernet:ethernet']['netgroup-vlan:vlans'] = {}
+            interface_dict['netgroup-if-ethernet:ethernet']['netgroup-vlan:vlans']['netgroup-vlan:vlan'] = vlans
 
         return interface_dict
 
