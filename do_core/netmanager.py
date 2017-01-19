@@ -40,7 +40,7 @@ class NetManager:
             self.ct_password = Configuration().ONOS_PASSWORD
         
         # Topology
-        self.topology = None #nx.Graph()
+        self.topology = None  # nx.Graph()
         self.WEIGHT_PROPERTY_NAME = 'weight'
         self.ACTIONS_SEPARATOR_CHARACTER = ','
         self.VLAN_BUSY_CODE = 1
@@ -48,6 +48,12 @@ class NetManager:
         
         # Profile Graph
         self.ProfileGraph = NetManager.__ProfileGraph()
+
+        # ovsdb
+        if Configuration().OVSDB_SUPPORT:
+            self.ovsdb = OvsdbManager()
+            self.ovsdb.activate_ovsdbrest()
+            self.ovsdb.configure_ovsdbrest()
 
     class __ProfileGraph(object):
         def __init__(self):
@@ -512,7 +518,18 @@ class NetManager:
                     return port['port_id']
         return None
 
-    
+    # [GRE tunnels]
+
+    def add_gre_tunnel(self, device_id, port_name, local_ip, remote_ip, key):
+        self.ovsdb.add_gre_tunnel(device_id, port_name, local_ip, remote_ip, key)
+
+    def delete_gre_tunnel(self, device_id, port_name):
+        self.ovsdb.delete_gre_tunnel(device_id, port_name)
+
+    # [physical ports]
+    def add_port(self, device_id, port_name):
+        self.ovsdb.add_port(device_id, port_name)
+
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
         CLASS - EXTERNAL FLOWRULE

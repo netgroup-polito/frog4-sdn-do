@@ -16,7 +16,6 @@ from do_core.config import Configuration
 from do_core.sql.graph_session import GraphSession, VnfModel
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
-from do_core.netmanager import OvsdbManager
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError
 from requests.exceptions import HTTPError
@@ -39,7 +38,6 @@ class DO(object):
 
         # NetManager
         self.NetManager = NetManager()
-        self.ovsdb = OvsdbManager()
 
     def __print(self, msg):
         if self.__print_enabled:
@@ -475,8 +473,8 @@ class DO(object):
 
                 print("[New Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
                 logging.info("[New Gre] device:'"+port.switch_id+"' port:'"+port.graph_port_id+"'")
-                self.ovsdb.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id,
-                                          ep.local_ip, ep.remote_ip, ep.gre_key)
+                self.NetManager.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id,
+                                               ep.local_ip, ep.remote_ip, ep.gre_key)
                 # change endpoint to an interface endpoint on the new gre interface
                 ep.type = 'interface'
                 ep.interface = port.graph_port_id
@@ -977,7 +975,7 @@ class DO(object):
             # delete from controller
             print("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
             logging.info("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
-            self.ovsdb.delete_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id)
+            self.NetManager.delete_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id)
 
     def __deleteVnf(self, vnf):
         vnf_ports = GraphSession().getVnfPortsByVnfID(vnf.id)

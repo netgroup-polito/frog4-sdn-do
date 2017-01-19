@@ -84,6 +84,7 @@ class Configuration(object, metaclass=Singleton):
             self.__ONOS_VERSION = config.get('onos', 'onos_version')
 
             # [ovsdb]
+            self.__OVSDB_SUPPORT = config.getboolean('ovsdb', 'ovsdb_support')
             self.__OVSDB_NODE_IP = config.get('ovsdb', 'ovsdb_node_ip')
             self.__OVSDB_NODE_PORT = config.get('ovsdb', 'ovsdb_node_port')
             self.__OVSDB_IP = config.get('ovsdb', 'ovsdb_ip')
@@ -249,6 +250,10 @@ class Configuration(object, metaclass=Singleton):
     @property
     def ONOS_VERSION(self):
         return self.__ONOS_VERSION
+
+    @property
+    def OVSDB_SUPPORT(self):
+        return self.__OVSDB_SUPPORT
 
     @property
     def OVSDB_NODE_IP(self):

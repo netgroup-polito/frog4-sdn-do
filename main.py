@@ -38,7 +38,7 @@ from do_core.rest_interface import DO_UserAuthentication
 from do_core.rest_interface import DO_NetworkTopology
 
 from do_core.domain_information_manager import DomainInformationManager
-from do_core.netmanager import NetManager, OvsdbManager
+from do_core.netmanager import NetManager
 
 # Database connection test
 try_session()
@@ -134,17 +134,19 @@ print("Welcome to 'SDN Domain Orchestrator'")
 
 
 # adding physical interfaces if any
-try:
-    OvsdbManager().activate_ovsdbrest()
-    OvsdbManager().configure_ovsdbrest()
-    time.sleep(2)
-    # physical interfaces
-    ports = Configuration().PORTS
-    for port in ports:
-        OvsdbManager().add_port(ports[port], port)
-except Exception as ex:
-    logging.exception(ex)
-    logging.warning('Application ovsdbrest is not available')
+if len(Configuration().PORTS) > 0:
+    if Configuration().OVSDB_SUPPORT:
+        try:
+            net_manager = NetManager()
+            time.sleep(2)
+            ports = Configuration().PORTS
+            for port in ports:
+                net_manager.add_port(ports[port], port)
+        except Exception as ex:
+            logging.exception(ex)
+            logging.warning('Application ovsdbrest is not available')
+    else:
+        logging.warning('Physical ports to attach found on the config file, however support for ovsdb is not enabled')
 
 # starting DomainInformationManager
 domain_information_manager = DomainInformationManager()
