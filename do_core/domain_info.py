@@ -331,7 +331,7 @@ class Interface(object):
                 self.vlan = True
                 for vlan_dict in interface_dict['netgroup-if-ethernet:ethernet']['netgroup-vlan:vlans'][
                         'netgroup-vlan:vlan']:
-                    self.vlans_free.append(vlan_dict['vlan-id'])
+                    self.vlans_free.append(vlan_dict['netgroup-vlan:vlan-id'])
                 ''' - old way, does not follow openconfig model
                 if 'netgroup-vlan:config' in interface_dict['openconfig-if-ethernet:ethernet'][
                         'openconfig-vlan:vlan']:
