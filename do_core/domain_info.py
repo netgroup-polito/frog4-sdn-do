@@ -9,7 +9,6 @@ class DomainInfo(object):
     def __init__(self, domain_id=None, name=None, _type=None, domain_ip=None, domain_port=None,
                  hardware_info=None, capabilities=None, interfaces=None):
         """
-
         :param domain_id:
         :param name:
         :param _type:
@@ -68,7 +67,6 @@ class DomainInfo(object):
     @staticmethod
     def get_from_file(file_name):
         """
-
         :param file_name: name of json file in the /config folder
         :type file_name: str
         :return: DomainInfo object
@@ -86,7 +84,6 @@ class DomainInfo(object):
 class HardwareInfo(object):
     def __init__(self, resources=None, interfaces=None):
         """
-
         :param resources:
         :param interfaces:
         :type resources: Resources
@@ -134,7 +131,6 @@ class HardwareInfo(object):
 class Resources(object):
     def __init__(self, cpu=None, memory=None, storage=None):
         """
-
         :param cpu:
         :param memory:
         :param storage:
@@ -172,7 +168,6 @@ class Resources(object):
 class Cpu(object):
     def __init__(self, number=None, frequency=None, free=None):
         """
-
         :param number:
         :param frequency:
         :param free:
@@ -201,7 +196,6 @@ class Cpu(object):
 class Memory(object):
     def __init__(self, size=None, frequency=None, latency=None, free=None):
         """
-
         :param size:
         :param frequency:
         :param latency:
@@ -235,7 +229,6 @@ class Memory(object):
 class Storage(object):
     def __init__(self, size=None, latency=None, free=None):
         """
-
         :param size:
         :param latency:
         :param free:
@@ -266,7 +259,6 @@ class Interface(object):
     def __init__(self, node=None, name=None, side=None, enabled=None, neighbors=None, gre=False, gre_tunnels=None,
                  vlan=False, vlan_mode=None, vlans_free=None):
         """
-
         :param node: ip address
         :param name: interface name
         :param side:
@@ -313,8 +305,8 @@ class Interface(object):
         if 'subinterfaces' in interface_dict:
             for subinterface_dict in interface_dict['subinterfaces']['subinterface']:
                 if subinterface_dict['config']['name'] == self.name:
-                    if subinterface_dict['netgroup-if-capabilities:capabilities']['netgroup-if-capabilities:gre']:
-                        self.gre = True
+                    self.gre = subinterface_dict['netgroup-if-capabilities:capabilities']['netgroup-if-capabilities:gre']
+                    if self.gre:
                         if 'netgroup-if-gre:gre' in subinterface_dict:
                             for gre_dict in subinterface_dict['netgroup-if-gre:gre']:
                                 gre_tunnel = GreTunnel()
@@ -359,9 +351,8 @@ class Interface(object):
         subinterface_dict = {}
         subinterface_dict['config'] = {}
         subinterface_dict['config']['name'] = self.name
-        if self.gre:
-            subinterface_dict['netgroup-if-capabilities:capabilities'] = {}
-            subinterface_dict['netgroup-if-capabilities:capabilities']['netgroup-if-capabilities:gre'] = True
+        subinterface_dict['netgroup-if-capabilities:capabilities'] = {}
+        subinterface_dict['netgroup-if-capabilities:capabilities']['netgroup-if-capabilities:gre'] = self.gre
         gre_tunnels = []
         for gre_tunnel in self.gre_tunnels:
             gre_tunnels.append(gre_tunnel.get_dict())
@@ -422,7 +413,6 @@ class Interface(object):
 class Neighbor(object):
     def __init__(self, domain_name=None, remote_interface=None, neighbor_type=None, node=None):
         """
-
         :param domain_name:
         :param remote_interface:
         :param neighbor_type:
@@ -466,7 +456,6 @@ class Neighbor(object):
 class GreTunnel(object):
     def __init__(self, name=None, local_ip=None, remote_ip=None, gre_key=None):
         """
-
         :param name:
         :param local_ip:
         :param remote_ip:
@@ -507,7 +496,6 @@ class GreTunnel(object):
 class Capabilities(object):
     def __init__(self, infrastructural_capabilities=None, functional_capabilities=None):
         """
-
         :param infrastructural_capabilities:
         :param functional_capabilities:
         :type infrastructural_capabilities: list of InfrastructuralCapability
@@ -546,7 +534,6 @@ class Capabilities(object):
 class InfrastructuralCapability(object):
     def __init__(self, _type=None, name=None):
         """
-
         :param _type:
         :param name:
         :type _type: str
@@ -570,7 +557,6 @@ class InfrastructuralCapability(object):
 class FunctionalCapability(object):
     def __init__(self, _type=None, name=None, ready=False, family=None, template=None, resources=None, function_specifications=None):
         """
-
         :param _type:
         :param name:
         :param ready:
@@ -632,7 +618,6 @@ class FunctionalCapability(object):
 class FunctionSpecification(object):
     def __init__(self, name=None, value=None, unit=None, mean=None):
         """
-
         :param name:
         :param value:
         :param unit:
