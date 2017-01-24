@@ -23,6 +23,8 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
     __domain_info = DomainInfo()
 
     def __init__(self):
+        self.loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)
+        self.__filename = Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE
         return
 
     def loadFile(self, filename):
@@ -286,4 +288,4 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
                 break
         self.__dict = self.__domain_info.get_dict()
 
-ResourceDescription().loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)
+#ResourceDescription().loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)

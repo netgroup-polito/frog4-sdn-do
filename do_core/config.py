@@ -100,6 +100,8 @@ class Configuration(object, metaclass=Singleton):
             self.__DOMAIN_DESCRIPTION_TOPIC = config.get('domain_description', 'domain_description_topic')
             self.__DOMAIN_DESCRIPTION_FILE = base_folder + "/" + config.get('domain_description',
                                                                             'domain_description_file')
+            self.__DOMAIN_DESCRIPTION_DYNAMIC_FILE = base_folder + "/" + config.get('domain_description',
+                                                                                    'domain_description_dynamic_file')
             self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
 
             # [other_options]
@@ -294,6 +296,10 @@ class Configuration(object, metaclass=Singleton):
     @property
     def DOMAIN_DESCRIPTION_FILE(self):
         return self.__DOMAIN_DESCRIPTION_FILE
+
+    @property
+    def DOMAIN_DESCRIPTION_DYNAMIC_FILE(self):
+        return self.__DOMAIN_DESCRIPTION_DYNAMIC_FILE
 
     @property
     def CAPABILITIES_APP_NAME(self):

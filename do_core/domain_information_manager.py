@@ -93,27 +93,28 @@ class DomainInformationManager(object):
     def start(self):
 
         # load static informations from file
-        ResourceDescription().loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)
+        # ResourceDescription().loadFile(Configuration().DOMAIN_DESCRIPTION_FILE)
+        resource_description = ResourceDescription()
 
         # activate capabilities application on controller
         try:
             NetManager().activate_app(Configuration().CAPABILITIES_APP_NAME)
             time.sleep(2)
         except:
-            logging.warning("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
-                            ", no functional capabilities will be exported.")
+            logging.exception("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
+                              ", no functional capabilities will be exported.")
             return
 
         # get capabilities informations from controller
-        ResourceDescription().clear_functional_capabilities()
+        resource_description.clear_functional_capabilities()
 
         functional_capabilities = NetManager().get_apps_capabilities()
         self._fc_digest = self._calculate_capabilities_digest(functional_capabilities)
         for functional_capability in functional_capabilities:
-            ResourceDescription().add_functional_capability(functional_capability)
+            resource_description.add_functional_capability(functional_capability)
 
         # save new file
-        ResourceDescription().saveFile()
+        resource_description.saveFile()
 
         # start dd_client
         logging.info("Starting doubledecker client...")

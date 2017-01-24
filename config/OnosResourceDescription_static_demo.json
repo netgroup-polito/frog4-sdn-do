@@ -39,11 +39,21 @@
               ]
             },
             "openconfig-if-ethernet:ethernet": {
-              "openconfig-vlan:vlan": {
-                "openconfig-vlan:config": {
-                  "interface-mode": "TRUNK",
-                  "trunk-vlans": []
-                }
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:vlan-id": 15,
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 15
+                    }
+                  },
+                  {
+                    "netgroup-vlan:vlan-id": 16,
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 16
+                    }
+                  }
+                ]
               }
             }
           },

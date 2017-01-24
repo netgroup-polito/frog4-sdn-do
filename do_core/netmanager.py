@@ -51,7 +51,7 @@ class NetManager:
 
         # ovsdb
         if Configuration().OVSDB_SUPPORT:
-            self.ovsdb = OvsdbManager()
+            self.ovsdb = OvsdbManager(self)
             self.ovsdb.activate_ovsdbrest()
             self.ovsdb.configure_ovsdbrest()
 
@@ -232,8 +232,7 @@ class NetManager:
             json_req = flowj.getJSON()
             flow_id, response = ONOS_Rest(self.ct_version).createFlow(self.ct_endpoint, self.ct_username, self.ct_password, json_req, efr.get_switch_id())
             return flow_id
-            
-    
+
     def deleteFlow(self, switch_id, flowname):
         if self.isODL():
             ODL_Rest(self.ct_version).deleteFlow(self.ct_endpoint, self.ct_username, self.ct_password, switch_id, flowname)
@@ -709,8 +708,8 @@ class NetManager:
 
 class OvsdbManager(object):
 
-    def __init__(self):
-        self.net_manager = NetManager()
+    def __init__(self, net_manager):
+        self.net_manager = net_manager
         self.ovsdb_ip = Configuration().OVSDB_IP
 
     def activate_ovsdbrest(self):
