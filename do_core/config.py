@@ -26,7 +26,6 @@ class Configuration(object, metaclass=Singleton):
             self.conf_file = os.environ["FROG4_SDN_DO_CONF"]
         else:
             self.conf_file = "config/default-config.ini"
-
         self.initialize()
 
     def initialize(self):
@@ -106,6 +105,7 @@ class Configuration(object, metaclass=Singleton):
 
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
+            self.__USE_INTERFACES_NAMES = config.getboolean('other_options', 'use_interfaces_names')
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -308,3 +308,7 @@ class Configuration(object, metaclass=Singleton):
     @property
     def OO_CONSOLE_PRINT(self):
         return self.__OO_CONSOLE_PRINT
+
+    @property
+    def USE_INTERFACES_NAMES(self):
+        return self.__USE_INTERFACES_NAMES

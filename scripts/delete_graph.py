@@ -1,4 +1,6 @@
-import json
+import os
+os.environ.setdefault("FROG4_SDN_DO_CONF", "config/script-config.ini")
+import logging
 
 from do_core.config import Configuration
 from do_core.user_authentication import UserAuthentication
@@ -12,7 +14,7 @@ Configuration().log_configuration()
 
 try:
     user_data = UserAuthentication().authenticateUserFromCredentials('admin', 'admin', 'admin_tenant')
-    nffg_id = '1234'
+    nffg_id = '123'
 
     nc_do = DO(user_data)
     nc_do.NFFG_Delete(nffg_id)

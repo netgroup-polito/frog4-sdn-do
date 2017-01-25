@@ -3,14 +3,15 @@ Delete all informations from the database.
 Delete all installed flows from the switches.
 Keep in the database user and tenant informations only.
 '''
-
+import os
+os.environ.setdefault("FROG4_SDN_DO_CONF", "config/script-config.ini")
 import logging
 from do_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
 #from do_core.resource_description import ResourceDescription
 from do_core.domain_information_manager import Messaging
 from do_core.netmanager import NetManager
-
+from do_core.config import Configuration
 
 def do_core_clean_all():
     
@@ -51,5 +52,5 @@ def do_core_clean_all():
     
     print("Cleaning database and switches completed!")
     
-
+Configuration().log_configuration()
 do_core_clean_all()

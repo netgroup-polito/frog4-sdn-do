@@ -35,7 +35,6 @@ class DO(object):
          - user_data.password
          - user_data.tenant
         '''
-
         # NetManager
         self.NetManager = NetManager()
 
@@ -581,7 +580,7 @@ class DO(object):
         for port in vnf_port_map:
             ports_configuration['ports'][port] = {
                 'device-id': vnf_port_map[port]['device'],
-                'port-number': self.NetManager.getPortByInterface(
+                'port-number': self.NetManager.getPortName(
                     vnf_port_map[port]['device'],
                     vnf_port_map[port]['interface']
                 )
@@ -786,11 +785,12 @@ class DO(object):
                 pos = -1
                 logging.debug("setting switch_id: " + epIN.node_id)
                 efr.set_switch_id(epIN.node_id)
-                port_in = self.NetManager.getPortByInterface(epIN.node_id, epIN.interface)
+
+                port_in = self.NetManager.getPortName(epIN.node_id, epIN.interface)
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
                 if port_out is None and len(path) == 1:  # 'single-switch' path
                     pos = -2
-                    port_out = self.NetManager.getPortByInterface(epOUT.node_id, epOUT.interface)
+                    port_out = self.NetManager.getPortName(epOUT.node_id, epOUT.interface)
 
             # Last switch
             elif i == len(path) - 1:
@@ -798,7 +798,7 @@ class DO(object):
                 logging.debug("setting switch_id: " + epOUT.node_id)
                 efr.set_switch_id(epOUT.node_id)
                 port_in = self.NetManager.switchPortIn(hop, path[i - 1])
-                port_out = self.NetManager.getPortByInterface(epOUT.node_id, epOUT.interface)
+                port_out = self.NetManager.getPortName(epOUT.node_id, epOUT.interface)
                 # Add actions
                 efr.set_actions(list(base_actions))
 

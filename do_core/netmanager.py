@@ -503,8 +503,14 @@ class NetManager:
             return None
         self.setTopologyGraph()
         return self.topology[switch][to_switch]['from_port']
-    
-    def getPortByInterface(self, switch_id, interface):
+
+    def getPortName(self, switch_id, interface):
+        if Configuration().USE_INTERFACES_NAMES:
+            return self.getPortByInterfaceName(switch_id, interface)
+        else:
+            return interface
+
+    def getPortByInterfaceName(self, switch_id, interface):
         # return the port id of a switch by the correspondent interface name
         if switch_id is None or interface is None:
             return None
