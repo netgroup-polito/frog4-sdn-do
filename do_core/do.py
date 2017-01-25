@@ -719,34 +719,38 @@ class DO(object):
         efr = self.NetManager.externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
 
         base_actions = []
-        vlan_out = None
-        original_vlan_out = None
-        vlan_in = None
-        pop_vlan_flag = False
+        action_push_vlan_out = None
+        action_set_vlan_out = None
+        # action_original_vlan_out = None
+        match_vlan_in = None
+        action_pop_vlan = False
+
+        internal_path_vlan_in = None
+        internal_path_vlan_out = None
 
         # Initialize vlan_id and save it
         if flowrule.match.vlan_id is not None:
-            vlan_in = flowrule.match.vlan_id
-            original_vlan_out = vlan_in
+            match_vlan_in = flowrule.match.vlan_id
+            # action_original_vlan_out = match_vlan_in
 
         # Clean actions, search for an egress vlan id and pop vlan action
         for a in flowrule.actions:
 
             # [PUSH VLAN (ID)] Store the VLAN ID and remove the action
             if a.push_vlan is not None:
-                vlan_out = a.push_vlan
-                original_vlan_out = a.push_vlan
+                action_push_vlan_out = a.push_vlan
+                # action_original_vlan_out = a.push_vlan
                 continue
 
             # [SET VLAN ID] Store the VLAN ID and remove the action
             if a.set_vlan_id is not None:
-                vlan_out = a.set_vlan_id
-                original_vlan_out = a.set_vlan_id
+                action_set_vlan_out = a.set_vlan_id
+                # action_original_vlan_out = a.set_vlan_id
                 continue
 
             # [POP VLAN] Set the flag and remove the action
-            if a.pop_vlan is not None and a.pop_vlan == True:
-                pop_vlan_flag = True
+            if a.pop_vlan is not None and a.pop_vlan:
+                action_pop_vlan = True
                 continue
 
             # Filter non OUTPUT actions
@@ -759,7 +763,7 @@ class DO(object):
             so it will have to be removed by the last switch.
             This flag is also set to True when a "pop-vlan" action and a vlan match are present. 
         '''
-        pop_vlan_flag = (vlan_out is None) and (pop_vlan_flag or vlan_in is None)
+        # action_pop_vlan_flag = (action_vlan_out is None) and (action_pop_vlan_flag or match_vlan_in is None)
 
         # [PATH] Traverse the path and create the flow for each switch
         logging.debug("Creating the flow for each switch")
@@ -803,8 +807,8 @@ class DO(object):
                 efr.set_actions(list(base_actions))
 
                 # Force the vlan out to be equal to the original
-                if pop_vlan_flag is False and original_vlan_out is not None:
-                    vlan_out = original_vlan_out
+                # if action_pop_vlan is False and action_original_vlan_out is not None:
+                #    action_vlan_out = action_original_vlan_out
 
             # Middle way switch
             else:
@@ -812,39 +816,74 @@ class DO(object):
                 port_in = self.NetManager.switchPortIn(hop, path[i - 1])
                 port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
 
-            # Vlan egress endpoint ...set the vlan_id
+            # Vlan egress endpoint ...set the vlan_id.
+            # [Gabriele: WHY? if endpoint is vlan we should in any case pop the internal vlan and push the external!]
+            ''' <- removed by Gabriele
             if epOUT.type == 'vlan' and (pos == 1 or pos == -2):
-                pop_vlan_flag = False
-                vlan_out = epOUT.vlan_id
+                action_pop_vlan_flag = False
+                action_vlan_out = epOUT.vlan_id
+            '''
 
             # Check, generate and set vlan ids
-            vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_ID, next_switch_portIn, flowrule.match,
-                                                               vlan_out)
+            # Gabriele: i didn't understand the utility of the second return value
+            internal_path_vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_ID, next_switch_portIn, flowrule.match,
+                                                                             internal_path_vlan_in)
 
-            # MATCH           
+            # [MATCH]
             base_nffg_match = copy.copy(flowrule.match)
 
             # VLAN In
-            if vlan_in is not None:
-                base_nffg_match.vlan_id = vlan_in
+            if match_vlan_in is not None:
+                base_nffg_match.vlan_id = match_vlan_in
 
-            # ACTIONS
+            if internal_path_vlan_in is not None:
+                base_nffg_match.vlan_id = internal_path_vlan_in
 
-            # Remove VLAN header
-            if pop_vlan_flag and (pos == 1 or pos == -2):  # 1=last switch; -2='single-switch' path
+            # [ACTIONS]
+
+            # with this algorithm we can have max three level of enqueued VLANS ([OUTER] [MIDDLE] [INNER])
+
+            # [OUTER] Pop external vlan on first switch if endpoint vlan
+            if epIN.type == 'vlan' and (pos == -1 or pos == -2):  # -1= first switch; -2='single-switch' path
                 efr.append_action(NffgAction(pop_vlan=True))
 
-            # Add/mod VLAN header
-            if set_vlan_out is not None:
+            # [MIDDLE] nffg action pop VLAN in first switch
+            if action_pop_vlan and (pos == -1 or pos == -2):  # -1=first switch; -2='single-switch' path
+                efr.append_action(NffgAction(pop_vlan=True))
 
+            # [INNER] push internal path VLAN in first switch
+            if pos == -1:
                 # If there is a match rule on vlan id, it means a vlan header 
-                # it is already present and we do not need to push a vlan.
-                if vlan_in is None:
-                    efr.append_action(NffgAction(push_vlan=True))
-                    efr.append_action(NffgAction(set_vlan_id=set_vlan_out))
+                # it is already present and we do not need to push a vlan. [Gabriele: "????"]
+                # if match_vlan_in is None: # <- removed by Gabriele: "what about vlan endpoints where we need to pop + push?"
+                efr.append_action(NffgAction(push_vlan=True))
+                efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+
+            # [INNER] set internal path VLAN in intermediate switch
+            if pos == 0:
+                efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+
+            # [INNER] pop internal path VLAN in last switch
+            if pos == 1:
+                efr.append_action(NffgAction(pop_vlan=True))
+
+            # [MIDDLE] nffg action push VLAN in last switch
+            if action_push_vlan_out and (pos == 1 or pos == -2):
+                efr.append_action(NffgAction(push_vlan=True))
+                efr.append_action(NffgAction(set_vlan_id=action_push_vlan_out))
+
+            # [MIDDLE] nffg action set VLAN in last witch
+            if action_set_vlan_out and (pos == 1 or pos == -2):
+                efr.append_action(NffgAction(set_vlan_id=action_set_vlan_out))
+
+            # [OUTER] push external vlan on last switch if endpoint vlan
+            if epOUT.type == 'vlan' and (pos == 1 or pos == -2):  # 1= last switch; -2='single-switch' path
+                efr.append_action(NffgAction(push_vlan=True))
+                efr.append_action(NffgAction(set_vlan_id=epOUT.vlan_id))
 
             # Set next ingress vlan
-            vlan_in = vlan_out
+            match_vlan_in = internal_path_vlan_out
+            internal_path_vlan_in = internal_path_vlan_out
 
             # Push the flow rule
             base_nffg_match.port_in = port_in
@@ -855,7 +894,7 @@ class DO(object):
         '''
         Note#1 - Where are the original vlan id?
             vlan in = flowrule.match.vlan_id
-            vlan out = original_vlan_out
+            vlan out = action_original_vlan_out
         '''
         return
 

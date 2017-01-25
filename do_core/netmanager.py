@@ -93,7 +93,7 @@ class NetManager:
                     has_vnf = True
                 else:
                     for action in flowrule.actions:
-                        if action.output.split(':')[0] == 'vnf':
+                        if action.output is not None and action.output.split(':')[0] == 'vnf':
                             has_vnf = True
                             break
                 if not has_vnf:
@@ -107,7 +107,7 @@ class NetManager:
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if is_detached:
                         for action in flow_from.actions:
-                            if action.output.split(':')[0] == 'vnf':
+                            if action.output is not action.output.split(':')[0] == 'vnf':
                                 is_detached = False
                                 break
                 if not is_detached:
@@ -127,7 +127,7 @@ class NetManager:
                 for flow_from in self.get_flows_from_vnf(vnf):
                     if not is_attached:
                         for action in flow_from.actions:
-                            if action.output.split(':')[0] == 'vnf':
+                            if action.output is not action.output.split(':')[0] == 'vnf':
                                 is_attached = True
                                 break
                 if is_attached:
@@ -176,7 +176,7 @@ class NetManager:
             flow_rules = []
             for flow_rule in self.__nffg_flowrules.values():
                 for action in flow_rule.actions:
-                    if action.output == node_id:
+                    if action.output is not action.output == node_id:
                         flow_rules.append(flow_rule)
                         continue
             return flow_rules
