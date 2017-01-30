@@ -423,12 +423,19 @@ class NetManager:
             links = json.loads(json_data)
             
             for link in links['links']:
-                p_in = link["src"]["port"]
-                p_out = link["dst"]["port"]
-                
-                head = {'node_id':link["src"]["device"],'port_id':p_in}
-                tail = {'node_id':link["dst"]["device"],'port_id':p_out}
-                lkList.append({'head':head,'tail':tail})
+                # check if the link is bidirectional
+                for link2 in links['links']:
+                    if link2["src"]["device"] == link["dst"]["device"]\
+                            and link2["dst"]["device"] == link["src"]["device"]\
+                            and link2["src"]["port"] == link["dst"]["port"]\
+                            and link2["dst"]["port"] == link["src"]["port"]:
+                        p_in = link["src"]["port"]
+                        p_out = link["dst"]["port"]
+                        head = {'node_id':link["src"]["device"],'port_id':p_in}
+                        tail = {'node_id':link["dst"]["device"],'port_id':p_out}
+
+                        lkList.append({'head':head,'tail':tail})
+                        break
         
         return lkList
     
