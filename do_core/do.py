@@ -78,7 +78,7 @@ class DO(object):
             # Update the resource description .json
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
-            Messaging().publish_domain_description()
+            #Messaging().publish_domain_description()
 
             return self.__session_id
 
@@ -238,7 +238,7 @@ class DO(object):
         '''
         # VNFs inspections
         # TODO this check is implemented comparing vnf name with fc type, in the future nffg should have vnf type
-        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
             available_functions.append(functional_capability.type)
@@ -387,7 +387,7 @@ class DO(object):
         and it is set as 'new' in order that be installed again.
         """
         # Get domain informations from file
-        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
 
         # List of updated endpoints
         updated_endpoints = []
@@ -512,7 +512,7 @@ class DO(object):
             logging.debug("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
             raise NffgUselessInformations("NFFG vnf emulation: " + msg + ". This DO does not process this kind of data.")
 
-        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
 
         # [ DETACHED VNFs ]
         for vnf in self.NetManager.ProfileGraph.get_detached_vnfs():
@@ -573,17 +573,19 @@ class DO(object):
         # get interface names for endpoints
         for vnf_port in vnf_port_map:
             endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
-            vnf_port_map[vnf_port] = {'device': endpoint.node_id, 'interface': endpoint.interface}
+            vnf_port_map[vnf_port] = {
+                'device': endpoint.node_id,
+                'interface': endpoint.interface,
+                'vlan-id': endpoint.vlan_id
+            }
 
         # push configuration to set application ports
         ports_configuration = {'ports': {}}
         for port in vnf_port_map:
             ports_configuration['ports'][port] = {
                 'device-id': vnf_port_map[port]['device'],
-                'port-number': self.NetManager.getPortName(
-                    vnf_port_map[port]['device'],
-                    vnf_port_map[port]['interface']
-                )
+                'port-number': self.NetManager.getPortName(vnf_port_map[port]['device'], vnf_port_map[port]['interface']),
+                'external-vlan': vnf_port_map[port]['vlan-id']
             }
         self.NetManager.push_app_configuration(application_name, ports_configuration)
         print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")

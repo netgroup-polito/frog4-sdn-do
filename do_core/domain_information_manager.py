@@ -81,7 +81,7 @@ class Messaging(object, metaclass=Singleton):
 
     @staticmethod
     def read_domain_description_file():
-        description_file = open(Configuration().DOMAIN_DESCRIPTION_FILE, "r")
+        description_file = open(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE, "r")
         return description_file.read()
 
 
@@ -127,20 +127,20 @@ class DomainInformationManager(object):
 
     def fetch_functional_capabilities(self):
         # get current capabilities from controller
-            functional_capabilities = NetManager().get_apps_capabilities()
-            # check if there are changes
-            new_digest = self._calculate_capabilities_digest(functional_capabilities)
-            if new_digest != self._fc_digest:
-                logging.info("Domain information changed!")
-                self._fc_digest = new_digest
-                # update description with new capabilities
-                ResourceDescription().clear_functional_capabilities()
-                for functional_capability in functional_capabilities:
-                    ResourceDescription().add_functional_capability(functional_capability)
-                # save new file
-                ResourceDescription().saveFile()
-                # send updated domain informations
-                Messaging().publish_domain_description()
+        functional_capabilities = NetManager().get_apps_capabilities()
+        # check if there are changes
+        new_digest = self._calculate_capabilities_digest(functional_capabilities)
+        if new_digest != self._fc_digest:
+            logging.info("Domain information changed!")
+            self._fc_digest = new_digest
+            # update description with new capabilities
+            ResourceDescription().clear_functional_capabilities()
+            for functional_capability in functional_capabilities:
+                ResourceDescription().add_functional_capability(functional_capability)
+            # save new file
+            ResourceDescription().saveFile()
+            # send updated domain informations
+            Messaging().publish_domain_description()
 
     @staticmethod
     def _calculate_capabilities_digest(functional_capabilities):

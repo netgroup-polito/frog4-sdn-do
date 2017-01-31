@@ -890,7 +890,7 @@ class GraphSession(object):
 
         # [ VNF ]
         for vnf in nffg.vnfs:
-            domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+            domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
             application_name = ""
             for functional_capability in domain_info.capabilities.functional_capabilities:
                 if functional_capability.type == vnf.name:
@@ -913,7 +913,7 @@ class GraphSession(object):
         :return:
         """
 
-        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_FILE)
+        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
 
         # [ ENDPOINTS ]
         for endpoint in nffg.end_points:
