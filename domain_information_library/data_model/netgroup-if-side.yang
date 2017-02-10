@@ -1,0 +1,29 @@
+// Contents of "netgroup-if-side"
+module netgroup-if-side {
+    namespace "https://github.com/netgroup-polito/yang/netgroup-if-side";
+    prefix "netgroup-if-side";
+
+    import netgroup-domain { prefix netgroup-domain; revision-date 2016-07-02; }
+
+    revision 2016-07-03 {
+        description "Initial revision";
+    }
+
+
+	grouping side-top {
+        leaf side {
+          type enumeration {
+        	  enum core;
+        	  enum edge;
+          }
+  		  default core;
+          description "Indicates the side of the interface: 'edge' means it is on the user side, 'core' on the operator side.";
+        }
+	}
+
+	augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" {
+	    description
+	      "It adds side information to openconfig interface.";
+    	uses side-top;
+	}
+}

@@ -1,0 +1,487 @@
+module: netgroup-domain
+   +--rw informations
+      +--rw id                       string
+      +--rw name?                    string
+      +--rw type?                    enumeration
+      +--rw management-address?      inet:ip-address
+      +--rw hardware-informations!
+      |  +--rw resources
+      |  |  +--rw cpu
+      |  |  |  +--rw number?      uint16
+      |  |  |  +--rw frequency?   uint16
+      |  |  |  +--rw free?        percent
+      |  |  +--rw memory
+      |  |  |  +--rw size?        uint16
+      |  |  |  +--rw frequency?   uint16
+      |  |  |  +--rw latency?     uint8
+      |  |  |  +--rw free?        percent
+      |  |  +--rw storage!
+      |  |     +--rw size?      uint32
+      |  |     +--rw latency?   uint16
+      |  |     +--rw free?      percent
+      |  +--rw interfaces
+      |     +--rw interface* [name]
+      |        +--rw name                             -> ../config/name
+      |        +--rw config
+      |        |  +--rw type           identityref
+      |        |  +--rw mtu?           uint16
+      |        |  +--rw name?          string
+      |        |  +--rw description?   string
+      |        |  +--rw enabled?       boolean
+      |        +--ro state
+      |        |  +--ro type            identityref
+      |        |  +--ro mtu?            uint16
+      |        |  +--ro name?           string
+      |        |  +--ro description?    string
+      |        |  +--ro enabled?        boolean
+      |        |  +--ro ifindex?        uint32
+      |        |  +--ro admin-status    enumeration
+      |        |  +--ro oper-status     enumeration
+      |        |  +--ro last-change?    yang:timeticks
+      |        |  +--ro counters
+      |        |     +--ro in-octets?            yang:counter64
+      |        |     +--ro in-unicast-pkts?      yang:counter64
+      |        |     +--ro in-broadcast-pkts?    yang:counter64
+      |        |     +--ro in-multicast-pkts?    yang:counter64
+      |        |     +--ro in-discards?          yang:counter64
+      |        |     +--ro in-errors?            yang:counter64
+      |        |     +--ro in-unknown-protos?    yang:counter32
+      |        |     +--ro out-octets?           yang:counter64
+      |        |     +--ro out-unicast-pkts?     yang:counter64
+      |        |     +--ro out-broadcast-pkts?   yang:counter64
+      |        |     +--ro out-multicast-pkts?   yang:counter64
+      |        |     +--ro out-discards?         yang:counter64
+      |        |     +--ro out-errors?           yang:counter64
+      |        |     +--ro last-clear?           yang:date-and-time
+      |        +--rw hold-time
+      |        |  +--rw config
+      |        |  |  +--rw up?     uint32
+      |        |  |  +--rw down?   uint32
+      |        |  +--ro state
+      |        |     +--ro up?     uint32
+      |        |     +--ro down?   uint32
+      |        +--rw subinterfaces
+      |        |  +--rw subinterface* [index]
+      |        |     +--rw index                                    -> ../config/index
+      |        |     +--rw config
+      |        |     |  +--rw index?         uint32
+      |        |     |  +--rw name?          string
+      |        |     |  +--rw description?   string
+      |        |     |  +--rw enabled?       boolean
+      |        |     +--ro state
+      |        |     |  +--ro index?          uint32
+      |        |     |  +--ro name?           string
+      |        |     |  +--ro description?    string
+      |        |     |  +--ro enabled?        boolean
+      |        |     |  +--ro ifindex?        uint32
+      |        |     |  +--ro admin-status    enumeration
+      |        |     |  +--ro oper-status     enumeration
+      |        |     |  +--ro last-change?    yang:timeticks
+      |        |     |  +--ro counters
+      |        |     |     +--ro in-octets?            yang:counter64
+      |        |     |     +--ro in-unicast-pkts?      yang:counter64
+      |        |     |     +--ro in-broadcast-pkts?    yang:counter64
+      |        |     |     +--ro in-multicast-pkts?    yang:counter64
+      |        |     |     +--ro in-discards?          yang:counter64
+      |        |     |     +--ro in-errors?            yang:counter64
+      |        |     |     +--ro in-unknown-protos?    yang:counter32
+      |        |     |     +--ro out-octets?           yang:counter64
+      |        |     |     +--ro out-unicast-pkts?     yang:counter64
+      |        |     |     +--ro out-broadcast-pkts?   yang:counter64
+      |        |     |     +--ro out-multicast-pkts?   yang:counter64
+      |        |     |     +--ro out-discards?         yang:counter64
+      |        |     |     +--ro out-errors?           yang:counter64
+      |        |     |     +--ro last-clear?           yang:date-and-time
+      |        |     +--rw netgroup-if-capabilities:capabilities
+      |        |     |  +--rw netgroup-if-capabilities:gre?   boolean
+      |        |     +--rw netgroup-if-gre:gre* [name]
+      |        |     |  +--rw netgroup-if-gre:name       string
+      |        |     |  +--rw netgroup-if-gre:config
+      |        |     |  |  +--rw netgroup-if-gre:unnumbered?    boolean
+      |        |     |  |  +--rw netgroup-if-gre:name?          string
+      |        |     |  |  +--rw netgroup-if-gre:description?   string
+      |        |     |  |  +--rw netgroup-if-gre:enabled?       boolean
+      |        |     |  +--rw netgroup-if-gre:state
+      |        |     |  |  +--rw netgroup-if-gre:admin-status?   enumeration
+      |        |     |  |  +--rw netgroup-if-gre:oper-status?    enumeration
+      |        |     |  +--rw netgroup-if-gre:options
+      |        |     |     +--rw netgroup-if-gre:local_ip?    inet:ipv4-address-no-zone
+      |        |     |     +--rw netgroup-if-gre:remote_ip?   inet:ipv4-address-no-zone
+      |        |     |     +--rw netgroup-if-gre:in_key?      string
+      |        |     |     +--rw netgroup-if-gre:out_key?     string
+      |        |     |     +--rw netgroup-if-gre:key?         string
+      |        |     +--rw netgroup-vlan:vlan
+      |        |     |  +--rw netgroup-vlan:config
+      |        |     |  |  +--rw netgroup-vlan:vlan-id?   union
+      |        |     |  +--ro netgroup-vlan:state
+      |        |     |     +--ro netgroup-vlan:vlan-id?   union
+      |        |     +--rw netgroup-if-ip:ipv4
+      |        |     |  +--rw netgroup-if-ip:addresses
+      |        |     |  |  +--rw netgroup-if-ip:address* [ip]
+      |        |     |  |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |        |     |  |     +--rw netgroup-if-ip:config
+      |        |     |  |     |  +--rw netgroup-if-ip:ip?              inet:ipv4-address-no-zone
+      |        |     |  |     |  +--rw netgroup-if-ip:prefix-length?   uint8
+      |        |     |  |     +--ro netgroup-if-ip:state
+      |        |     |  |     |  +--ro netgroup-if-ip:ip?              inet:ipv4-address-no-zone
+      |        |     |  |     |  +--ro netgroup-if-ip:prefix-length?   uint8
+      |        |     |  |     |  +--ro netgroup-if-ip:origin?          ip-address-origin
+      |        |     |  |     +--rw netgroup-if-ip:vrrp
+      |        |     |  |        +--rw netgroup-if-ip:vrrp-group* [virtual-router-id]
+      |        |     |  |           +--rw netgroup-if-ip:virtual-router-id     -> ../config/virtual-router-id
+      |        |     |  |           +--rw netgroup-if-ip:config
+      |        |     |  |           |  +--rw netgroup-if-ip:virtual-router-id?        uint8
+      |        |     |  |           |  +--rw netgroup-if-ip:virtual-address*          inet:ip-address
+      |        |     |  |           |  +--rw netgroup-if-ip:priority?                 uint8
+      |        |     |  |           |  +--rw netgroup-if-ip:preempt?                  boolean
+      |        |     |  |           |  +--rw netgroup-if-ip:preempt-delay?            uint16
+      |        |     |  |           |  +--rw netgroup-if-ip:accept-mode?              boolean
+      |        |     |  |           |  +--rw netgroup-if-ip:advertisement-interval?   uint16
+      |        |     |  |           +--ro netgroup-if-ip:state
+      |        |     |  |           |  +--ro netgroup-if-ip:virtual-router-id?        uint8
+      |        |     |  |           |  +--ro netgroup-if-ip:virtual-address*          inet:ip-address
+      |        |     |  |           |  +--ro netgroup-if-ip:priority?                 uint8
+      |        |     |  |           |  +--ro netgroup-if-ip:preempt?                  boolean
+      |        |     |  |           |  +--ro netgroup-if-ip:preempt-delay?            uint16
+      |        |     |  |           |  +--ro netgroup-if-ip:accept-mode?              boolean
+      |        |     |  |           |  +--ro netgroup-if-ip:advertisement-interval?   uint16
+      |        |     |  |           |  +--ro netgroup-if-ip:current-priority?         uint8
+      |        |     |  |           +--rw netgroup-if-ip:interface-tracking
+      |        |     |  |              +--rw netgroup-if-ip:config
+      |        |     |  |              |  +--rw netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |        |     |  |              |  +--rw netgroup-if-ip:priority-decrement?   uint8
+      |        |     |  |              +--ro netgroup-if-ip:state
+      |        |     |  |                 +--ro netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |        |     |  |                 +--ro netgroup-if-ip:priority-decrement?   uint8
+      |        |     |  +--rw netgroup-if-ip:neighbors
+      |        |     |  |  +--rw netgroup-if-ip:neighbor* [ip]
+      |        |     |  |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |        |     |  |     +--rw netgroup-if-ip:config
+      |        |     |  |     |  +--rw netgroup-if-ip:ip?                   inet:ipv4-address-no-zone
+      |        |     |  |     |  +--rw netgroup-if-ip:link-layer-address    yang:phys-address
+      |        |     |  |     +--ro netgroup-if-ip:state
+      |        |     |  |        +--ro netgroup-if-ip:ip?                   inet:ipv4-address-no-zone
+      |        |     |  |        +--ro netgroup-if-ip:link-layer-address    yang:phys-address
+      |        |     |  |        +--ro netgroup-if-ip:origin?               neighbor-origin
+      |        |     |  +--rw netgroup-if-ip:unnumbered
+      |        |     |  |  +--rw netgroup-if-ip:config
+      |        |     |  |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |        |     |  |  +--ro netgroup-if-ip:state
+      |        |     |  |  |  +--ro netgroup-if-ip:enabled?   boolean
+      |        |     |  |  +--rw netgroup-if-ip:interface-ref
+      |        |     |  |     +--rw netgroup-if-ip:config
+      |        |     |  |     |  +--rw netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |        |     |  |     |  +--rw netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |        |     |  |     +--ro netgroup-if-ip:state
+      |        |     |  |        +--ro netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |        |     |  |        +--ro netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |        |     |  +--rw netgroup-if-ip:config
+      |        |     |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |        |     |  |  +--rw netgroup-if-ip:mtu?       uint16
+      |        |     |  +--ro netgroup-if-ip:state
+      |        |     |     +--ro netgroup-if-ip:enabled?   boolean
+      |        |     |     +--ro netgroup-if-ip:mtu?       uint16
+      |        |     +--rw netgroup-if-ip:ipv6
+      |        |        +--rw netgroup-if-ip:addresses
+      |        |        |  +--rw netgroup-if-ip:address* [ip]
+      |        |        |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |        |        |     +--rw netgroup-if-ip:config
+      |        |        |     |  +--rw netgroup-if-ip:ip?              inet:ipv6-address-no-zone
+      |        |        |     |  +--rw netgroup-if-ip:prefix-length    uint8
+      |        |        |     +--ro netgroup-if-ip:state
+      |        |        |     |  +--ro netgroup-if-ip:ip?              inet:ipv6-address-no-zone
+      |        |        |     |  +--ro netgroup-if-ip:prefix-length    uint8
+      |        |        |     |  +--ro netgroup-if-ip:origin?          ip-address-origin
+      |        |        |     |  +--ro netgroup-if-ip:status?          enumeration
+      |        |        |     +--rw netgroup-if-ip:vrrp
+      |        |        |        +--rw netgroup-if-ip:vrrp-group* [virtual-router-id]
+      |        |        |           +--rw netgroup-if-ip:virtual-router-id     -> ../config/virtual-router-id
+      |        |        |           +--rw netgroup-if-ip:config
+      |        |        |           |  +--rw netgroup-if-ip:virtual-router-id?        uint8
+      |        |        |           |  +--rw netgroup-if-ip:virtual-address*          inet:ip-address
+      |        |        |           |  +--rw netgroup-if-ip:priority?                 uint8
+      |        |        |           |  +--rw netgroup-if-ip:preempt?                  boolean
+      |        |        |           |  +--rw netgroup-if-ip:preempt-delay?            uint16
+      |        |        |           |  +--rw netgroup-if-ip:accept-mode?              boolean
+      |        |        |           |  +--rw netgroup-if-ip:advertisement-interval?   uint16
+      |        |        |           |  +--rw netgroup-if-ip:virtual-link-local?       inet:ip-address
+      |        |        |           +--ro netgroup-if-ip:state
+      |        |        |           |  +--ro netgroup-if-ip:virtual-router-id?        uint8
+      |        |        |           |  +--ro netgroup-if-ip:virtual-address*          inet:ip-address
+      |        |        |           |  +--ro netgroup-if-ip:priority?                 uint8
+      |        |        |           |  +--ro netgroup-if-ip:preempt?                  boolean
+      |        |        |           |  +--ro netgroup-if-ip:preempt-delay?            uint16
+      |        |        |           |  +--ro netgroup-if-ip:accept-mode?              boolean
+      |        |        |           |  +--ro netgroup-if-ip:advertisement-interval?   uint16
+      |        |        |           |  +--ro netgroup-if-ip:current-priority?         uint8
+      |        |        |           |  +--ro netgroup-if-ip:virtual-link-local?       inet:ip-address
+      |        |        |           +--rw netgroup-if-ip:interface-tracking
+      |        |        |              +--rw netgroup-if-ip:config
+      |        |        |              |  +--rw netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |        |        |              |  +--rw netgroup-if-ip:priority-decrement?   uint8
+      |        |        |              +--ro netgroup-if-ip:state
+      |        |        |                 +--ro netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |        |        |                 +--ro netgroup-if-ip:priority-decrement?   uint8
+      |        |        +--rw netgroup-if-ip:neighbors
+      |        |        |  +--rw netgroup-if-ip:neighbor* [ip]
+      |        |        |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |        |        |     +--rw netgroup-if-ip:config
+      |        |        |     |  +--rw netgroup-if-ip:ip?                   inet:ipv6-address-no-zone
+      |        |        |     |  +--rw netgroup-if-ip:link-layer-address    yang:phys-address
+      |        |        |     +--ro netgroup-if-ip:state
+      |        |        |        +--ro netgroup-if-ip:ip?                   inet:ipv6-address-no-zone
+      |        |        |        +--ro netgroup-if-ip:link-layer-address    yang:phys-address
+      |        |        |        +--ro netgroup-if-ip:origin?               neighbor-origin
+      |        |        |        +--ro netgroup-if-ip:is-router?            empty
+      |        |        |        +--ro netgroup-if-ip:neighbor-state?       enumeration
+      |        |        +--rw netgroup-if-ip:unnumbered
+      |        |        |  +--rw netgroup-if-ip:config
+      |        |        |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |        |        |  +--ro netgroup-if-ip:state
+      |        |        |  |  +--ro netgroup-if-ip:enabled?   boolean
+      |        |        |  +--rw netgroup-if-ip:interface-ref
+      |        |        |     +--rw netgroup-if-ip:config
+      |        |        |     |  +--rw netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |        |        |     |  +--rw netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |        |        |     +--ro netgroup-if-ip:state
+      |        |        |        +--ro netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |        |        |        +--ro netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |        |        +--rw netgroup-if-ip:config
+      |        |        |  +--rw netgroup-if-ip:enabled?                     boolean
+      |        |        |  +--rw netgroup-if-ip:mtu?                         uint32
+      |        |        |  +--rw netgroup-if-ip:dup-addr-detect-transmits?   uint32
+      |        |        +--ro netgroup-if-ip:state
+      |        |           +--ro netgroup-if-ip:enabled?                     boolean
+      |        |           +--ro netgroup-if-ip:mtu?                         uint32
+      |        |           +--ro netgroup-if-ip:dup-addr-detect-transmits?   uint32
+      |        +--rw netgroup-if-side:side?           enumeration
+      |        +--rw netgroup-neighbor:neighbors
+      |        |  +--rw netgroup-neighbor:neighbor* [domain-name]
+      |        |     +--rw netgroup-neighbor:domain-name         string
+      |        |     +--rw netgroup-neighbor:neighbor-type?      enumeration
+      |        |     +--rw netgroup-neighbor:remote-interface?   string
+      |        +--rw netgroup-if-ethernet:ethernet
+      |        |  +--rw netgroup-if-ethernet:config
+      |        |  |  +--rw netgroup-if-ethernet:mac-address?           yang:mac-address
+      |        |  |  +--rw netgroup-if-ethernet:duplex-mode?           enumeration
+      |        |  |  +--rw (netgroup-if-ethernet:port-speed)?
+      |        |  |  |  +--:(netgroup-if-ethernet:auto)
+      |        |  |  |  |  +--rw netgroup-if-ethernet:auto?                  empty
+      |        |  |  |  +--:(netgroup-if-ethernet:manual)
+      |        |  |  |     +--rw netgroup-if-ethernet:speed?                 identityref
+      |        |  |  +--rw netgroup-if-ethernet:enable-flow-control?   boolean
+      |        |  +--ro netgroup-if-ethernet:state
+      |        |  |  +--ro netgroup-if-ethernet:mac-address?           yang:mac-address
+      |        |  |  +--ro netgroup-if-ethernet:duplex-mode?           enumeration
+      |        |  |  +--ro (netgroup-if-ethernet:port-speed)?
+      |        |  |  |  +--:(netgroup-if-ethernet:auto)
+      |        |  |  |  |  +--ro netgroup-if-ethernet:auto?                  empty
+      |        |  |  |  +--:(netgroup-if-ethernet:manual)
+      |        |  |  |     +--ro netgroup-if-ethernet:speed?                 identityref
+      |        |  |  +--ro netgroup-if-ethernet:enable-flow-control?   boolean
+      |        |  |  +--ro netgroup-if-ethernet:counters
+      |        |  |     +--ro netgroup-if-ethernet:in-mac-control-frames?    yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-mac-pause-frames?      yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-oversize-frames?       yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-jabber-frames?         yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-fragment-frames?       yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-8021q-frames?          yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:in-crc-errors?            yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:out-mac-control-frames?   yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:out-mac-pause-frames?     yang:counter64
+      |        |  |     +--ro netgroup-if-ethernet:out-8021q-frames?         yang:counter64
+      |        |  +--rw netgroup-vlan:vlans
+      |        |     +--rw netgroup-vlan:vlan* [vlan-id]
+      |        |        +--rw netgroup-vlan:vlan-id    -> ../config/vlan-id
+      |        |        +--rw netgroup-vlan:config
+      |        |        |  +--rw netgroup-vlan:vlan-id?   oc-vlan-types:vlan-id
+      |        |        |  +--rw netgroup-vlan:name?      string
+      |        |        |  +--rw netgroup-vlan:status?    enumeration
+      |        |        |  +--rw netgroup-vlan:tpid?      identityref
+      |        |        +--ro netgroup-vlan:state
+      |        |        |  +--ro netgroup-vlan:vlan-id?   oc-vlan-types:vlan-id
+      |        |        |  +--ro netgroup-vlan:name?      string
+      |        |        |  +--ro netgroup-vlan:status?    enumeration
+      |        |        |  +--ro netgroup-vlan:tpid?      identityref
+      |        |        +--rw netgroup-vlan:members
+      |        |           +--ro netgroup-vlan:member*
+      |        |              +--ro netgroup-vlan:interface-ref
+      |        |                 +--ro netgroup-vlan:state
+      |        |                    +--ro netgroup-vlan:interface?      -> /oc-if:interfaces/interface/name
+      |        |                    +--ro netgroup-vlan:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |        +--rw netgroup-vlan:routed-vlan
+      |           +--rw netgroup-vlan:config
+      |           |  +--rw netgroup-vlan:vlan?   union
+      |           +--ro netgroup-vlan:state
+      |           |  +--ro netgroup-vlan:vlan?   union
+      |           +--rw netgroup-if-ip:ipv4
+      |           |  +--rw netgroup-if-ip:addresses
+      |           |  |  +--rw netgroup-if-ip:address* [ip]
+      |           |  |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |           |  |     +--rw netgroup-if-ip:config
+      |           |  |     |  +--rw netgroup-if-ip:ip?              inet:ipv4-address-no-zone
+      |           |  |     |  +--rw netgroup-if-ip:prefix-length?   uint8
+      |           |  |     +--ro netgroup-if-ip:state
+      |           |  |     |  +--ro netgroup-if-ip:ip?              inet:ipv4-address-no-zone
+      |           |  |     |  +--ro netgroup-if-ip:prefix-length?   uint8
+      |           |  |     |  +--ro netgroup-if-ip:origin?          ip-address-origin
+      |           |  |     +--rw netgroup-if-ip:vrrp
+      |           |  |        +--rw netgroup-if-ip:vrrp-group* [virtual-router-id]
+      |           |  |           +--rw netgroup-if-ip:virtual-router-id     -> ../config/virtual-router-id
+      |           |  |           +--rw netgroup-if-ip:config
+      |           |  |           |  +--rw netgroup-if-ip:virtual-router-id?        uint8
+      |           |  |           |  +--rw netgroup-if-ip:virtual-address*          inet:ip-address
+      |           |  |           |  +--rw netgroup-if-ip:priority?                 uint8
+      |           |  |           |  +--rw netgroup-if-ip:preempt?                  boolean
+      |           |  |           |  +--rw netgroup-if-ip:preempt-delay?            uint16
+      |           |  |           |  +--rw netgroup-if-ip:accept-mode?              boolean
+      |           |  |           |  +--rw netgroup-if-ip:advertisement-interval?   uint16
+      |           |  |           +--ro netgroup-if-ip:state
+      |           |  |           |  +--ro netgroup-if-ip:virtual-router-id?        uint8
+      |           |  |           |  +--ro netgroup-if-ip:virtual-address*          inet:ip-address
+      |           |  |           |  +--ro netgroup-if-ip:priority?                 uint8
+      |           |  |           |  +--ro netgroup-if-ip:preempt?                  boolean
+      |           |  |           |  +--ro netgroup-if-ip:preempt-delay?            uint16
+      |           |  |           |  +--ro netgroup-if-ip:accept-mode?              boolean
+      |           |  |           |  +--ro netgroup-if-ip:advertisement-interval?   uint16
+      |           |  |           |  +--ro netgroup-if-ip:current-priority?         uint8
+      |           |  |           +--rw netgroup-if-ip:interface-tracking
+      |           |  |              +--rw netgroup-if-ip:config
+      |           |  |              |  +--rw netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |           |  |              |  +--rw netgroup-if-ip:priority-decrement?   uint8
+      |           |  |              +--ro netgroup-if-ip:state
+      |           |  |                 +--ro netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |           |  |                 +--ro netgroup-if-ip:priority-decrement?   uint8
+      |           |  +--rw netgroup-if-ip:neighbors
+      |           |  |  +--rw netgroup-if-ip:neighbor* [ip]
+      |           |  |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |           |  |     +--rw netgroup-if-ip:config
+      |           |  |     |  +--rw netgroup-if-ip:ip?                   inet:ipv4-address-no-zone
+      |           |  |     |  +--rw netgroup-if-ip:link-layer-address    yang:phys-address
+      |           |  |     +--ro netgroup-if-ip:state
+      |           |  |        +--ro netgroup-if-ip:ip?                   inet:ipv4-address-no-zone
+      |           |  |        +--ro netgroup-if-ip:link-layer-address    yang:phys-address
+      |           |  |        +--ro netgroup-if-ip:origin?               neighbor-origin
+      |           |  +--rw netgroup-if-ip:unnumbered
+      |           |  |  +--rw netgroup-if-ip:config
+      |           |  |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |           |  |  +--ro netgroup-if-ip:state
+      |           |  |  |  +--ro netgroup-if-ip:enabled?   boolean
+      |           |  |  +--rw netgroup-if-ip:interface-ref
+      |           |  |     +--rw netgroup-if-ip:config
+      |           |  |     |  +--rw netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |           |  |     |  +--rw netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |           |  |     +--ro netgroup-if-ip:state
+      |           |  |        +--ro netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |           |  |        +--ro netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |           |  +--rw netgroup-if-ip:config
+      |           |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |           |  |  +--rw netgroup-if-ip:mtu?       uint16
+      |           |  +--ro netgroup-if-ip:state
+      |           |     +--ro netgroup-if-ip:enabled?   boolean
+      |           |     +--ro netgroup-if-ip:mtu?       uint16
+      |           +--rw netgroup-if-ip:ipv6
+      |              +--rw netgroup-if-ip:addresses
+      |              |  +--rw netgroup-if-ip:address* [ip]
+      |              |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |              |     +--rw netgroup-if-ip:config
+      |              |     |  +--rw netgroup-if-ip:ip?              inet:ipv6-address-no-zone
+      |              |     |  +--rw netgroup-if-ip:prefix-length    uint8
+      |              |     +--ro netgroup-if-ip:state
+      |              |     |  +--ro netgroup-if-ip:ip?              inet:ipv6-address-no-zone
+      |              |     |  +--ro netgroup-if-ip:prefix-length    uint8
+      |              |     |  +--ro netgroup-if-ip:origin?          ip-address-origin
+      |              |     |  +--ro netgroup-if-ip:status?          enumeration
+      |              |     +--rw netgroup-if-ip:vrrp
+      |              |        +--rw netgroup-if-ip:vrrp-group* [virtual-router-id]
+      |              |           +--rw netgroup-if-ip:virtual-router-id     -> ../config/virtual-router-id
+      |              |           +--rw netgroup-if-ip:config
+      |              |           |  +--rw netgroup-if-ip:virtual-router-id?        uint8
+      |              |           |  +--rw netgroup-if-ip:virtual-address*          inet:ip-address
+      |              |           |  +--rw netgroup-if-ip:priority?                 uint8
+      |              |           |  +--rw netgroup-if-ip:preempt?                  boolean
+      |              |           |  +--rw netgroup-if-ip:preempt-delay?            uint16
+      |              |           |  +--rw netgroup-if-ip:accept-mode?              boolean
+      |              |           |  +--rw netgroup-if-ip:advertisement-interval?   uint16
+      |              |           |  +--rw netgroup-if-ip:virtual-link-local?       inet:ip-address
+      |              |           +--ro netgroup-if-ip:state
+      |              |           |  +--ro netgroup-if-ip:virtual-router-id?        uint8
+      |              |           |  +--ro netgroup-if-ip:virtual-address*          inet:ip-address
+      |              |           |  +--ro netgroup-if-ip:priority?                 uint8
+      |              |           |  +--ro netgroup-if-ip:preempt?                  boolean
+      |              |           |  +--ro netgroup-if-ip:preempt-delay?            uint16
+      |              |           |  +--ro netgroup-if-ip:accept-mode?              boolean
+      |              |           |  +--ro netgroup-if-ip:advertisement-interval?   uint16
+      |              |           |  +--ro netgroup-if-ip:current-priority?         uint8
+      |              |           |  +--ro netgroup-if-ip:virtual-link-local?       inet:ip-address
+      |              |           +--rw netgroup-if-ip:interface-tracking
+      |              |              +--rw netgroup-if-ip:config
+      |              |              |  +--rw netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |              |              |  +--rw netgroup-if-ip:priority-decrement?   uint8
+      |              |              +--ro netgroup-if-ip:state
+      |              |                 +--ro netgroup-if-ip:track-interface?      -> /oc-if:interfaces/interface/name
+      |              |                 +--ro netgroup-if-ip:priority-decrement?   uint8
+      |              +--rw netgroup-if-ip:neighbors
+      |              |  +--rw netgroup-if-ip:neighbor* [ip]
+      |              |     +--rw netgroup-if-ip:ip        -> ../config/ip
+      |              |     +--rw netgroup-if-ip:config
+      |              |     |  +--rw netgroup-if-ip:ip?                   inet:ipv6-address-no-zone
+      |              |     |  +--rw netgroup-if-ip:link-layer-address    yang:phys-address
+      |              |     +--ro netgroup-if-ip:state
+      |              |        +--ro netgroup-if-ip:ip?                   inet:ipv6-address-no-zone
+      |              |        +--ro netgroup-if-ip:link-layer-address    yang:phys-address
+      |              |        +--ro netgroup-if-ip:origin?               neighbor-origin
+      |              |        +--ro netgroup-if-ip:is-router?            empty
+      |              |        +--ro netgroup-if-ip:neighbor-state?       enumeration
+      |              +--rw netgroup-if-ip:unnumbered
+      |              |  +--rw netgroup-if-ip:config
+      |              |  |  +--rw netgroup-if-ip:enabled?   boolean
+      |              |  +--ro netgroup-if-ip:state
+      |              |  |  +--ro netgroup-if-ip:enabled?   boolean
+      |              |  +--rw netgroup-if-ip:interface-ref
+      |              |     +--rw netgroup-if-ip:config
+      |              |     |  +--rw netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |              |     |  +--rw netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |              |     +--ro netgroup-if-ip:state
+      |              |        +--ro netgroup-if-ip:interface?      -> /oc-if:interfaces/interface/name
+      |              |        +--ro netgroup-if-ip:subinterface?   -> /oc-if:interfaces/interface[oc-if:name=current()/../interface]/subinterfaces/subinterface/index
+      |              +--rw netgroup-if-ip:config
+      |              |  +--rw netgroup-if-ip:enabled?                     boolean
+      |              |  +--rw netgroup-if-ip:mtu?                         uint32
+      |              |  +--rw netgroup-if-ip:dup-addr-detect-transmits?   uint32
+      |              +--ro netgroup-if-ip:state
+      |                 +--ro netgroup-if-ip:enabled?                     boolean
+      |                 +--ro netgroup-if-ip:mtu?                         uint32
+      |                 +--ro netgroup-if-ip:dup-addr-detect-transmits?   uint32
+      +--rw capabilities!
+         +--rw infrastructural-capabilities!
+         |  +--rw infrastructural-capability* [name]
+         |     +--rw name    string
+         |     +--rw type    enumeration
+         +--rw functional-capabilities!
+            +--rw functional-capability* [name]
+               +--rw name                       string
+               +--rw type                       string
+               +--rw ready                      boolean
+               +--rw family?                    string
+               +--rw template?                  inet:uri
+               +--rw resources
+               |  +--rw cpu
+               |  |  +--rw number?      uint16
+               |  |  +--rw frequency?   uint16
+               |  |  +--rw free?        percent
+               |  +--rw memory
+               |  |  +--rw size?        uint16
+               |  |  +--rw frequency?   uint16
+               |  |  +--rw latency?     uint8
+               |  |  +--rw free?        percent
+               |  +--rw storage!
+               |     +--rw size?      uint32
+               |     +--rw latency?   uint16
+               |     +--rw free?      percent
+               +--rw function-specifications
+                  +--rw function-specification* [name mean]
+                     +--rw name     string
+                     +--rw mean     enumeration
+                     +--rw value    string
+                     +--rw unit     string

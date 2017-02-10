@@ -1,0 +1,40 @@
+// Contents of "netgroup-function"
+module netgroup-function {
+    namespace "https://github.com/netgroup-polito/yang/netgroup-function";
+    prefix "netgroup-function";
+
+    revision 2016-07-02 {
+        description "Initial revision";
+    }
+
+    grouping function-specifications-top {
+    	container function-specifications {
+    		list function-specification {
+    			key "name mean";
+    			leaf name {
+    				description "The name that identifies the specification";
+    				type string;
+    			}
+				leaf mean {
+    				description "Tells the mean of the value field, if could be a punctual value, or a boundary value";
+    				type enumeration {
+    					enum equal;
+    					enum lower_bound;
+    					enum upper_bound;
+    				}
+    			}
+    			leaf value {
+    				description "The specification value for the given function";
+    				mandatory true;
+					type string;
+    			}
+    			leaf unit {
+    				description "Mesure unit of 'value' field";
+    				mandatory true;
+    				type string;
+    			}
+    		}
+    	}
+    }
+    uses function-specifications-top;
+}

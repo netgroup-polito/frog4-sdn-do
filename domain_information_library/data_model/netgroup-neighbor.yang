@@ -1,0 +1,47 @@
+module netgroup-neighbor {
+
+	yang-version "1";
+
+	// namespace
+	namespace "https://github.com/netgroup-polito/yang/netgroup-neighbor";
+
+	prefix "netgroup-neighbor";
+
+	import netgroup-domain { prefix netgroup-domain; revision-date 2016-07-02; }
+	import iana-if-type { prefix iana-if-type; revision-date 2016-06-09; }
+
+	grouping neighbor-top {
+		container neighbors {
+			list neighbor {
+				key domain-name;
+		        leaf domain-name {
+		          type string;
+		          description "Neighbor id name.";
+		        }
+		        leaf neighbor-type {
+		        	description "The network type of the neighbor";
+		        	type enumeration {
+		        		enum internet;
+		        		enum isp;
+		        	}
+		        }
+		        leaf remote-interface {
+		        	description "Neighbor interface";
+		        	type string;
+		        }
+			}
+		}
+	}
+
+	augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" {
+		when "netgroup-domain:config/netgroup-domain:type = 'iana-if-type:ethernetCsmacd'" {
+		  description "Additional interface configuration parameters when
+		  the interface type is Ethernet";
+		}
+		description "Adds addtional Ethernet-specific configuration to
+		interfaces model";
+		uses neighbor-top;
+  	}
+
+
+}

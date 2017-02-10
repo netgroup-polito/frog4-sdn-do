@@ -1,0 +1,84 @@
+// Contents of "netgroup-hardware"
+module netgroup-hardware {
+    namespace "https://github.com/netgroup-polito/yang/netgroup-hardware";
+    prefix "netgroup-hardware";
+
+    //include computing-resources;
+    import openconfig-interfaces { prefix openconfig-interfaces; revision-date 2016-05-26; }
+    
+    revision 2016-07-02 {
+        description "Initial revision";
+    }
+    
+    typedef percent {
+        type uint8 {
+            range "0 .. 100";
+        }
+        description "Percentage";
+    }
+    
+    grouping resources {
+    	container resources {
+	    	container cpu {
+	    		leaf number {
+	    			description "Number of CPUs";
+	    			type uint16;
+	    		}
+	    		leaf frequency {
+	    			description "Processor frequency in MHz";
+	    			type uint16;
+	    		}
+	    		leaf free {
+	    			description "Percentage of free CPU";
+	    			type percent;
+	    		}
+	    	}
+	    	container memory {
+	    		leaf size {
+	    			description "Size of the central memory in MB";
+	    			type uint16;
+	    		}
+	    		leaf frequency {
+	    			description "RAM frequency in MHz";
+	    			type uint16;
+	    		}
+	    		leaf latency {
+	    			description "Memory access latency in ns";
+	    			type uint8;
+	    		}
+	    		leaf free {
+	    			description "Percentage of free memory";
+	    			type percent;
+	    		}
+	    	}
+	    	container storage {
+	    		presence "The domain has available local storage";
+	    		
+	    		leaf size {
+	    			description "Size of the storage memory in MB";
+	    			type uint32;
+	    		}
+	    		leaf latency {
+	    			description "Disk access latency in ms";
+	    			type uint16;
+	    		}
+	    		leaf free {
+	    			description "Percentage of free disk";
+	    			type percent;
+	    		}
+	    	}
+    	}
+    }
+    
+    grouping informations-top {
+    	container hardware-informations {
+    		presence "The domain exports it's hardware configuration";
+    		
+    		uses resources;
+    		uses openconfig-interfaces:interfaces-top;
+    	}
+    }
+    
+	uses informations-top;
+	
+}

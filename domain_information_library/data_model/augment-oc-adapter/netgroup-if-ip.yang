@@ -1,0 +1,134 @@
+// Contents of "negroup-if-ip"
+module netgroup-if-ip {
+    namespace "urn:opendaylight:netgroup-if-ip";
+    prefix "netgroup-if-ip";
+
+    import netgroup-domain { prefix netgroup-domain; revision-date 2016-07-02; }
+    import openconfig-if-ip { prefix openconfig-if-ip; revision-date 2016-05-26; }
+    import netgroup-vlan { prefix netgroup-vlan; revision-date 2016-07-05; }
+    
+    revision 2016-07-05 {
+        description "Initial revision";
+    }
+    
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface" {
+    description
+      "IPv4 addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ipv4-top;
+
+  }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface" {
+    description
+      "IPv6 addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ipv6-top;
+
+  }
+
+  // VRRP for IPv4 interfaces
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface/netgroup-if-ip:ipv4/addresses/address" {
+    description
+      "Additional IP addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-top;
+
+  }
+
+  // VRRP for IPv6 interfaces
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface/netgroup-if-ip:ipv6/addresses/address" {
+     description
+      "Additional IP addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-top;
+
+  }
+
+  augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface/netgroup-if-ip:ipv6/netgroup-if-ip:addresses/address/vrrp/vrrp-group/" +
+    "config" {
+      description
+        "Additional VRRP data for IPv6 interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-ipv6-config;
+  }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-domain:subinterfaces/netgroup-domain:subinterface/netgroup-if-ip:ipv6/netgroup-if-ip:addresses/address/vrrp/vrrp-group/state" {
+      description
+        "Additional VRRP data for IPv6 interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-ipv6-state;
+  }
+
+  // Augments for for routed VLANs
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-vlan:routed-vlan" {
+    description
+      "IPv4 addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ipv4-top;
+
+  }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-vlan:routed-vlan" {
+    description
+      "IPv6 addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ipv6-top;
+
+  }
+
+  // VRRP for routed VLAN interfaces
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-vlan:routed-vlan/netgroup-if-ip:ipv4/netgroup-if-ip:addresses/address" {
+    description
+      "Additional IP addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-top;
+
+  }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-vlan:routed-vlan/netgroup-if-ip:ipv6/netgroup-if-ip:addresses/address" {
+     description
+      "Additional IP addr family configuration for
+      interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-top;
+
+  }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+    "/netgroup-vlan:routed-vlan/netgroup-if-ip:ipv6/netgroup-if-ip:addresses/address/vrrp/vrrp-group/config" {
+      description
+        "Additional VRRP data for IPv6 interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-ipv6-config;
+  }
+
+  augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" +
+	"/netgroup-vlan:routed-vlan/netgroup-if-ip:ipv6/netgroup-if-ip:addresses/address/vrrp/vrrp-group/state" {
+      description
+        "Additional VRRP data for IPv6 interfaces";
+
+    uses openconfig-if-ip:ip-vrrp-ipv6-state;
+  }
+
+}

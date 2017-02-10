@@ -1,0 +1,84 @@
+// Contents of "netgroup-capabilities"
+module netgroup-capabilities {
+    namespace "https://github.com/netgroup-polito/yang/netgroup-capabilities";
+    prefix "netgroup-capabilities";
+    
+    import ietf-inet-types { prefix inet; revision-date 2013-07-15; }
+    
+    import netgroup-hardware { prefix netgroup-hardware; revision-date 2016-07-02; } 
+    import netgroup-function { prefix netgroup-function; revision-date 2016-07-02; }
+
+    revision 2016-07-02 {
+        description "Initial revision";
+    }
+
+    grouping infrastructural-capabilities {
+    	container infrastructural-capabilities {
+    		presence "The domain exports its infrastructural capabilities";
+	    	list infrastructural-capability {
+	    		description "describes an intrinsic capability of the domain, that is owned due to 'how the	domain itself is made'.";
+	    		key name;
+	    		leaf name {
+	    			description "The name of the infrastructural capability";
+	    			type string;
+	    		}
+	    		leaf type {
+	    			description "Type of the infrastructural capability";
+	    			mandatory true;
+	    			type enumeration {
+	    				enum cpu_architecture;
+	    				enum vm_hipervisor;
+	    				enum vm_container;
+	    				enum sdn_controller;
+	    			}
+	    		}
+	    	}
+    	}
+    }
+    
+    grouping functional-capabilities {
+    	container functional-capabilities {
+    		presence "The domain exports its functional capabilities";
+    		
+    		list functional-capability {
+    			description "Describes a particular capacity owned by the domain, which is due to a component
+    			(hardware or software) that at the moment is physically present inside the domain itself or can be easily obtained";
+    			key name;
+    			leaf name {
+    				description "The name of the functional capability";
+    				type string;
+    			}
+    			leaf type {
+    				description "A less granural name common for different implementation of the same function";
+    				mandatory true;
+    				type string;
+    			}
+    			leaf ready {
+    			    description "Specifies if the capability is ready to use or is busy";
+    			    mandatory true;
+    			    type boolean;
+    			}
+    			leaf family {
+    				description "This filed describe the scope or the nature of the function (NETWORK, MULTIMEDIA...)";
+    				type string;
+    			}
+    			leaf template {
+    				description "Location of a template that describe the function interface";
+    				type inet:uri;
+    			}
+    			uses netgroup-hardware:resources;
+    			uses netgroup-function:function-specifications-top;
+    		}
+    	}
+    }
+    
+    grouping capabilities-top {
+    	container capabilities {
+    		presence "The domain exports its capabilities";
+    		
+    		uses infrastructural-capabilities;
+    		uses functional-capabilities;
+    	}
+    }
+    uses capabilities-top;
+}

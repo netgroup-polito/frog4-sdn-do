@@ -1,0 +1,25 @@
+// Contents of "netgroup-if-ethernet"
+module netgroup-if-ethernet {
+    namespace "urn:opendaylight:netgroup-if-ethernet";
+    prefix "netgroup-if-ethernet";
+
+    import netgroup-domain { prefix netgroup-domain; revision-date 2016-07-02; }
+    import openconfig-if-ethernet { prefix openconfig-if-ethernet; revision-date 2015-10-09; }
+    import iana-if-type { prefix iana-if-type; revision-date 2016-06-09; }
+
+    revision 2016-07-05 {
+        description "Initial revision";
+    }
+
+    augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface" {
+        when "netgroup-domain:config/netgroup-domain:type = 'iana-if-type:ethernetCsmacd'" {
+          description "Additional interface configuration parameters when
+          the interface type is Ethernet";
+        }
+        description "Adds addtional Ethernet-specific configuration to
+        interfaces model";
+
+        uses openconfig-if-ethernet:ethernet-top;
+      }
+
+}

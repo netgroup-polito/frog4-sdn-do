@@ -1,0 +1,47 @@
+// Contents of "netgroup-domain"
+module netgroup-domain {
+    namespace "https://github.com/netgroup-polito/yang/netgroup-domain";
+    prefix "netgroup-domain";
+
+    import ietf-inet-types { prefix inet; }
+    
+    import netgroup-hardware { prefix netgroup-hardware; revision-date 2016-07-02; }
+    import netgroup-capabilities { prefix netgroup-capabilities; revision-date 2016-07-02; }
+    
+    revision 2016-07-02 {
+        description "Initial revision";
+    }
+    
+    grouping domain-top {
+    	container informations {
+    		leaf id	{
+    			description "Domain id on the frog network";
+    			type string;
+    			mandatory true;
+    		}
+    		leaf name {
+    			description "Domain name";
+    			type string;
+    		}
+    		leaf type {
+    			description "The domain type";
+    			type enumeration {
+    				enum openstack;
+    				enum universal_node;
+    				enum onos;
+    				enum opendaylight;
+    				enum openflow;
+    			}
+    		}
+    		leaf management-address {
+    			description "Address with the local orchestrator APIs";
+    			type inet:ip-address;
+    		}
+    		uses netgroup-hardware:informations-top;
+    		uses netgroup-capabilities:capabilities-top;
+    	}
+    }
+    
+    uses domain-top;
+
+}

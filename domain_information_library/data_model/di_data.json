@@ -1,0 +1,251 @@
+{
+  "netgroup-domain:informations": {
+    "name": "onos_domain",
+    "management-address": "127.0.0.1:10000",
+    "hardware-informations": {
+      "interfaces": {
+        "interface": [
+          {
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "remote-interface": "of:000084802d9d0540/5101",
+                  "domain-name": "openstack"
+                }
+              ]
+            },
+            "name": "of:000084802d9d0540/5101",
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "netgroup-if-capabilities:capabilities": {
+                    "netgroup-if-capabilities:gre": false
+                  },
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "5101"
+                  }
+                }
+              ]
+            },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 295
+                    },
+                    "netgroup-vlan:vlan-id": 295
+                  },
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 296
+                    },
+                    "netgroup-vlan:vlan-id": 296
+                  }
+                ]
+              }
+            },
+            "config": {
+              "enabled": true
+            }
+          },
+          {
+            "name": "of:000064e9505a87c0/5102",
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "netgroup-if-capabilities:capabilities": {
+                    "netgroup-if-capabilities:gre": false
+                  },
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "5101"
+                  }
+                }
+              ]
+            },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 294
+                    },
+                    "netgroup-vlan:vlan-id": 294
+                  }
+                ]
+              }
+            },
+            "config": {
+              "enabled": true
+            }
+          },
+          {
+            "name": "of:000034dbfd3c1140/5097",
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "netgroup-if-capabilities:capabilities": {
+                    "netgroup-if-capabilities:gre": false
+                  },
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "5101"
+                  }
+                }
+              ]
+            },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 297
+                    },
+                    "netgroup-vlan:vlan-id": 297
+                  }
+                ]
+              }
+            },
+            "config": {
+              "enabled": true
+            }
+          },
+          {
+            "name": "of:000064e9505a8a40/5106",
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "remote-interface": "eth1",
+                  "domain-name": "UN1"
+                }
+              ]
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "netgroup-if-capabilities:capabilities": {
+                    "netgroup-if-capabilities:gre": false
+                  },
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "5101"
+                  }
+                }
+              ]
+            },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 299
+                    },
+                    "netgroup-vlan:vlan-id": 299
+                  }
+                ]
+              }
+            },
+            "config": {
+              "enabled": true
+            }
+          },
+          {
+            "name": "of:000064e9505a8a40/5107",
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "remote-interface": "eth2",
+                  "domain-name": "UN1"
+                }
+              ]
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "index": 1,
+                  "netgroup-if-capabilities:capabilities": {
+                    "netgroup-if-capabilities:gre": false
+                  },
+                  "netgroup-if-gre:gre": [],
+                  "config": {
+                    "name": "5101"
+                  }
+                }
+              ]
+            },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 298
+                    },
+                    "netgroup-vlan:vlan-id": 298
+                  }
+                ]
+              }
+            },
+            "config": {
+              "enabled": true
+            }
+          }
+        ]
+      }
+    },
+    "type": "ONOS",
+    "id": "00000001",
+    "capabilities": {
+      "infrastructural-capabilities": {
+        "infrastructural-capability": [
+          {
+            "name": "x86-64",
+            "type": "cpu_architecture"
+          },
+          {
+            "name": "onos",
+            "type": "sdn_controller"
+          }
+        ]
+      },
+      "functional-capabilities": {
+        "functional-capability": [
+          {
+            "type": "NAT",
+            "name": "it.polito.onosapp.nat",
+            "ready": true,
+            "template": "isp_nat.json",
+            "family": "Network",
+            "function-specifications": {
+              "function-specification": [
+                {
+                  "name": "ip",
+                  "value": "10.0.0.254",
+                  "unit": "ip-address",
+                  "mean": "equal"
+                },
+                {
+                  "name": "port-range",
+                  "value": "10000",
+                  "unit": "-",
+                  "mean": "lower_bound"
+                },
+                {
+                  "name": "port-range",
+                  "value": "30000",
+                  "unit": "-",
+                  "mean": "upper_bound"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

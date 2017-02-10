@@ -1,0 +1,25 @@
+module netgroup-if-capabilities {
+
+	namespace "https://github.com/netgroup-polito/yang/if-capabilities";
+
+	prefix "netgroup-if-capabilities";
+
+  	import netgroup-domain { prefix netgroup-domain; revision-date 2016-07-02; }
+
+	grouping capabilities-top {
+		container capabilities {
+	        leaf gre {
+	          type boolean;
+      		  default false;
+	          description "Boolean value that indicates if subinterface allowes gre.";
+	        }
+		}
+	}
+
+	augment "/netgroup-domain:informations/netgroup-domain:hardware-informations/netgroup-domain:interfaces/netgroup-domain:interface/" +
+    "netgroup-domain:subinterfaces/netgroup-domain:subinterface" {
+
+		description "Added capabilities to a subinterface container.";
+    	uses capabilities-top;
+  }
+}

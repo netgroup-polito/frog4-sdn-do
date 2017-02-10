@@ -1,0 +1,1038 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <informations xmlns="https://github.com/netgroup-polito/yang/netgroup-domain">
+    <id>
+      <!-- type: string -->
+    </id>
+    <name>
+      <!-- type: string -->
+    </name>
+    <type>
+      <!-- type: enumeration -->
+    </type>
+    <management-address>
+      <!-- type: inet:ip-address -->
+    </management-address>
+    <hardware-informations>
+      <!-- presence: The domain exports it's hardware configuration -->
+      <resources>
+        <cpu>
+          <number>
+            <!-- type: uint16 -->
+          </number>
+          <frequency>
+            <!-- type: uint16 -->
+          </frequency>
+          <free>
+            <!-- type: percent -->
+          </free>
+        </cpu>
+        <memory>
+          <size>
+            <!-- type: uint16 -->
+          </size>
+          <frequency>
+            <!-- type: uint16 -->
+          </frequency>
+          <latency>
+            <!-- type: uint8 -->
+          </latency>
+          <free>
+            <!-- type: percent -->
+          </free>
+        </memory>
+        <storage>
+          <!-- presence: The domain has available local storage -->
+          <size>
+            <!-- type: uint32 -->
+          </size>
+          <latency>
+            <!-- type: uint16 -->
+          </latency>
+          <free>
+            <!-- type: percent -->
+          </free>
+        </storage>
+      </resources>
+      <interfaces xmlns:ift="urn:ietf:params:xml:ns:yang:iana-if-type">
+        <interface>
+          <!-- # entries: 0.. -->
+          <name>
+            <!-- type: leafref -->
+          </name>
+          <config>
+            <type>
+              ift:ethernetCsmacd
+            </type>
+            <mtu>
+              <!-- type: uint16 -->
+            </mtu>
+            <name>
+              <!-- type: string -->
+            </name>
+            <description>
+              <!-- type: string -->
+            </description>
+          </config>
+          <state>
+            <type>
+              ift:ethernetCsmacd
+            </type>
+            <mtu>
+              <!-- type: uint16 -->
+            </mtu>
+            <name>
+              <!-- type: string -->
+            </name>
+            <description>
+              <!-- type: string -->
+            </description>
+            <ifindex>
+              <!-- type: uint32 -->
+            </ifindex>
+            <admin-status>
+              <!-- type: enumeration -->
+            </admin-status>
+            <oper-status>
+              <!-- type: enumeration -->
+            </oper-status>
+            <last-change>
+              <!-- type: yang:timeticks -->
+            </last-change>
+            <counters>
+              <in-octets>
+                <!-- type: yang:counter64 -->
+              </in-octets>
+              <in-unicast-pkts>
+                <!-- type: yang:counter64 -->
+              </in-unicast-pkts>
+              <in-broadcast-pkts>
+                <!-- type: yang:counter64 -->
+              </in-broadcast-pkts>
+              <in-multicast-pkts>
+                <!-- type: yang:counter64 -->
+              </in-multicast-pkts>
+              <in-discards>
+                <!-- type: yang:counter64 -->
+              </in-discards>
+              <in-errors>
+                <!-- type: yang:counter64 -->
+              </in-errors>
+              <in-unknown-protos>
+                <!-- type: yang:counter32 -->
+              </in-unknown-protos>
+              <out-octets>
+                <!-- type: yang:counter64 -->
+              </out-octets>
+              <out-unicast-pkts>
+                <!-- type: yang:counter64 -->
+              </out-unicast-pkts>
+              <out-broadcast-pkts>
+                <!-- type: yang:counter64 -->
+              </out-broadcast-pkts>
+              <out-multicast-pkts>
+                <!-- type: yang:counter64 -->
+              </out-multicast-pkts>
+              <out-discards>
+                <!-- type: yang:counter64 -->
+              </out-discards>
+              <out-errors>
+                <!-- type: yang:counter64 -->
+              </out-errors>
+              <last-clear>
+                <!-- type: yang:date-and-time -->
+              </last-clear>
+            </counters>
+          </state>
+          <hold-time>
+            <config/>
+            <state/>
+          </hold-time>
+          <subinterfaces>
+            <subinterface>
+              <!-- # entries: 0.. -->
+              <index>
+                <!-- type: leafref -->
+              </index>
+              <config>
+                <name>
+                  <!-- type: string -->
+                </name>
+                <description>
+                  <!-- type: string -->
+                </description>
+              </config>
+              <state>
+                <name>
+                  <!-- type: string -->
+                </name>
+                <description>
+                  <!-- type: string -->
+                </description>
+                <ifindex>
+                  <!-- type: uint32 -->
+                </ifindex>
+                <admin-status>
+                  <!-- type: enumeration -->
+                </admin-status>
+                <oper-status>
+                  <!-- type: enumeration -->
+                </oper-status>
+                <last-change>
+                  <!-- type: yang:timeticks -->
+                </last-change>
+                <counters>
+                  <in-octets>
+                    <!-- type: yang:counter64 -->
+                  </in-octets>
+                  <in-unicast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </in-unicast-pkts>
+                  <in-broadcast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </in-broadcast-pkts>
+                  <in-multicast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </in-multicast-pkts>
+                  <in-discards>
+                    <!-- type: yang:counter64 -->
+                  </in-discards>
+                  <in-errors>
+                    <!-- type: yang:counter64 -->
+                  </in-errors>
+                  <in-unknown-protos>
+                    <!-- type: yang:counter32 -->
+                  </in-unknown-protos>
+                  <out-octets>
+                    <!-- type: yang:counter64 -->
+                  </out-octets>
+                  <out-unicast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </out-unicast-pkts>
+                  <out-broadcast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </out-broadcast-pkts>
+                  <out-multicast-pkts>
+                    <!-- type: yang:counter64 -->
+                  </out-multicast-pkts>
+                  <out-discards>
+                    <!-- type: yang:counter64 -->
+                  </out-discards>
+                  <out-errors>
+                    <!-- type: yang:counter64 -->
+                  </out-errors>
+                  <last-clear>
+                    <!-- type: yang:date-and-time -->
+                  </last-clear>
+                </counters>
+              </state>
+              <capabilities xmlns="https://github.com/netgroup-polito/yang/if-capabilities"/>
+              <gre xmlns="https://github.com/netgroup-polito/yang/netgroup-if-gre">
+                <!-- # entries: 0.. -->
+                <name>
+                  <!-- type: string -->
+                </name>
+                <config>
+                  <name>
+                    <!-- type: string -->
+                  </name>
+                  <description>
+                    <!-- type: string -->
+                  </description>
+                </config>
+                <state>
+                  <admin-status>
+                    <!-- type: enumeration -->
+                  </admin-status>
+                  <oper-status>
+                    <!-- type: enumeration -->
+                  </oper-status>
+                </state>
+                <options>
+                  <local_ip>
+                    <!-- type: inet:ipv4-address-no-zone -->
+                  </local_ip>
+                  <remote_ip>
+                    <!-- type: inet:ipv4-address-no-zone -->
+                  </remote_ip>
+                  <in_key>
+                    <!-- type: string -->
+                  </in_key>
+                  <out_key>
+                    <!-- type: string -->
+                  </out_key>
+                  <key>
+                    <!-- type: string -->
+                  </key>
+                </options>
+              </gre>
+              <vlan xmlns="urn:opendaylight:netgroup-vlan">
+                <config>
+                  <vlan-id>
+                    <!-- type: union -->
+                  </vlan-id>
+                </config>
+                <state>
+                  <vlan-id>
+                    <!-- type: union -->
+                  </vlan-id>
+                </state>
+              </vlan>
+              <ipv4 xmlns="urn:opendaylight:netgroup-if-ip">
+                <addresses>
+                  <address>
+                    <!-- # entries: 0.. -->
+                    <ip>
+                      <!-- type: leafref -->
+                    </ip>
+                    <config>
+                      <ip>
+                        <!-- type: inet:ipv4-address-no-zone -->
+                      </ip>
+                      <prefix-length>
+                        <!-- type: uint8 -->
+                      </prefix-length>
+                    </config>
+                    <state>
+                      <ip>
+                        <!-- type: inet:ipv4-address-no-zone -->
+                      </ip>
+                      <prefix-length>
+                        <!-- type: uint8 -->
+                      </prefix-length>
+                      <origin>
+                        <!-- type: ip-address-origin -->
+                      </origin>
+                    </state>
+                    <vrrp>
+                      <vrrp-group>
+                        <!-- # entries: 0.. -->
+                        <virtual-router-id>
+                          <!-- type: leafref -->
+                        </virtual-router-id>
+                        <config>
+                          <virtual-router-id>
+                            <!-- type: uint8 -->
+                          </virtual-router-id>
+                          <virtual-address>
+                            <!-- # entries: 0.. -->
+                          </virtual-address>
+                        </config>
+                        <state>
+                          <virtual-router-id>
+                            <!-- type: uint8 -->
+                          </virtual-router-id>
+                          <virtual-address>
+                            <!-- # entries: 0.. -->
+                          </virtual-address>
+                          <current-priority>
+                            <!-- type: uint8 -->
+                          </current-priority>
+                        </state>
+                        <interface-tracking>
+                          <config>
+                            <track-interface>
+                              <!-- type: leafref -->
+                            </track-interface>
+                          </config>
+                          <state>
+                            <track-interface>
+                              <!-- type: leafref -->
+                            </track-interface>
+                          </state>
+                        </interface-tracking>
+                      </vrrp-group>
+                    </vrrp>
+                  </address>
+                </addresses>
+                <neighbors>
+                  <neighbor>
+                    <!-- # entries: 0.. -->
+                    <ip>
+                      <!-- type: leafref -->
+                    </ip>
+                    <config>
+                      <ip>
+                        <!-- type: inet:ipv4-address-no-zone -->
+                      </ip>
+                      <link-layer-address>
+                        <!-- type: yang:phys-address -->
+                      </link-layer-address>
+                    </config>
+                    <state>
+                      <ip>
+                        <!-- type: inet:ipv4-address-no-zone -->
+                      </ip>
+                      <link-layer-address>
+                        <!-- type: yang:phys-address -->
+                      </link-layer-address>
+                      <origin>
+                        <!-- type: neighbor-origin -->
+                      </origin>
+                    </state>
+                  </neighbor>
+                </neighbors>
+                <unnumbered>
+                  <config/>
+                  <state/>
+                  <interface-ref>
+                    <config>
+                      <interface>
+                        <!-- type: leafref -->
+                      </interface>
+                      <subinterface>
+                        <!-- type: leafref -->
+                      </subinterface>
+                    </config>
+                    <state>
+                      <interface>
+                        <!-- type: leafref -->
+                      </interface>
+                      <subinterface>
+                        <!-- type: leafref -->
+                      </subinterface>
+                    </state>
+                  </interface-ref>
+                </unnumbered>
+                <config>
+                  <mtu>
+                    <!-- type: uint16 -->
+                  </mtu>
+                </config>
+                <state>
+                  <mtu>
+                    <!-- type: uint16 -->
+                  </mtu>
+                </state>
+              </ipv4>
+              <ipv6 xmlns="urn:opendaylight:netgroup-if-ip">
+                <addresses>
+                  <address>
+                    <!-- # entries: 0.. -->
+                    <ip>
+                      <!-- type: leafref -->
+                    </ip>
+                    <config>
+                      <ip>
+                        <!-- type: inet:ipv6-address-no-zone -->
+                      </ip>
+                      <prefix-length>
+                        <!-- type: uint8 -->
+                      </prefix-length>
+                    </config>
+                    <state>
+                      <ip>
+                        <!-- type: inet:ipv6-address-no-zone -->
+                      </ip>
+                      <prefix-length>
+                        <!-- type: uint8 -->
+                      </prefix-length>
+                      <origin>
+                        <!-- type: ip-address-origin -->
+                      </origin>
+                      <status>
+                        <!-- type: enumeration -->
+                      </status>
+                    </state>
+                    <vrrp>
+                      <vrrp-group>
+                        <!-- # entries: 0.. -->
+                        <virtual-router-id>
+                          <!-- type: leafref -->
+                        </virtual-router-id>
+                        <config>
+                          <virtual-router-id>
+                            <!-- type: uint8 -->
+                          </virtual-router-id>
+                          <virtual-address>
+                            <!-- # entries: 0.. -->
+                          </virtual-address>
+                          <virtual-link-local>
+                            <!-- type: inet:ip-address -->
+                          </virtual-link-local>
+                        </config>
+                        <state>
+                          <virtual-router-id>
+                            <!-- type: uint8 -->
+                          </virtual-router-id>
+                          <virtual-address>
+                            <!-- # entries: 0.. -->
+                          </virtual-address>
+                          <current-priority>
+                            <!-- type: uint8 -->
+                          </current-priority>
+                          <virtual-link-local>
+                            <!-- type: inet:ip-address -->
+                          </virtual-link-local>
+                        </state>
+                        <interface-tracking>
+                          <config>
+                            <track-interface>
+                              <!-- type: leafref -->
+                            </track-interface>
+                          </config>
+                          <state>
+                            <track-interface>
+                              <!-- type: leafref -->
+                            </track-interface>
+                          </state>
+                        </interface-tracking>
+                      </vrrp-group>
+                    </vrrp>
+                  </address>
+                </addresses>
+                <neighbors>
+                  <neighbor>
+                    <!-- # entries: 0.. -->
+                    <ip>
+                      <!-- type: leafref -->
+                    </ip>
+                    <config>
+                      <ip>
+                        <!-- type: inet:ipv6-address-no-zone -->
+                      </ip>
+                      <link-layer-address>
+                        <!-- type: yang:phys-address -->
+                      </link-layer-address>
+                    </config>
+                    <state>
+                      <ip>
+                        <!-- type: inet:ipv6-address-no-zone -->
+                      </ip>
+                      <link-layer-address>
+                        <!-- type: yang:phys-address -->
+                      </link-layer-address>
+                      <origin>
+                        <!-- type: neighbor-origin -->
+                      </origin>
+                      <is-router>
+                        <!-- type: empty -->
+                      </is-router>
+                      <neighbor-state>
+                        <!-- type: enumeration -->
+                      </neighbor-state>
+                    </state>
+                  </neighbor>
+                </neighbors>
+                <unnumbered>
+                  <config/>
+                  <state/>
+                  <interface-ref>
+                    <config>
+                      <interface>
+                        <!-- type: leafref -->
+                      </interface>
+                      <subinterface>
+                        <!-- type: leafref -->
+                      </subinterface>
+                    </config>
+                    <state>
+                      <interface>
+                        <!-- type: leafref -->
+                      </interface>
+                      <subinterface>
+                        <!-- type: leafref -->
+                      </subinterface>
+                    </state>
+                  </interface-ref>
+                </unnumbered>
+                <config>
+                  <mtu>
+                    <!-- type: uint32 -->
+                  </mtu>
+                </config>
+                <state>
+                  <mtu>
+                    <!-- type: uint32 -->
+                  </mtu>
+                </state>
+              </ipv6>
+            </subinterface>
+          </subinterfaces>
+          <neighbors xmlns="https://github.com/netgroup-polito/yang/netgroup-neighbor">
+            <neighbor>
+              <!-- # entries: 0.. -->
+              <domain-name>
+                <!-- type: string -->
+              </domain-name>
+              <neighbor-type>
+                <!-- type: enumeration -->
+              </neighbor-type>
+              <remote-interface>
+                <!-- type: string -->
+              </remote-interface>
+            </neighbor>
+          </neighbors>
+          <ethernet xmlns="urn:opendaylight:netgroup-if-ethernet">
+            <config>
+              <mac-address>
+                <!-- type: yang:mac-address -->
+              </mac-address>
+              <speed>
+                <!-- type: identityref -->
+              </speed>
+            </config>
+            <state>
+              <mac-address>
+                <!-- type: yang:mac-address -->
+              </mac-address>
+              <speed>
+                <!-- type: identityref -->
+              </speed>
+              <counters>
+                <in-mac-control-frames>
+                  <!-- type: yang:counter64 -->
+                </in-mac-control-frames>
+                <in-mac-pause-frames>
+                  <!-- type: yang:counter64 -->
+                </in-mac-pause-frames>
+                <in-oversize-frames>
+                  <!-- type: yang:counter64 -->
+                </in-oversize-frames>
+                <in-jabber-frames>
+                  <!-- type: yang:counter64 -->
+                </in-jabber-frames>
+                <in-fragment-frames>
+                  <!-- type: yang:counter64 -->
+                </in-fragment-frames>
+                <in-8021q-frames>
+                  <!-- type: yang:counter64 -->
+                </in-8021q-frames>
+                <in-crc-errors>
+                  <!-- type: yang:counter64 -->
+                </in-crc-errors>
+                <out-mac-control-frames>
+                  <!-- type: yang:counter64 -->
+                </out-mac-control-frames>
+                <out-mac-pause-frames>
+                  <!-- type: yang:counter64 -->
+                </out-mac-pause-frames>
+                <out-8021q-frames>
+                  <!-- type: yang:counter64 -->
+                </out-8021q-frames>
+              </counters>
+            </state>
+            <vlans xmlns="urn:opendaylight:netgroup-vlan">
+              <vlan>
+                <!-- # entries: 0.. -->
+                <vlan-id>
+                  <!-- type: leafref -->
+                </vlan-id>
+                <config>
+                  <vlan-id>
+                    <!-- type: oc-vlan-types:vlan-id -->
+                  </vlan-id>
+                  <name>
+                    <!-- type: string -->
+                  </name>
+                  <interface-mode>
+                    <!-- type: enumeration -->
+                  </interface-mode>
+                  <trunk-vlans>
+                    <!-- # entries: 0.. -->
+                  </trunk-vlans>
+                </config>
+                <state>
+                  <vlan-id>
+                    <!-- type: oc-vlan-types:vlan-id -->
+                  </vlan-id>
+                  <name>
+                    <!-- type: string -->
+                  </name>
+                </state>
+                <members>
+                  <member>
+                    <!-- # entries: 0.. -->
+                    <interface-ref>
+                      <state>
+                        <interface>
+                          <!-- type: leafref -->
+                        </interface>
+                        <subinterface>
+                          <!-- type: leafref -->
+                        </subinterface>
+                      </state>
+                    </interface-ref>
+                  </member>
+                </members>
+              </vlan>
+            </vlans>
+          </ethernet>
+          <routed-vlan xmlns="urn:opendaylight:netgroup-vlan">
+            <config>
+              <vlan>
+                <!-- type: union -->
+              </vlan>
+            </config>
+            <state>
+              <vlan>
+                <!-- type: union -->
+              </vlan>
+            </state>
+            <ipv4 xmlns="urn:opendaylight:netgroup-if-ip">
+              <addresses>
+                <address>
+                  <!-- # entries: 0.. -->
+                  <ip>
+                    <!-- type: leafref -->
+                  </ip>
+                  <config>
+                    <ip>
+                      <!-- type: inet:ipv4-address-no-zone -->
+                    </ip>
+                    <prefix-length>
+                      <!-- type: uint8 -->
+                    </prefix-length>
+                  </config>
+                  <state>
+                    <ip>
+                      <!-- type: inet:ipv4-address-no-zone -->
+                    </ip>
+                    <prefix-length>
+                      <!-- type: uint8 -->
+                    </prefix-length>
+                    <origin>
+                      <!-- type: ip-address-origin -->
+                    </origin>
+                  </state>
+                  <vrrp>
+                    <vrrp-group>
+                      <!-- # entries: 0.. -->
+                      <virtual-router-id>
+                        <!-- type: leafref -->
+                      </virtual-router-id>
+                      <config>
+                        <virtual-router-id>
+                          <!-- type: uint8 -->
+                        </virtual-router-id>
+                        <virtual-address>
+                          <!-- # entries: 0.. -->
+                        </virtual-address>
+                      </config>
+                      <state>
+                        <virtual-router-id>
+                          <!-- type: uint8 -->
+                        </virtual-router-id>
+                        <virtual-address>
+                          <!-- # entries: 0.. -->
+                        </virtual-address>
+                        <current-priority>
+                          <!-- type: uint8 -->
+                        </current-priority>
+                      </state>
+                      <interface-tracking>
+                        <config>
+                          <track-interface>
+                            <!-- type: leafref -->
+                          </track-interface>
+                        </config>
+                        <state>
+                          <track-interface>
+                            <!-- type: leafref -->
+                          </track-interface>
+                        </state>
+                      </interface-tracking>
+                    </vrrp-group>
+                  </vrrp>
+                </address>
+              </addresses>
+              <neighbors>
+                <neighbor>
+                  <!-- # entries: 0.. -->
+                  <ip>
+                    <!-- type: leafref -->
+                  </ip>
+                  <config>
+                    <ip>
+                      <!-- type: inet:ipv4-address-no-zone -->
+                    </ip>
+                    <link-layer-address>
+                      <!-- type: yang:phys-address -->
+                    </link-layer-address>
+                  </config>
+                  <state>
+                    <ip>
+                      <!-- type: inet:ipv4-address-no-zone -->
+                    </ip>
+                    <link-layer-address>
+                      <!-- type: yang:phys-address -->
+                    </link-layer-address>
+                    <origin>
+                      <!-- type: neighbor-origin -->
+                    </origin>
+                  </state>
+                </neighbor>
+              </neighbors>
+              <unnumbered>
+                <config/>
+                <state/>
+                <interface-ref>
+                  <config>
+                    <interface>
+                      <!-- type: leafref -->
+                    </interface>
+                    <subinterface>
+                      <!-- type: leafref -->
+                    </subinterface>
+                  </config>
+                  <state>
+                    <interface>
+                      <!-- type: leafref -->
+                    </interface>
+                    <subinterface>
+                      <!-- type: leafref -->
+                    </subinterface>
+                  </state>
+                </interface-ref>
+              </unnumbered>
+              <config>
+                <mtu>
+                  <!-- type: uint16 -->
+                </mtu>
+              </config>
+              <state>
+                <mtu>
+                  <!-- type: uint16 -->
+                </mtu>
+              </state>
+            </ipv4>
+            <ipv6 xmlns="urn:opendaylight:netgroup-if-ip">
+              <addresses>
+                <address>
+                  <!-- # entries: 0.. -->
+                  <ip>
+                    <!-- type: leafref -->
+                  </ip>
+                  <config>
+                    <ip>
+                      <!-- type: inet:ipv6-address-no-zone -->
+                    </ip>
+                    <prefix-length>
+                      <!-- type: uint8 -->
+                    </prefix-length>
+                  </config>
+                  <state>
+                    <ip>
+                      <!-- type: inet:ipv6-address-no-zone -->
+                    </ip>
+                    <prefix-length>
+                      <!-- type: uint8 -->
+                    </prefix-length>
+                    <origin>
+                      <!-- type: ip-address-origin -->
+                    </origin>
+                    <status>
+                      <!-- type: enumeration -->
+                    </status>
+                  </state>
+                  <vrrp>
+                    <vrrp-group>
+                      <!-- # entries: 0.. -->
+                      <virtual-router-id>
+                        <!-- type: leafref -->
+                      </virtual-router-id>
+                      <config>
+                        <virtual-router-id>
+                          <!-- type: uint8 -->
+                        </virtual-router-id>
+                        <virtual-address>
+                          <!-- # entries: 0.. -->
+                        </virtual-address>
+                        <virtual-link-local>
+                          <!-- type: inet:ip-address -->
+                        </virtual-link-local>
+                      </config>
+                      <state>
+                        <virtual-router-id>
+                          <!-- type: uint8 -->
+                        </virtual-router-id>
+                        <virtual-address>
+                          <!-- # entries: 0.. -->
+                        </virtual-address>
+                        <current-priority>
+                          <!-- type: uint8 -->
+                        </current-priority>
+                        <virtual-link-local>
+                          <!-- type: inet:ip-address -->
+                        </virtual-link-local>
+                      </state>
+                      <interface-tracking>
+                        <config>
+                          <track-interface>
+                            <!-- type: leafref -->
+                          </track-interface>
+                        </config>
+                        <state>
+                          <track-interface>
+                            <!-- type: leafref -->
+                          </track-interface>
+                        </state>
+                      </interface-tracking>
+                    </vrrp-group>
+                  </vrrp>
+                </address>
+              </addresses>
+              <neighbors>
+                <neighbor>
+                  <!-- # entries: 0.. -->
+                  <ip>
+                    <!-- type: leafref -->
+                  </ip>
+                  <config>
+                    <ip>
+                      <!-- type: inet:ipv6-address-no-zone -->
+                    </ip>
+                    <link-layer-address>
+                      <!-- type: yang:phys-address -->
+                    </link-layer-address>
+                  </config>
+                  <state>
+                    <ip>
+                      <!-- type: inet:ipv6-address-no-zone -->
+                    </ip>
+                    <link-layer-address>
+                      <!-- type: yang:phys-address -->
+                    </link-layer-address>
+                    <origin>
+                      <!-- type: neighbor-origin -->
+                    </origin>
+                    <is-router>
+                      <!-- type: empty -->
+                    </is-router>
+                    <neighbor-state>
+                      <!-- type: enumeration -->
+                    </neighbor-state>
+                  </state>
+                </neighbor>
+              </neighbors>
+              <unnumbered>
+                <config/>
+                <state/>
+                <interface-ref>
+                  <config>
+                    <interface>
+                      <!-- type: leafref -->
+                    </interface>
+                    <subinterface>
+                      <!-- type: leafref -->
+                    </subinterface>
+                  </config>
+                  <state>
+                    <interface>
+                      <!-- type: leafref -->
+                    </interface>
+                    <subinterface>
+                      <!-- type: leafref -->
+                    </subinterface>
+                  </state>
+                </interface-ref>
+              </unnumbered>
+              <config>
+                <mtu>
+                  <!-- type: uint32 -->
+                </mtu>
+              </config>
+              <state>
+                <mtu>
+                  <!-- type: uint32 -->
+                </mtu>
+              </state>
+            </ipv6>
+          </routed-vlan>
+        </interface>
+      </interfaces>
+    </hardware-informations>
+    <capabilities>
+      <!-- presence: The domain exports its capabilities -->
+      <infrastructural-capabilities>
+        <!-- presence: The domain exports its infrastructural capabilities -->
+        <infrastructural-capability>
+          <!-- # entries: 0.. -->
+          <name>
+            <!-- type: string -->
+          </name>
+          <type>
+            <!-- type: enumeration -->
+          </type>
+        </infrastructural-capability>
+      </infrastructural-capabilities>
+      <functional-capabilities>
+        <!-- presence: The domain exports its functional capabilities -->
+        <functional-capability>
+          <!-- # entries: 0.. -->
+          <name>
+            <!-- type: string -->
+          </name>
+          <type>
+            <!-- type: string -->
+          </type>
+          <ready>
+            <!-- type: boolean -->
+          </ready>
+          <family>
+            <!-- type: string -->
+          </family>
+          <template>
+            <!-- type: inet:uri -->
+          </template>
+          <resources>
+            <cpu>
+              <number>
+                <!-- type: uint16 -->
+              </number>
+              <frequency>
+                <!-- type: uint16 -->
+              </frequency>
+              <free>
+                <!-- type: percent -->
+              </free>
+            </cpu>
+            <memory>
+              <size>
+                <!-- type: uint16 -->
+              </size>
+              <frequency>
+                <!-- type: uint16 -->
+              </frequency>
+              <latency>
+                <!-- type: uint8 -->
+              </latency>
+              <free>
+                <!-- type: percent -->
+              </free>
+            </memory>
+            <storage>
+              <!-- presence: The domain has available local storage -->
+              <size>
+                <!-- type: uint32 -->
+              </size>
+              <latency>
+                <!-- type: uint16 -->
+              </latency>
+              <free>
+                <!-- type: percent -->
+              </free>
+            </storage>
+          </resources>
+          <function-specifications>
+            <function-specification>
+              <!-- # entries: 0.. -->
+              <name>
+                <!-- type: string -->
+              </name>
+              <mean>
+                <!-- type: enumeration -->
+              </mean>
+              <value>
+                <!-- type: string -->
+              </value>
+              <unit>
+                <!-- type: string -->
+              </unit>
+            </function-specification>
+          </function-specifications>
+        </functional-capability>
+      </functional-capabilities>
+    </capabilities>
+  </informations>
+</data>
