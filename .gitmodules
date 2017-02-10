@@ -2,5 +2,5 @@
 	path = nffg_library
 	url = https://github.com/netgroup-polito/nffg-library.git
 [submodule "domain-information-library"]
-	path = domain_information_library/
+	path = domain_information_library
 	url = https://github.com/netgroup-polito/domain-information-library
