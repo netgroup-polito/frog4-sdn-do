@@ -1,8 +1,8 @@
 import json, logging
 from collections import OrderedDict
 from do_core.config import Configuration
-from do_core.domain_info import DomainInfo, FunctionalCapability
 from do_core.sql.graph_session import GraphSession
+from domain_information_library.domain_info import DomainInfo
 
 
 class Singleton(type):

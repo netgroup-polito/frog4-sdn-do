@@ -9,7 +9,7 @@ Created on Jun 20, 2015
 import datetime, logging, uuid
 
 from do_core.config import Configuration
-from do_core.domain_info import DomainInfo
+from domain_information_library.domain_info import DomainInfo
 from nffg_library.nffg import NF_FG, EndPoint, FlowRule, Match, Action, VNF, Port
 
 from sqlalchemy import Column, VARCHAR, Boolean, Integer, DateTime, Text, asc, desc, func

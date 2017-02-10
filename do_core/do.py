@@ -9,7 +9,7 @@ from __future__ import division
 import logging
 import copy
 
-from do_core.domain_info import DomainInfo
+from domain_information_library.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
 from do_core.config import Configuration
