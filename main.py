@@ -132,6 +132,9 @@ app.add_url_rule(
 logging.info("Flask Successfully started")
 print("Welcome to 'SDN Domain Orchestrator'")
 
+# ovsdb
+if Configuration().OVSDB_SUPPORT:
+    NetManager().init_ovsdb()
 
 # adding physical interfaces if any
 if len(Configuration().PORTS) > 0:
@@ -152,3 +155,4 @@ if len(Configuration().PORTS) > 0:
 domain_information_manager = DomainInformationManager()
 thread = Thread(target=domain_information_manager.start)
 thread.start()
+logging.info("DoubleDecker client successfully started")

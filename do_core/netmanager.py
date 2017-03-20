@@ -8,7 +8,7 @@ import json
 import networkx as nx
 
 from do_core.config import Configuration
-from do_core.domain_info import FunctionalCapability
+from domain_information_library.domain_info import FunctionalCapability
 from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
@@ -50,10 +50,11 @@ class NetManager:
         self.ProfileGraph = NetManager.__ProfileGraph()
 
         # ovsdb
-        if Configuration().OVSDB_SUPPORT:
-            self.ovsdb = OvsdbManager(self)
-            self.ovsdb.activate_ovsdbrest()
-            self.ovsdb.configure_ovsdbrest()
+        self.ovsdb = OvsdbManager(self)
+
+    def init_ovsdb(self):
+        self.ovsdb.activate_ovsdbrest()
+        self.ovsdb.configure_ovsdbrest()
 
     class __ProfileGraph(object):
         def __init__(self):
@@ -736,7 +737,7 @@ class OvsdbManager(object):
     def is_ovsdbrest_running(self):
 
         if self.net_manager.isODL():
-            # TODO activate here ODL ovsdbrest API
+            # TODO check here ODL ovsdbrest API
             pass
         elif self.net_manager.isONOS():
             try:
