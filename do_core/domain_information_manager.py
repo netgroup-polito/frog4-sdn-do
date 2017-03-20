@@ -65,7 +65,7 @@ class Messaging(object, metaclass=Singleton):
         self.working_thread = Thread(target=self.dd_client.start)
         self.working_thread.start()
         logging.info("DoubleDecker client started!")
-        logging.info("Publishing domain information: " + message)
+        logging.debug("Publishing domain information: " + message)
 
     def publish_domain_description(self):
         if self.first_start is True:
@@ -75,7 +75,8 @@ class Messaging(object, metaclass=Singleton):
         message = self.read_domain_description_file()
         try:
             self.dd_client.publish(Configuration().DOMAIN_DESCRIPTION_TOPIC, message)
-            logging.info("Publishing domain information: " + json.dumps(json.loads(message)))
+            logging.info("Publishing domain information...")
+            logging.debug(json.dumps(json.loads(message)))
         except ConnectionError:
             raise MessagingError("DD client not registered") from None
 

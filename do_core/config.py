@@ -104,28 +104,28 @@ class Configuration(object, metaclass=Singleton):
             self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
 
             # [other_options]
-            self.__OO_CONSOLE_PRINT = config.get('other_options', 'console_print')
+            self.__OO_CONSOLE_PRINT = config.getboolean('other_options', 'console_print')
             self.__USE_INTERFACES_NAMES = config.getboolean('other_options', 'use_interfaces_names')
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
 
     def log_configuration(self):
-        log_format = '%(asctime)s %(levelname)s %(message)s - %(filename)s:%(lineno)s'
+        log_format = '%(asctime)s.%(msecs)03d %(levelname)s %(message)s - %(filename)s:%(lineno)s'
         if self.__LOG_DEBUG is True:
             log_level = logging.DEBUG
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
             sqlalchemy_log = logging.getLogger('sqlalchemy.engine')
             sqlalchemy_log.setLevel(logging.WARNING)
-        elif self.__LOG_DEBUG is True:
+        elif self.__LOG_VERBOSE is True:
             log_level = logging.INFO
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
         else:
             log_level = logging.WARNING
         logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format,
-                            datefmt='%m/%d/%Y %I:%M:%S %p:%r')
+                            datefmt='%d/%m/%Y %H:%M:%S')
         logging.info("[CONFIG] Logging just started!")
 
     def __set_available_vlan_ids_array(self, vid_ranges):

@@ -16,24 +16,13 @@
               "enabled": true
             },
             "subinterfaces": {
-              "subinterface": [
-                {
-                  "index": 1,
-                  "config": {
-                    "name": "eth1",
-                    "description": "something",
-                    "enabled": true
-                  },
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  }
-                }
-              ]
+              "subinterface": []
             },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
                   "domain-name": "host1",
+                  "neighbor-type": "access-network",
                   "remote-interface": "10.0.0.1/eth0"
                 }
               ]
@@ -66,24 +55,13 @@
               "enabled": true
             },
             "subinterfaces": {
-              "subinterface": [
-                {
-                  "index": 1,
-                  "config": {
-                    "name": "eth2",
-                    "description": "something",
-                    "enabled": true
-                  },
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  }
-                }
-              ]
+              "subinterface": []
             },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
                   "domain-name": "host2",
+                  "neighbor-type": "access-network",
                   "remote-interface": "10.0.0.2/eth0"
                 }
               ]
@@ -106,24 +84,13 @@
               "enabled": true
             },
             "subinterfaces": {
-              "subinterface": [
-                {
-                  "index": 1,
-                  "config": {
-                    "name": "s3-eth1",
-                    "description": "something",
-                    "enabled": true
-                  },
-                  "netgroup-if-capabilities:capabilities": {
-                    "gre": true
-                  }
-                }
-              ]
+              "subinterface": []
             },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
                   "domain-name": "host3",
+                  "neighbor-type": "access-network",
                   "remote-interface": "10.0.0.3/eth0"
                 }
               ]
@@ -146,11 +113,40 @@
               "enabled": true
             },
             "subinterfaces": {
+              "subinterface": []
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "host4",
+                  "neighbor-type": "access-network",
+                  "remote-interface": "10.0.0.4/eth0"
+                }
+              ]
+            },
+            "openconfig-if-ethernet:ethernet": {
+              "openconfig-vlan:vlan": {
+                "openconfig-vlan:config": {
+                  "interface-mode": "TRUNK",
+                  "trunk-vlans": []
+                }
+              }
+            }
+          },
+          {
+            "name": "eth3",
+            "netgroup-if-side:side": "core",
+            "config": {
+              "type": "ethernetCsmacd",
+              "description": "endpoint on device 03",
+              "enabled": true
+            },
+            "subinterfaces": {
               "subinterface": [
                 {
                   "index": 1,
                   "config": {
-                    "name": "s3-eth2",
+                    "name": "eth3",
                     "description": "something",
                     "enabled": true
                   },
@@ -163,8 +159,8 @@
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "domain-name": "host4",
-                  "remote-interface": "10.0.0.4/eth0"
+                  "domain-name": "netgroup-lan",
+                  "neighbor-type": "legacy-network"
                 }
               ]
             },

@@ -54,31 +54,34 @@ class DO(object):
 
         # Instantiate a new NF-FG
         try:
-            logging.debug("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
+            logging.info("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
-
+            logging.info("Session created")
             # Build the Profile Graph
             self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
 
             # Set up GRE tunnels if any
+            logging.info("Tunnel set up...")
             self.__NC_TunnelSetUp(nffg)
+            logging.info("Tunnel set up completed!")
 
             # Send flow rules to Network Controller
+            logging.info("Instantiating flow rules...")
             self.__NC_FlowsInstantiation(nffg)
-            logging.debug("Flow rules instantiated!")
+            logging.info("Flow rules instantiated!")
 
             # activate needed applications
+            logging.info("Activating applications...")
             self.__NC_ApplicationsInstantiation(nffg)
-            logging.debug("Applications activated!")
+            logging.info("Applications activated!")
 
-            logging.debug("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
+            logging.info("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
             # Update the resource description .json
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
-            #Messaging().publish_domain_description()
 
             return self.__session_id
 
@@ -165,7 +168,7 @@ class DO(object):
             logging.debug("Delete NF-FG: [session=" + str(
                 self.__session_id) + "] we are going to delete: " + instantiated_nffg.getJSON())
             self.__NFFG_NC_deleteGraph()
-            logging.debug("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
+            logging.info("Delete NF-FG: session " + self.__session_id + " correctly deleted!")
 
             # Update the resource description .json
             ResourceDescription().updateAll()
@@ -228,9 +231,10 @@ class DO(object):
             raise NffgUselessInformations("NFFG Validation: " + msg +
                                           ". This DO does not process this kind of flowrules.")
 
+        logging.info("Validate nffg...")
+
         # EP Array
         EPs = {}
-
         '''
         The below domain could offer some network function capabilities that could be used to implement
         the VNFs of this graph. Here we check if this is possible (all VNFs of the graph could be implemented on the
@@ -340,6 +344,9 @@ class DO(object):
                                                                                               'pid']) == False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID " + str(a.set_vlan_id) + " not allowed! Valid vlan ids: " + vids_list)
+
+        logging.info("Validation completed.")
+
 
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -470,8 +477,8 @@ class DO(object):
                 # set up tunnel through controller library
                 port = GraphSession().getPort(ep.id)
 
-                print("[New Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
-                logging.info("[New Gre] device:'"+port.switch_id+"' port:'"+port.graph_port_id+"'")
+                self.__print("[New Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+                logging.debug("[New Gre] device:'"+port.switch_id+"' port:'"+port.graph_port_id+"'")
                 self.NetManager.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id,
                                                ep.local_ip, ep.remote_ip, ep.gre_key)
                 # change endpoint to an interface endpoint on the new gre interface
@@ -548,7 +555,7 @@ class DO(object):
         :return:
         """
         self.NetManager.activate_app(application_name)
-        print("[Activated App] app-name:'"+application_name+"'")
+        self.__print("[Activated App] app-name:'"+application_name+"'")
         logging.info("[Activated App] app-name:'"+application_name+"'")
 
     def __NC_ConfigureVnfPorts(self, application_name, vnf):
@@ -588,7 +595,7 @@ class DO(object):
                 'external-vlan': vnf_port_map[port]['vlan-id']
             }
         self.NetManager.push_app_configuration(application_name, ports_configuration)
-        print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
+        self.__print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
         logging.info("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
 
     def __NC_DeactivateApplication(self, application_name):
@@ -599,7 +606,7 @@ class DO(object):
         :return:
         """
         self.NetManager.deactivate_app(application_name)
-        print("[Deactivated App] app-name:'"+application_name+"'")
+        self.__print("[Deactivated App] app-name:'"+application_name+"'")
         logging.info("[Deactivated App] app-name:'"+application_name+"'")
 
     def __NC_ProcessFlowrule(self, in_endpoint, flowrule):
@@ -969,7 +976,7 @@ class DO(object):
                 # PRINT
                 self.__print(
                     "[Remove Flow] id:'" + flow_rule_ref.internal_id + "' device:'" + flow_rule_ref.switch_id + "'")
-                logging.info(
+                logging.debug(
                     "[Remove Flow] id:'" + flow_rule_ref.internal_id + "' device:'" + flow_rule_ref.switch_id + "'")
                 # RESOURCE DESCRIPTION
                 ResourceDescription().delete_flowrule(flow_rule_ref.id)
@@ -1014,8 +1021,8 @@ class DO(object):
         if ep_resources is not None:  # <- non ci entra (?)
             port = GraphSession().getPortById(ep_resources.resource_id)
             # delete from controller
-            print("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
-            logging.info("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+            self.__print("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
+            logging.debug("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
             self.NetManager.delete_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id)
 
     def __deleteVnf(self, vnf):
@@ -1075,7 +1082,7 @@ class DO(object):
 
         # PRINT
         self.__print("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
-        logging.info("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
+        logging.debug("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
 
     def __checkFlowname_externalFlowrule(self, efr):
         '''
