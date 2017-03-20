@@ -1,8 +1,8 @@
 import json, logging
 from collections import OrderedDict
 from do_core.config import Configuration
+from domain_information_library.domain_info import DomainInfo, FunctionalCapability
 from do_core.sql.graph_session import GraphSession
-from domain_information_library.domain_info import DomainInfo
 
 
 class Singleton(type):
@@ -30,26 +30,27 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
     def loadFile(self, filename):
         if self.__filename == filename:
             return
-        
+
         self.__filename = filename
-        
+
         in_file = open(self.__filename,"r")
         read = in_file.read()
         self.__dict = json.loads(read, object_hook=OrderedDict, object_pairs_hook=OrderedDict)
         self.__domain_info.parse_dict(self.__dict)
-        
+
         self.__read_endpoints_and_vlans()
 
     def updateAll(self):
         for endpoint_name in self.__endpoints:
-            
-            __tvlist = self.__endpoints[endpoint_name]['__trunk_vlans']
-            __tvlist.clear()
-            for tv in self.__endpoints[endpoint_name]['trunk_vlans']:
-                if tv[0]==tv[1]:
-                    __tvlist.append(tv[0])
-                elif tv[0]<tv[1]:
-                    __tvlist.append(str(tv[0])+".."+str(tv[1]))
+            if self.__endpoints[endpoint_name]['trunk_vlans'] is not None:
+                __tvlist = self.__endpoints[endpoint_name]['__trunk_vlans']
+                __tvlist.clear()
+                print(str(self.__endpoints))
+                for tv in self.__endpoints[endpoint_name]['trunk_vlans']:
+                    if tv[0]==tv[1]:
+                        __tvlist.append(tv[0])
+                    elif tv[0]<tv[1]:
+                        __tvlist.append(str(tv[0])+".."+str(tv[1]))
 
     def saveFile(self):
         '''
@@ -67,9 +68,9 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         '''
         Execute some update operations when a new flowrule is added.
             1) TRUNK VLAN: remove a busy vlan id from the endpoint 'trunk-vlan' field
-            2) DISABLE ENDPOINT: set the endpoint as 'disabled' when has a match that does not specify a vlan_id 
+            2) DISABLE ENDPOINT: set the endpoint as 'disabled' when has a match that does not specify a vlan_id
         '''
-        
+
         fr = GraphSession().getFlowruleByID(fr_db_id)
         if fr is None:
             return
@@ -84,7 +85,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         # ( 1 ) REMOVE TRUNK VLAN
         if match.vlan_id is not None:
             self.__remove_trunk_vlan(fr.switch_id, match.port_in, match.vlan_id)
-        
+
         # ( 2 ) DISABLE ENDPOINT
         else:
             self.__disable_endpoint(fr.switch_id, match.port_in)
@@ -95,27 +96,27 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
             1) TRUNK VLAN: add a free vlan id into the endpoint 'trunk-vlan' field
             2) ENABLE ENDPOINT: set the endpoint as 'enabled'
         '''
-        
+
         fr = GraphSession().getFlowruleByID(fr_db_id)
         if fr is None:
             return
         match = GraphSession().getMatchByFlowruleID(fr.id)
         if match is None:
             return
-        
+
         if not self.checkEndpoint(fr.switch_id, match.port_in):
             return
-                
+
         # ( 1 ) ADD TRUNK VLAN
         if match.vlan_id is not None:
             self.__add_trunk_vlan(fr.switch_id, match.port_in, match.vlan_id)
-        
+
         # ( 2 ) ENABLE ENDPOINT
         else:
             self.__enable_endpoint(fr.switch_id, match.port_in)
 
     def __read_endpoints_and_vlans(self):
-        
+
         self.__endpoints = {}
 
         for interface in self.__domain_info.hardware_info.interfaces:
@@ -129,66 +130,66 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
             ep['trunk_vlans'] = None
             ep['__trunk_vlans'] = interface.vlans_free
 
-            if interface.vlan and interface.vlan_mode == 'TRUNK':
+            if interface.vlan:
                 ep['trunk_vlans'] = self.__set_trunk_vlan_list(interface.vlans_free)
             self.__endpoints[interface.name] = ep
 
     def __add_trunk_vlan(self, switch_id, port_in, vlan_id):
-        
+
         def get_key(item):
             return item[0]
-        
+
         vlan_id = int(vlan_id)
         ep_name = switch_id+self.__endpoint_name_separator+port_in
-        
+
         trunk_vlans = self.__endpoints[ep_name]['trunk_vlans']
-        
+
         i = -1
         for tv in trunk_vlans:
             i += 1
-            
+
             # add an outermost value
             if (tv[0]-1) == vlan_id or (tv[1]+1) == vlan_id:
                 if (tv[0]-1) == vlan_id:
                     tv[0] -= 1
-                
+
                 if (tv[1]+1) == vlan_id:
                     tv[1] += 1
 
                 return
-            
+
         # add a single value
         trunk_vlans.append([vlan_id, vlan_id])
         self.__endpoints[ep_name]['trunk_vlans'] = sorted(trunk_vlans, key=get_key)
         return
 
     def __remove_trunk_vlan(self, switch_id, port_in, vlan_id):
-        
+
         def get_Key(item):
             return item[0]
-        
+
         vlan_id = int(vlan_id)
         ep_name = switch_id+self.__endpoint_name_separator+port_in
-        
+
         trunk_vlans = self.__endpoints[ep_name]['trunk_vlans']
         # self.__endpoints[ep_name]
-        
+
         i = -1
         for tv in trunk_vlans:
             i += 1
-            
+
             # remove an outermost value
             if tv[0] == vlan_id or tv[1] == vlan_id:
                 if tv[0] == vlan_id:
                     tv[0] += 1
-                
+
                 if tv[1] == vlan_id:
                     tv[1] -= 1
-                
+
                 if tv[0] > tv[1]:
                     trunk_vlans.pop(i)
                 return
-            
+
             # remove an inner value
             if tv[0] < vlan_id < tv[1]:
                 trunk_vlans.append([tv[0], vlan_id-1])
@@ -198,19 +199,19 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
                 return
 
     def __enable_endpoint(self, switch_id, port_in):
-        
+
         epname = switch_id+self.__endpoint_name_separator+port_in
         trunk_vlans = self.__endpoints[epname]['enabled'] = True
 
     def __disable_endpoint(self, switch_id, port_in):
-        
+
         epname = switch_id+self.__endpoint_name_separator+port_in
         trunk_vlans = self.__endpoints[epname]['enabled'] = False
 
     def __set_trunk_vlan_list(self, trunk_vlans_list):
-        
+
         new_list = []
-        
+
         for tv_id in trunk_vlans_list:
             if isinstance(tv_id, str):
                 range = tv_id.split("..")
@@ -220,7 +221,7 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
                     new_list.append(range)
             elif isinstance(tv_id, int):
                 new_list.append([tv_id,tv_id])
-        
+
         return new_list
 
     def checkEndpoint(self, switch, port):
@@ -228,9 +229,9 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
         if ep_name not in self.__endpoints:
             return False
         return True
-    
+
     def VlanID_isAvailable(self, vlan_id, switch_id, port_id):
-        endpoint_name = switch_id+self.__endpoint_name_separator+port_id 
+        endpoint_name = switch_id+self.__endpoint_name_separator+port_id
         for r in self.__endpoints[endpoint_name]['trunk_vlans']:
             if vlan_id>=r[0] and vlan_id<=r[1]:
                 return True
