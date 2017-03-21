@@ -1,50 +1,85 @@
+"""
+Created on Mar 20, 2016
+
+@author: gabrielecastellano
+"""
+
 import logging
+import requests
 
 from flask import request, jsonify
 from flask_restplus import Resource
+from sqlalchemy.orm.exc import NoResultFound
 
-from orchestrator_core.api.api import api
-from orchestrator_core.nffg_manager import NFFG_Manager
-from orchestrator_core.userAuthentication import UserAuthentication
-from orchestrator_core.exception import unauthorizedRequest, UserNotFound, VNFRepositoryError
+from do_core.api.api import api
+from do_core.netmanager import NetManager
+from do_core.user_authentication import UserAuthentication
+from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, UserNotFound, TenantNotFound, \
+    UserTokenExpired
 
 
-template_ns = api.namespace('template', 'Template Resource')
+topology_ns = api.namespace('topology', 'Network Topology Resource')
 
 
-class TemplateAPI(object):
+class Network(object):
 
     def get(self, image_id):
         pass
 
 
-@template_ns.route('/location/<template_name>', methods=['GET'])
-@api.doc(responses={404: 'Template not found'})
-class TemplateLocationResource(Resource):
+@topology_ns.route('', methods=['GET'])
+class NetworkTopologyResource(Resource):
 
-    @template_ns.param("template_name", "Template to be retrieved", "path", type="string", required=True)
-    @template_ns.param("X-Auth-User", "Username", "header", type="string", required=True)
-    @template_ns.param("X-Auth-Pass", "Password", "header", type="string", required=True)
-    @template_ns.param("X-Auth-Tenant", "Tenant", "header", type="string", required=True)
-    @template_ns.response(200, 'Template retrieved.')
-    @template_ns.response(401, 'Unauthorized.')
-    @template_ns.response(500, 'Internal Error.')
-    def get(self, template_name):
+    @topology_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
+    @topology_ns.response(200, 'Topology correctly retrieved.')
+    @topology_ns.response(401, 'Unauthorized.')
+    @topology_ns.response(500, 'Internal Error.')
+    def get(self):
         """
-        Get the NF template
+        Get the network topology
         """
         try:
             UserAuthentication().authenticateUserFromRESTRequest(request)
-            return jsonify((NFFG_Manager().getTemplate(template_name).getDict()))
-        except (unauthorizedRequest, UserNotFound) as err:
+
+            ng = NetManager()
+
+            return jsonify(ng.getNetworkTopology())
+
+        # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except wrongRequest as err:
+            logging.exception(err)
+            return "Bad Request", 400
+
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except unauthorizedRequest as err:
             if request.headers.get("X-Auth-User") is not None:
                 logging.debug("Unauthorized access attempt from user "+request.headers.get("X-Auth-User"))
             logging.debug(err.message)
             return "Unauthorized", 401
-        except FileNotFoundError as err:
-            return "Template not found", 404
-        except VNFRepositoryError as err:
-            return "VNFRepositoryError: Template not found or incorrect VNF-Repository configuration", 404
+
+        # User auth credentials - raised by UserAuthentication().authenticateUserFromRESTRequest
+        except UserTokenExpired as err:
+            logging.exception(err)
+            return err.message, 401
+
+        # No Results
+        except UserNotFound as err:
+            logging.exception(err)
+            return "UserNotFound", 404
+        except TenantNotFound as err:
+            logging.exception(err)
+            return "TenantNotFound", 404
+        except NoResultFound as err:
+            logging.exception(err)
+            return "NoResultFound", 404
+        except sessionNotFound as err:
+            logging.exception(err)
+            return "sessionNotFound", 404
+
+        # Other errors
+        except requests.HTTPError as err:
+            logging.exception(err)
+            return str(err), 500
         except Exception as err:
             logging.exception(err)
-            return "Contact the admin " + str(err), 500
+            return str(err), 500

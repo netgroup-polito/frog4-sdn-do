@@ -37,16 +37,15 @@ Note: both versions can coexist, but you must choose what version to enable:
 ### Install Python libraries
 
 * [doubledecker](https://github.com/Acreo/DoubleDecker)
-* gunicorn 19.4.1
-* falcon 0.3.0
+* gunicorn 19.6.0
 * requests 2.9.1
 * configparser 3.5.0
-* jsonschema 2.5.1
+* jsonschema 2.6.0
 * sqlite3 2.6.0
-* sqlalchemy 1.0.11
+* sqlalchemy 1.1.6
 * networkx 1.10
-* flask 0.11.1
-* flasgger 0.5.12
+* flask 0.12.
+* flask-restplus 0.9.2
 
 To install a python3 module:
 ```sh
