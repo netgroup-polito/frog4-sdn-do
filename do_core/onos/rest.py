@@ -165,7 +165,6 @@ class ONOS_Rest(RestInterface):
         :param onos_endpoint: controller REST API address
         :param onos_user: controller user
         :param onos_pass: controller password for user
-        :param app_name: the application to activate
         :return:
         """
         headers = {'Accept': 'application/json'}
