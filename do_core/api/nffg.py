@@ -29,7 +29,7 @@ nffg_ns = api.namespace('NF-FG', 'NFFG Resource')
 
 @nffg_ns.route('/<nffg_id>', methods=['GET', 'DELETE', 'PUT'],
                doc={'params': {'nffg_id': {'description': 'The graph ID', 'in': 'path'}}})
-@nffg_ns.route('/', defaults={'nffg_id': None}, methods=['GET'])
+@nffg_ns.route('/', methods=['GET'])
 class NFFGResource(Resource):
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
