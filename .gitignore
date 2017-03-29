@@ -1,5 +1,4 @@
 *~
-*.pyc
 *.log
 #*.conf
 *.project
@@ -19,10 +18,9 @@ db.sqlite3
 /config/OnosResourceDescription.json
 .idea/
 __pycache__/
-do_core/__pycache__/
-do_core/controller_interface/__pycache__/
-do_core/onos/__pycache__/
-do_core/sql/__pycache__/
 keys/public-keys.json
-scripts/__pycache__/
 keys/broker-keys.json
+config/JolnetDomainDescription.json
+config/OnosResourceDescription_demo.json
+config/script-config.ini
+config/script-local-config.ini
