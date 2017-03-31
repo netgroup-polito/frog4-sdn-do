@@ -17,7 +17,7 @@ try:
     nffg_id = '123'
 
     nc_do = DO(user_data)
-    nc_do.NFFG_Delete(nffg_id)
+    nc_do.delete_nffg(nffg_id)
 
 except Exception as err:
     logging.exception(err)

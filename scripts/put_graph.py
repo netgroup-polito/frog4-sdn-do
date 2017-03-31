@@ -26,7 +26,7 @@ try:
     nffg.id = nffg_id
 
     nc_do = DO(user_data)
-    nc_do.NFFG_Validate(nffg)
-    nc_do.NFFG_Put(nffg)
+    nc_do.validate_nffg(nffg)
+    nc_do.put_nffg(nffg)
 except Exception as err:
     logging.exception(err)

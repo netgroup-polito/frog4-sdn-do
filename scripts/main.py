@@ -46,8 +46,8 @@ def put_json(filename):
         nffg.parseDict(nffg_file)
         
         # Validate and Put
-        NCDO.NFFG_Validate(nffg)
-        NCDO.NFFG_Put(nffg)
+        NCDO.validate_nffg(nffg)
+        NCDO.put_nffg(nffg)
         
     except Exception as ex:
         if hasattr(ex, 'message'):
