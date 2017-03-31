@@ -56,8 +56,8 @@ class NFFGResource(Resource):
             nffg.id = nffg_id
 
             nc_do = DO(user_data)
-            nc_do.NFFG_Validate(nffg)
-            nc_do.NFFG_Put(nffg)
+            nc_do.validate_nffg(nffg)
+            nc_do.put_nffg(nffg)
 
             return "Graph correctly deployed", 202
 
@@ -134,7 +134,7 @@ class NFFGResource(Resource):
             user_data = UserAuthentication().authenticateUserFromRESTRequest(request)
             do = DO(user_data)
 
-            do.NFFG_Delete(nffg_id)
+            do.delete_nffg(nffg_id)
 
             return "Session deleted"
 
@@ -193,9 +193,9 @@ class NFFGResource(Resource):
 
             if nffg_id is None:
                 # return all NFFGs
-                resp = Response(response=json.dumps(do.NFFG_Get_All()), status=200, mimetype="application/json")
+                resp = Response(response=json.dumps(do.get_nffgs()), status=200, mimetype="application/json")
             else:
-                resp = Response(response=do.NFFG_Get(nffg_id).getJSON(), status=200, mimetype="application/json")
+                resp = Response(response=do.get_nffg(nffg_id).getJSON(), status=200, mimetype="application/json")
             return resp
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -256,7 +256,7 @@ class NFFGStatusResource(Resource):
             user_data = UserAuthentication().authenticateUserFromRESTRequest(request)
             do = DO(user_data)
 
-            status, percentage = do.NFFG_Status(nffg_id)
+            status, percentage = do.nffg_status(nffg_id)
             status_json = dict()
             status_json['status'] = status
             status_json['percentage_completed'] = percentage

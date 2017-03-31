@@ -106,6 +106,7 @@ class Configuration(object, metaclass=Singleton):
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.getboolean('other_options', 'console_print')
             self.__USE_INTERFACES_NAMES = config.getboolean('other_options', 'use_interfaces_names')
+            self.__JOLNET = config.getboolean('other_options', 'jolnet')
 
         except Exception as ex:
             raise WrongConfigurationFile(str(ex))
@@ -312,3 +313,7 @@ class Configuration(object, metaclass=Singleton):
     @property
     def USE_INTERFACES_NAMES(self):
         return self.__USE_INTERFACES_NAMES
+
+    @property
+    def JOLNET(self):
+        return self.__JOLNET

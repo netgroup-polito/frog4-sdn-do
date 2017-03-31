@@ -13,7 +13,7 @@ from domain_information_library.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
 from do_core.config import Configuration
-from do_core.sql.graph_session import GraphSession, VnfModel
+from do_core.sql.graph_session import GraphSession
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.domain_information_manager import Messaging
@@ -42,14 +42,14 @@ class DO(object):
         if self.__print_enabled:
             print(msg)
 
-    def NFFG_Put(self, nffg):
+    def put_nffg(self, nffg):
         """
         Manage the request of NF-FG instantiation.
         """
         logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
         # Check if the NF-FG is already instantiated, update it and exit
-        if self.NFFG_Update(nffg) is not None:
+        if self.update_nffg(nffg) is not None:
             return self.__session_id
 
         # Instantiate a new NF-FG
@@ -94,11 +94,12 @@ class DO(object):
             GraphSession().updateError(self.__session_id)
             raise ex
 
-    def NFFG_Update(self, new_nffg):
+    def update_nffg(self, new_nffg):
 
         # Check and get the session id for this user-graph couple
         logging.debug(
-            "Update NF-FG: check if the user " + self.user_data.user_id + " has already instantiated the graph " + new_nffg.id + ".")
+            "Update NF-FG: check if the user " + self.user_data.user_id + " has already instantiated the graph " +
+            new_nffg.id + ".")
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
         if session is None:
             return None
@@ -107,7 +108,8 @@ class DO(object):
 
         try:
             logging.debug(
-                "Update NF-FG: updating session " + self.__session_id + " from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
+                "Update NF-FG: updating session " + self.__session_id + " from user " + self.user_data.username +
+                " on tenant " + self.user_data.tenant)
             GraphSession().updateStatus(self.__session_id, 'updating')
 
             # Build the Profile Graph
@@ -156,7 +158,7 @@ class DO(object):
             raise ex
         return self.__session_id
 
-    def NFFG_Delete(self, nffg_id):
+    def delete_nffg(self, nffg_id):
 
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
@@ -183,7 +185,7 @@ class DO(object):
             logging.error("Delete NF-FG: ", ex)
             raise ex
 
-    def NFFG_Get(self, nffg_id):
+    def get_nffg(self, nffg_id):
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=True)
         if session is None:
             raise sessionNotFound("Get NF-FG: session not found, for graph " + str(nffg_id))
@@ -192,7 +194,8 @@ class DO(object):
         logging.debug("Getting session: " + str(self.__session_id))
         return GraphSession().getNFFG(self.__session_id)
 
-    def NFFG_Get_All(self):
+    @staticmethod
+    def get_nffgs():
 
         logging.debug("Getting all graphs")
         nffgs = {'NF-FG': []}
@@ -200,7 +203,7 @@ class DO(object):
             nffgs['NF-FG'].append(nffg.getDict())
         return nffgs
 
-    def NFFG_Status(self, nffg_id):
+    def nffg_status(self, nffg_id):
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, nffg_id, error_aware=False)
         if session is None:
             raise sessionNotFound("Status NF-FG: session not found, for graph " + str(nffg_id))
@@ -214,12 +217,14 @@ class DO(object):
         logging.debug("Status NF-FG: graph status: " + str(session.status) + " " + str(percentage) + "%")
         return session.status, percentage
 
-    def NFFG_Validate(self, nffg):
+    def validate_nffg(self, nffg):
         """
         A validator for this specific domain orchestrator.
         The original json, as specified in the extern NFFG library,
         could contain useless objects and fields for this DO.
         If this happens, we have to raise exceptions to stop the request processing.
+        :param nffg:
+        :type nffg: nffg_library.nffg.NF_FG
         """
 
         def raise_useless_info(msg):
@@ -234,7 +239,7 @@ class DO(object):
         logging.info("Validate nffg...")
 
         # EP Array
-        EPs = {}
+        eps = {}
         '''
         The below domain could offer some network function capabilities that could be used to implement
         the VNFs of this graph. Here we check if this is possible (all VNFs of the graph could be implemented on the
@@ -291,14 +296,14 @@ class DO(object):
             # if ep.type == "vlan" and ep.vlan_id is not None:
             #    if ResourceDescription().VlanID_isAvailable(int(ep.vlan_id), ep.node_id, ep.interface)==False:
             #        vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.node_id, ep.interface)
-            #        raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+"! Valid vlan ids: "+vids_list)
+            #        raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed on the endpoint "+str(ep.id)+
+            #                         "! Valid vlan ids: "+vids_list)
 
             # Add the endpoint
-            EPs['endpoint:' + ep.id] = {"sid": ep.node_id, "pid": ep.interface}
+            eps['endpoint:' + ep.id] = {"sid": ep.node_id, "pid": ep.interface}
 
         # FLOW RULEs inspection
         for flowrule in nffg.flow_rules:
-
             if flowrule.match is None:
                 GraphError("Flowrule " + flowrule.id + " has not match section")
             if flowrule.match.port_in is None:
@@ -307,7 +312,9 @@ class DO(object):
                 GraphError("Flowrule " + flowrule.id + " has not an ingress endpoint ('port_in')")
 
             # Check vlan availability
-            # if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'], EPs[flowrule.match.port_in]['pid'])==False:
+            # if flowrule.match.vlan_id is not None and ResourceDescription().VlanID_isAvailable(
+            #       int(flowrule.match.vlan_id), EPs[flowrule.match.port_in]['sid'],
+            #       EPs[flowrule.match.port_in]['pid']) == False:
             #    vids_list = ResourceDescription().VlanID_getAvailables_asString(ep.node_id, ep.interface)
             #    raise GraphError("Vlan ID "+str(ep.vlan_id)+" not allowed! Valid vlan ids: "+vids_list)
 
@@ -317,7 +324,7 @@ class DO(object):
             output_action_counter = 0
             output_ep = None
             for a in flowrule.actions:
-                if a.controller is not None and a.controller == True:
+                if a.controller is not None and a.controller is True:
                     raise_useless_info("presence of 'output_to_controller'")
                 if a.output_to_queue is not None:
                     raise_useless_info("presence of 'output_to_queue'")
@@ -334,19 +341,18 @@ class DO(object):
             # Check vlan availability
             for a in flowrule.actions:
                 if a.push_vlan is not None and ResourceDescription().VlanID_isAvailable(int(a.push_vlan),
-                                                                                        EPs[output_ep]['sid'],
-                                                                                        EPs[output_ep]['pid']) == False:
+                                                                                        eps[output_ep]['sid'],
+                                                                                        eps[output_ep]['pid']) is False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID " + str(a.push_vlan) + " not allowed! Valid vlan ids: " + vids_list)
                 if a.set_vlan_id is not None and ResourceDescription().VlanID_isAvailable(int(a.set_vlan_id),
-                                                                                          EPs[output_ep]['sid'],
-                                                                                          EPs[output_ep][
-                                                                                              'pid']) == False:
+                                                                                          eps[output_ep]['sid'],
+                                                                                          eps[output_ep][
+                                                                                              'pid']) is False:
                     vids_list = str(Configuration().VLAN_AVAILABLE_IDS)
                     raise GraphError("Vlan ID " + str(a.set_vlan_id) + " not allowed! Valid vlan ids: " + vids_list)
 
         logging.info("Validation completed.")
-
 
     '''
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -505,14 +511,12 @@ class DO(object):
             self.__NC_ProcessFlowrule(in_endpoint, flowrule)
             logging.debug("instantiated flow rule: " + str(flowrule.getDict()))
 
-    def __NC_ApplicationsInstantiation(self, nffg):
+    def __NC_ApplicationsInstantiation(self):
         """
         Instantiate applications on the controller implementing VNFs of the NF_FG.
         The vnf are categorized in three groups:
         DETACHED: vnfs that have flows just to/from endpoints
         ATTACHED: vnfs that have flows to/from an other vnf
-        :param nffg:
-        :return:
         """
 
         def raise_useless_info(msg):
@@ -668,12 +672,12 @@ class DO(object):
         # [ 2 ] Endpoints are on different switches...search for a path!
         logging.debug("Endpoint are on different switches, finding a path...")
         nodes_path = self.NetManager.getShortestPath(in_endpoint.node_id, out_endpoint.node_id)
-        if (nodes_path is not None):
+        if nodes_path is not None:
 
             logging.info(
                 "Found a path between " + in_endpoint.node_id + " and " + out_endpoint.node_id + ". " + "Path Length = " + str(
                     len(nodes_path)))
-            if self.__NC_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint) == False:
+            if not self.__NC_checkEndpointsOnPath(nodes_path, in_endpoint, out_endpoint):
                 logging.debug("Invalid link between the endpoints")
                 return
             self.__NC_LinkEndpointsByVlanID(nodes_path, in_endpoint, out_endpoint, flowrule)
@@ -684,9 +688,9 @@ class DO(object):
         return
 
     def __NC_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
-        '''
+        """
         Check if the flowrule can be installed on the ingress endpoint.
-        '''
+        """
 
         # Is the endpoint enabled?
         if GraphSession().isDirectEndpoint(in_endpoint.interface, in_endpoint.node_id):
@@ -715,7 +719,7 @@ class DO(object):
         return True
 
     def __NC_LinkEndpointsByVlanID(self, path, epIN, epOUT, flowrule):
-        ''' 
+        """ 
         This function links two endpoints with a set of flow rules pushed in
         all the intermediate switches (and in first and last switches, of course).
         
@@ -723,7 +727,7 @@ class DO(object):
         If no ingress (or egress) vlan id is specified, a suitable vlan id will be chosen.
         In any case, all the vlan ids will be checked in order to avoid possible 
         conflicts in the traversed switches.
-        '''
+        """
 
         efr = self.NetManager.externalFlowrule(flow_id=flowrule.id, priority=flowrule.priority, nffg_flowrule=flowrule)
 
@@ -735,7 +739,7 @@ class DO(object):
         action_pop_vlan = False
 
         internal_path_vlan_in = None
-        internal_path_vlan_out = None
+        # internal_path_vlan_out = None
 
         # Initialize vlan_id and save it
         if flowrule.match.vlan_id is not None:
@@ -787,11 +791,11 @@ class DO(object):
             pos = 0  # (-2: 'single-switch' path, -1:first, 0:middle, 1:last)
 
             # Next switch and next ingress port
-            next_switch_ID = None
-            next_switch_portIn = None
+            next_switch_id = None
+            next_switch_port_in = None
             if i < (len(path) - 1):
-                next_switch_ID = path[i + 1]
-                next_switch_portIn = self.NetManager.switchPortIn(next_switch_ID, hop)
+                next_switch_id = path[i + 1]
+                next_switch_port_in = self.NetManager.switchPortIn(next_switch_id, hop)
 
             # First switch
             if i == 0:
@@ -800,7 +804,7 @@ class DO(object):
                 efr.set_switch_id(epIN.node_id)
 
                 port_in = self.NetManager.getPortName(epIN.node_id, epIN.interface)
-                port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
+                port_out = self.NetManager.switchPortOut(hop, next_switch_id)
                 if port_out is None and len(path) == 1:  # 'single-switch' path
                     pos = -2
                     port_out = self.NetManager.getPortName(epOUT.node_id, epOUT.interface)
@@ -823,7 +827,7 @@ class DO(object):
             else:
                 efr.set_switch_id(hop)
                 port_in = self.NetManager.switchPortIn(hop, path[i - 1])
-                port_out = self.NetManager.switchPortOut(hop, next_switch_ID)
+                port_out = self.NetManager.switchPortOut(hop, next_switch_id)
 
             # Vlan egress endpoint ...set the vlan_id.
             # [Gabriele: WHY? if endpoint is vlan we should in any case pop the internal vlan and push the external!]
@@ -835,8 +839,8 @@ class DO(object):
 
             # Check, generate and set vlan ids
             # Gabriele: i didn't understand the utility of the second return value
-            internal_path_vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_ID, next_switch_portIn, flowrule.match,
-                                                                             internal_path_vlan_in)
+            internal_path_vlan_out, set_vlan_out = self.__checkAndSetVlanIDs(next_switch_id, next_switch_port_in,
+                                                                             flowrule.match, internal_path_vlan_in)
 
             # [MATCH]
             base_nffg_match = copy.copy(flowrule.match)
@@ -850,45 +854,56 @@ class DO(object):
 
             # [ACTIONS]
 
-            # with this algorithm we can have max three level of enqueued VLANS ([OUTER] [MIDDLE] [INNER])
+            if Configuration().JOLNET:
+                # [ Jolnet algorithm ]
+                if pos == -1:
+                    efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+                if pos == 0:
+                    efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+                if action_set_vlan_out and (pos == 1 or pos == -2):
+                    efr.append_action(NffgAction(set_vlan_id=action_set_vlan_out))
+                if epOUT.type == 'vlan' and (pos == 1 or pos == -2):  # 1= last switch; -2='single-switch' path
+                    efr.append_action(NffgAction(set_vlan_id=epOUT.vlan_id))
+            else:
+                # [ Generic algorithm ]
+                # with this algorithm we can have max three level of enqueued VLANS ([OUTER] [MIDDLE] [INNER])
 
-            # [OUTER] Pop external vlan on first switch if endpoint vlan
-            if epIN.type == 'vlan' and (pos == -1 or pos == -2):  # -1= first switch; -2='single-switch' path
-                efr.append_action(NffgAction(pop_vlan=True))
+                # [OUTER] Pop external vlan on first switch if endpoint vlan
+                if epIN.type == 'vlan' and (pos == -1 or pos == -2):  # -1= first switch; -2='single-switch' path
+                    efr.append_action(NffgAction(pop_vlan=True))
 
-            # [MIDDLE] nffg action pop VLAN in first switch
-            if action_pop_vlan and (pos == -1 or pos == -2):  # -1=first switch; -2='single-switch' path
-                efr.append_action(NffgAction(pop_vlan=True))
+                # [MIDDLE] nffg action pop VLAN in first switch
+                if action_pop_vlan and (pos == -1 or pos == -2):  # -1=first switch; -2='single-switch' path
+                    efr.append_action(NffgAction(pop_vlan=True))
 
-            # [INNER] push internal path VLAN in first switch
-            if pos == -1:
-                # If there is a match rule on vlan id, it means a vlan header 
-                # it is already present and we do not need to push a vlan. [Gabriele: "????"]
-                # if match_vlan_in is None: # <- removed by Gabriele: "what about vlan endpoints where we need to pop + push?"
-                efr.append_action(NffgAction(push_vlan=True))
-                efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+                # [INNER] push internal path VLAN in first switch
+                if pos == -1:
+                    # If there is a match rule on vlan id, it means a vlan header
+                    # it is already present and we do not need to push a vlan. [Gabriele: "????"]
+                    efr.append_action(NffgAction(push_vlan=True))
+                    efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
 
-            # [INNER] set internal path VLAN in intermediate switch
-            if pos == 0:
-                efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
+                # [INNER] set internal path VLAN in intermediate switch
+                if pos == 0:
+                    efr.append_action(NffgAction(set_vlan_id=internal_path_vlan_out))
 
-            # [INNER] pop internal path VLAN in last switch
-            if pos == 1:
-                efr.append_action(NffgAction(pop_vlan=True))
+                # [INNER] pop internal path VLAN in last switch
+                if pos == 1:
+                    efr.append_action(NffgAction(pop_vlan=True))
 
-            # [MIDDLE] nffg action push VLAN in last switch
-            if action_push_vlan_out and (pos == 1 or pos == -2):
-                efr.append_action(NffgAction(push_vlan=True))
-                efr.append_action(NffgAction(set_vlan_id=action_push_vlan_out))
+                # [MIDDLE] nffg action push VLAN in last switch
+                if action_push_vlan_out and (pos == 1 or pos == -2):
+                    efr.append_action(NffgAction(push_vlan=True))
+                    efr.append_action(NffgAction(set_vlan_id=action_push_vlan_out))
 
-            # [MIDDLE] nffg action set VLAN in last witch
-            if action_set_vlan_out and (pos == 1 or pos == -2):
-                efr.append_action(NffgAction(set_vlan_id=action_set_vlan_out))
+                # [MIDDLE] nffg action set VLAN in last witch
+                if action_set_vlan_out and (pos == 1 or pos == -2):
+                    efr.append_action(NffgAction(set_vlan_id=action_set_vlan_out))
 
-            # [OUTER] push external vlan on last switch if endpoint vlan
-            if epOUT.type == 'vlan' and (pos == 1 or pos == -2):  # 1= last switch; -2='single-switch' path
-                efr.append_action(NffgAction(push_vlan=True))
-                efr.append_action(NffgAction(set_vlan_id=epOUT.vlan_id))
+                # [OUTER] push external vlan on last switch if endpoint vlan
+                if epOUT.type == 'vlan' and (pos == 1 or pos == -2):  # 1= last switch; -2='single-switch' path
+                    efr.append_action(NffgAction(push_vlan=True))
+                    efr.append_action(NffgAction(set_vlan_id=epOUT.vlan_id))
 
             # Set next ingress vlan
             match_vlan_in = internal_path_vlan_out
@@ -899,24 +914,17 @@ class DO(object):
             efr.set_match(base_nffg_match)
             efr.append_action(NffgAction(output=port_out))
             self.__Push_externalFlowrule(efr)
-        # end-for
-        '''
-        Note#1 - Where are the original vlan id?
-            vlan in = flowrule.match.vlan_id
-            vlan out = action_original_vlan_out
-        '''
-        return
 
     def __checkAndSetVlanIDs(self, switch_id, port_in, nffg_match, vlan_in=None):
-        '''
+        """
         Receives the main parameters for a "vlan based" flow rule.
         Check all vlan ids on the specified ports of current switch and the next switch.
         If a similar "vlan based" flow rule exists, new vlan in/out will be chosen.
         This function make other some checks to verify the correctness of all parameters.
         
-        '''
+        """
         # New Egress VLAN ID
-        free_vlan_id = None
+        # free_vlan_id = None
         if switch_id is not None:
             free_vlan_id = self.__getFreeVlanOnSwitch(switch_id, port_in, nffg_match, vlan_in)
             if free_vlan_id is None:
@@ -983,14 +991,14 @@ class DO(object):
 
                 # CONTROLLER
                 self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
+            except HTTPError as err:
+                if err.response.status_code == 404:
+                    logging.debug("External flow " + flow_rule_ref.internal_id + " does not exist in the switch "
+                                  + flow_rule_ref.switch_id + ".")
             except Exception as ex:
-                if type(ex) is HTTPError and ex.response.status_code == 404:
-                    logging.debug(
-                        "External flow " + flow_rule_ref.internal_id + " does not exist in the switch " + flow_rule_ref.switch_id + ".")
-                else:
-                    logging.debug(
-                        "Exception while deleting external flow " + flow_rule_ref.internal_id + " in the switch " + flow_rule_ref.switch_id + ". ")
-                    raise ex
+                logging.debug("Exception while deleting external flow " + flow_rule_ref.internal_id + " in the switch "
+                              + flow_rule_ref.switch_id + ".")
+                raise ex
         GraphSession().deleteFlowruleByID(flow_rule_ref.id)
 
     def __deletePortByID(self, port_id):
@@ -1042,12 +1050,12 @@ class DO(object):
 
     def __Push_externalFlowrule(self, efr):
         # efr = NetManager.externalFlowrule
-        '''
+        """
         This is the only function that should be used to push an external flow
         (a "custom flow", in other words) in the database and in the network controller.
         GraphSession().addFlowrule(...) is also used in GraphSession().updateNFFG 
         and in GraphSession().addNFFG to store the flow rules written in nffg.json.
-        '''
+        """
 
         nffg_match = efr.getNffgMatch()
         nffg_actions = efr.getNffgAction()
@@ -1078,18 +1086,18 @@ class DO(object):
         GraphSession().dbStoreAction(nffg_actions, flow_rule_db_id)
 
         # RESOURCE DESCRIPTION
-        #ResourceDescription().new_flowrule(flow_rule_db_id)
+        # ResourceDescription().new_flowrule(flow_rule_db_id)
 
         # PRINT
         self.__print("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
         logging.debug("[New Flow] id:'" + efr.get_flow_name() + "' device:'" + efr.get_switch_id() + "'")
 
     def __checkFlowname_externalFlowrule(self, efr):
-        '''
+        """
         Check if the flow name already exists on the same switch,
         in order to avoid subscribing the existing flowrule in one switch.
-        '''
-        if GraphSession().externalFlowruleExists(efr.get_switch_id(), efr.get_flow_name()) == False:
+        """
+        if not GraphSession().externalFlowruleExists(efr.get_switch_id(), efr.get_flow_name()):
             return
 
         efr.set_flow_name(0)
