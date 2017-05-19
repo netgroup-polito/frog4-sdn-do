@@ -1,18 +1,18 @@
-# FROG4 OpenFlow Domain Orchestrator
+# FROG4 SDN Domain Orchestrator
 
-This orchestrator supervises an OpenFlow domain - constituited only by several switches - 
+This orchestrator supervises an SDN based domain (e.g., OpenFlow devices managed by an ONOS Controller) - constituited only by several switches - 
 and provides traffic steering capabilities between its endpoints.
+It always affors the possibility to insert simple NFs (such as a NAT) on the flow path (the proper bundle shuld be installed on the SDN Controller)
 
 
 ## Traffic Steering
 
-This domain expects to receive endpoint-to-endpoint flowules only, and these flowrules
-must be compliant with OpenFlow1.0.
+This domain expects to receive endpoint-to-endpoint flowules must be compliant with OpenFlow1.0.
 
-Every flowrule must have one entry endpoint and only one output endpoint (multiple output not supported!);
+Every flowrule must have one entry endpoint and only one output endpoint (multiple output are not supported!);
 a flowrule is instantiated into every switch belonging the path between the two endpoints.
 
-Every flow is distinguished by a vlan id, in order to avoid ambiguities, duplicities, and other 
+Every flow is internally distinguished by a vlan id, in order to avoid ambiguities, duplicities, and other 
 similar troubles into the involved switches.
 
 
@@ -28,7 +28,13 @@ for each endpoint we can specify:
 
 A domain administrator has to add and configure the endpoints editing the file
 [./config/ResourceDescription.json](/config/ResourceDescription.json).
+The final json should be compliant against this [YANG data model](https://github.com/netgroup-polito/domain-information-library).
 
+## Network Functions
+
+The SDN domain orchestrator also provide the possibility to seploy some NFs (implemented with an SDN application) between endpoints. The SDN Application must allow a fine Configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat)
+
+Currently just chains (endpoint to endpoint paths) with up to one NF are supported.
 
 ## SDN Controllers
 
@@ -36,7 +42,7 @@ This project leans on a SDN controller to have some network informations and
 for each openflow-based operation (e.g. create and delete flow rules).
 
 Currently, the DO supports [OpenDayLight](https://www.opendaylight.org/) and [ONOS](http://onosproject.org/), in particular:
-* ONOS 1.5.0 "Falcon"
+* ONOS (>= 1.5.0 "Falcon")
 * OpenDayLight Hydrogen Virtualization 1.0
 * OpenDayLight Helium SR4
 * OpenDayLight Lithium SR3
@@ -58,14 +64,12 @@ Note: set the appropriate broker address in [./config/default-config.ini](/confi
 All the graphs sended via REST API must respect the NF-FG json schema.
 
 Pay specifical attention to the information that are not supported by this domain orchestrator:
-* VNFs;
+* NF to NF links;
 * Remote endpoints;
 * "TTL" field of the endpoints;
-* Endpoints that are meither "interface" type nor "vlan" type;
 * Flowrule actions with multiple outputs, "output_to_controller" or "output_to_queue".
 
 Note: the nf-fg library is a sub-module of this repository.
-
 
 ## REST APIs
 
