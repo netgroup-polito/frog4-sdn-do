@@ -98,33 +98,35 @@ class DomainInformationManager(object):
         resource_description = ResourceDescription()
 
         # activate capabilities application on controller
-        try:
-            NetManager().activate_app(Configuration().CAPABILITIES_APP_NAME)
-            time.sleep(2)
-        except:
-            logging.exception("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
-                              ", no functional capabilities will be exported.")
-            return
 
-        # get capabilities informations from controller
-        resource_description.clear_functional_capabilities()
+        if Configuration().DISCOVER_CAPABILITIES:
+            try:
+                NetManager().activate_app(Configuration().CAPABILITIES_APP_NAME)
+                time.sleep(2)
+            except:
+                logging.exception("Cannot activate application '" + Configuration().CAPABILITIES_APP_NAME + "'" +
+                                  ", no functional capabilities will be exported.")
+                return
 
-        functional_capabilities = NetManager().get_apps_capabilities()
-        self._fc_digest = self._calculate_capabilities_digest(functional_capabilities)
-        for functional_capability in functional_capabilities:
-            resource_description.add_functional_capability(functional_capability)
+            # get capabilities informations from controller
+            resource_description.clear_functional_capabilities()
+            functional_capabilities = NetManager().get_apps_capabilities()
+            self._fc_digest = self._calculate_capabilities_digest(functional_capabilities)
+            for functional_capability in functional_capabilities:
+                resource_description.add_functional_capability(functional_capability)
 
-        # save new file
-        resource_description.saveFile()
+            # save new file
+            resource_description.saveFile()
 
         # start dd_client
         logging.info("Starting doubledecker client...")
         Messaging().publish_domain_description()
 
-        # periodically check for updates
-        while Messaging().working_thread.isAlive():
-            time.sleep(5)
-            self.fetch_functional_capabilities()
+        if Configuration().DISCOVER_CAPABILITIES:
+            # periodically check for updates
+            while Messaging().working_thread.isAlive():
+                time.sleep(5)
+                self.fetch_functional_capabilities()
 
     def fetch_functional_capabilities(self):
         # get current capabilities from controller

@@ -102,6 +102,7 @@ class Configuration(object, metaclass=Singleton):
             self.__DOMAIN_DESCRIPTION_DYNAMIC_FILE = base_folder + "/" + config.get('domain_description',
                                                                                     'domain_description_dynamic_file')
             self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
+            self.__DISCOVER_CAPABILITIES = config.getboolean('domain_description', 'discover_capabilities')
 
             # [other_options]
             self.__OO_CONSOLE_PRINT = config.getboolean('other_options', 'console_print')
@@ -305,6 +306,10 @@ class Configuration(object, metaclass=Singleton):
     @property
     def CAPABILITIES_APP_NAME(self):
         return self.__CAPABILITIES_APP_NAME
+
+    @property
+    def DISCOVER_CAPABILITIES(self):
+        return self.__DISCOVER_CAPABILITIES
 
     @property
     def OO_CONSOLE_PRINT(self):
