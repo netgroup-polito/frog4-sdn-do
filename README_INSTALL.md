@@ -75,14 +75,12 @@ In the config folder, make a new copy of the file OnosResourceDescription_static
 Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
 
 
-### Set the SDN Controller
+#### Set the SDN Controller
 
 The section "[network_controller]" defines the name of the SDN Controller.
 
 According to the SDN Controller name, edit the section [opendaylight] or [onos] 
 to specify version, endpoint and credentials.
-
-
 
 
 ### Create the database
@@ -96,6 +94,14 @@ Set full permissions on the database file:
 The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
 
 All the tables will be empty, except "user" and "tenant".
+
+### Set up the SDN Controller
+
+The SDN controller should be completed with additional bundles that provides needed API to the sdn-do:
+
+1) If you need the support to export available SDN application as NF, you need to install a nf-monitor bundle and activate it. On ONOS, you can use [this bundle](https://github.com/netgroup-polito/onos-applications/tree/master/apps-capabilities), following the instructions provided on the repository.
+
+2) If you are using the sdn-do on an ovsdb-based network (e.g., Mininet) and you need to deploy graphs having GRE-endpoints you need to install (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest).
 
 
 ### Start the Domain Orchestrator (HTTP)
