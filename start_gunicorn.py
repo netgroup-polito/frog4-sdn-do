@@ -25,4 +25,4 @@ ip = Configuration().ORCHESTRATOR_IP
 port = conf.ORCHESTRATOR_PORT
 address = str(ip) + ":" + str(port)
 
-call("gunicorn3 -b " + address + " -w 1 -t 500 main:app", shell=True)
+call("gunicorn -b " + address + " -w 1 -t 500 main:app", shell=True)

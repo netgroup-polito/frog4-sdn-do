@@ -15,7 +15,7 @@ from do_core.exception import MessagingError
 class DDClient(ClientSafe):
 
     def __init__(self, name, dealerurl, customer, keyfile, topic, message):
-        super().__init__(name, dealerurl, customer, keyfile)
+        super().__init__(name, dealerurl, keyfile)
         self._registered = False
         self.topic = topic
         self.message = message

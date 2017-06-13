@@ -128,10 +128,10 @@ class ResourceDescription(object, metaclass=Singleton):  # Singleton Class
             ep['port'] = interface.name
             ep['enabled'] = interface.enabled
             ep['trunk_vlans'] = None
-            ep['__trunk_vlans'] = interface.vlans_free
+            ep['__trunk_vlans'] = interface.free_vlans
 
             if interface.vlan:
-                ep['trunk_vlans'] = self.__set_trunk_vlan_list(interface.vlans_free)
+                ep['trunk_vlans'] = self.__set_trunk_vlan_list(interface.free_vlans)
             self.__endpoints[interface.name] = ep
 
     def __add_trunk_vlan(self, switch_id, port_in, vlan_id):
