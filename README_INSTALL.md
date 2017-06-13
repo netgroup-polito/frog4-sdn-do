@@ -1,11 +1,37 @@
 # FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
+### Install system dependecies
+
+	$ sudo apt-get install git curl sqlite3
+
 ### Install the SDN Controller
 
-[ONOS - Build from source code (recommended)](https://wiki.onosproject.org/display/ONOS/Getting+ONOS#GettingONOS-ONOSSourceCode) or 
-[ONOS - Packages and tutorials](https://wiki.onosproject.org/display/ONOS/Download+packages+and+tutorial+VMs)
+#### ONOS
+
+It is recommended to build ONOS from source code.
+
+Download the latest version of ONOS from the git repository:
+
+	$ git clone https://gerrit.onosproject.org/onos
+
+Build ONOS with buck
+
+	$ cd ONOS
+	$ tools/build/onos-buck build onos --show-output
+
+If you need a virtual network to be managed by ONOS, follow the ONOS+Mininet tutorial below:
+
+[Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py)
+
+##### Use Cases
+
+Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
+
+#### OpenDayLight
 
 [OpenDayLight - Releases and Guides](https://www.opendaylight.org/downloads)
+
+#### Java
 
 ONOS requires JAVA 8:
 ```sh
@@ -27,47 +53,42 @@ Note: both versions can coexist, but you must choose what version to enable:
 ```
 
 
-### Install Python 3
-
-```sh
-	$ sudo apt-get install python3.4-dev python3-setuptools
-	$ sudo easy_install3 pip
-```
 
 ### Install Python libraries
 
-* [doubledecker](https://github.com/Acreo/DoubleDecker)
+* [doubledecker](https://github.com/Acreo/DoubleDecker-py)
+* flask 0.12
+* flask-restplus 0.9.2
 * gunicorn 19.6.0
+* networkx 1.10
 * requests 2.9.1
 * configparser 3.5.0
 * jsonschema 2.6.0
-* sqlite3 2.6.0
 * sqlalchemy 1.1.6
-* networkx 1.10
-* flask 0.12.
-* flask-restplus 0.9.2
+
+Install pip3
+	
+	$ sudo apt-get install python3-pip
 
 To install a python3 module:
-```sh
+	
 	$ sudo pip3 install <module>
-```
 
 To check if a module is already installed and its version:
-```sh
+
 	$ pip3 freeze
-```
 
-### Clone the code
+### Clone the code of the sdn-do
 
 ```sh
-	$ git clone https://github.com/netgroup-polito/frog4-openflow-do.git
-	$ cd frog4-openflow-do
+	$ git clone https://github.com/netgroup-polito/frog4-sdn-do
+	$ cd frog4-sdn-do
 	$ git submodule init && git submodule update
 ```
 
 ### Write your own configuration
 
-Edit [./default-config.ini](/config/default-config.ini) and rename it in "config.ini".
+Edit [./default-config.ini](/config/default-config.ini) basing on instructions that you find inside the file itself and rename it in "config.ini".
 
 Pay attention to all paths: they must be relative paths (respect of 'frog4-openflow-do' directory).
 
