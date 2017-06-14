@@ -553,7 +553,7 @@ class GraphSession(object):
             port_in = None
             if flow_rule.match.port_in.split(':')[0] == 'endpoint':
                 port_in_type = 'endpoint'
-                port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':')[1:]).db_id
+                port_in = nffg.getEndPoint(flow_rule.match.port_in.split(':', 1)[1]).db_id
                 self.dbStoreEndpointResourceFlowrule(port_in, flow_rule_db_id)
             if flow_rule.match.port_in.split(':')[0] == 'vnf':
                 port_in_type = 'vnf'
@@ -569,7 +569,7 @@ class GraphSession(object):
                 output_port = None
                 if action.output is not None and action.output.split(':')[0] == 'endpoint':
                     output_type = 'endpoint'
-                    output_port = nffg.getEndPoint(action.output.split(':')[1:]).db_id
+                    output_port = nffg.getEndPoint(action.output.split(':', 1)[1]).db_id
                     self.dbStoreEndpointResourceFlowrule(output_port, flow_rule_db_id)
                 if action.output is not None and action.output.split(':')[0] == 'vnf':
                     output_type = 'vnf'
