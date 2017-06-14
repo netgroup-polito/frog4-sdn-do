@@ -1,0 +1,91 @@
+{
+  "netgroup-domain:informations": {
+    "id": "00000001",
+    "name": "UN1",
+    "type": "UN",
+    "management-address": "130.192.225.100:8080",
+    "hardware-informations": {
+      "interfaces": {
+        "interface": [
+          {
+            "name": "192.168.225.101/ens3",
+            "netgroup-if-side:side": "core",
+            "config": {
+              "type": "ethernetCsmacd",
+              "enabled": true
+            },
+            "subinterfaces": {
+              "subinterface": [
+                {
+                  "config": {
+                    "name": "192.168.225.101/ens3",
+                    "enabled": true
+                  },
+                  "netgroup-if-capabilities:capabilities": {
+                    "gre": true
+                  }
+                }
+              ]
+            },
+            "netgroup-neighbor:neighbors": {
+              "netgroup-neighbor:neighbor": [
+                {
+                  "domain-name": "netgroup-br-ex",
+                  "neighbor-type": "legacy-network"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "capabilities": {
+      "infrastructural-capabilities": {
+        "infrastructural-capability": [
+          {
+            "type": "cpu_architecture",
+            "name": "x86-64"
+          },
+          {
+            "type": "vm_container",
+            "name": "docker"
+          }
+        ]
+      },
+      "functional-capabilities": {
+        "functional-capability": [
+          {
+            "type": "nat",
+            "name": "nat",
+            "ready": true,
+            "template": "isp_nat.json",
+            "family": "Network",
+            "function-specifications": {
+              "function-specification": []
+            }
+          },
+          {
+            "type": "firewall",
+            "name": "firewall",
+            "ready": true,
+            "template": "cisco_firewall.json",
+            "family": "Network",
+            "function-specifications": {
+              "function-specification": []
+            }
+          },
+          {
+            "type": "vpn",
+            "name": "vpn",
+            "ready": true,
+            "template": "cisco_firewall.json",
+            "family": "Network",
+            "function-specifications": {
+              "function-specification": []
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -15,13 +15,19 @@ from do_core.exception import MessagingError
 class DDClient(ClientSafe):
 
     def __init__(self, name, dealerurl, customer, keyfile, topic, message):
-        super().__init__(name, dealerurl, keyfile)
+        super().__init__(name=name,
+                         dealerurl=dealerurl,
+                         customer=customer,
+                         keyfile=keyfile)
         self._registered = False
         self.topic = topic
         self.message = message
 
-    def on_data(self, dest, msg):
-        print(dest, " sent", msg)
+    def start(self):
+        super().start()
+
+    def on_data(self, src, msg):
+        print(src, " sent", msg)
 
     def on_pub(self, src, topic, msg):
         msg_str = "PUB %s from %s: %s" % (str(topic), str(src), str(msg))
@@ -34,8 +40,8 @@ class DDClient(ClientSafe):
     def on_discon(self):
         pass
 
-    def on_error(self):
-        pass
+    def on_error(self, code, msg):
+        logging.debug(str(code) + ": " + str(msg))
 
     def unsubscribe(self, topic, scope):
         pass
@@ -57,7 +63,7 @@ class Messaging(object, metaclass=Singleton):
         self.dd_client = DDClient(
             name=Configuration().DD_NAME,
             dealerurl=Configuration().DD_BROKER_ADDRESS,
-            customer=Configuration().DD_TENANT_NAME,     # bug in dd?? should be DD_TENANT_NAME
+            customer=Configuration().DD_TENANT_NAME,
             keyfile=Configuration().DD_TENANT_KEY,
             topic=Configuration().DOMAIN_DESCRIPTION_TOPIC,
             message=message
