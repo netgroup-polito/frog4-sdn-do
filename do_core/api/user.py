@@ -5,10 +5,13 @@ Created on Mar 21, 2016
 """
 
 import logging
+
+import binascii
 import requests
 import json
 
 from flask import request
+from flask.wrappers import Response
 from flask_restplus import Resource, fields
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -44,8 +47,7 @@ class LoginResource(Resource):
                 payload = json.loads(request_body, 'utf-8')
 
             userdata = UserAuthentication().authenticateUserFromRESTRequest(request, payload)
-
-            return userdata.token, 200, {'Content-Type': 'application/token'}
+            return Response(response=userdata.token, status=200, mimetype="application/token")
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
