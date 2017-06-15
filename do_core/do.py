@@ -72,7 +72,7 @@ class DO(object):
 
             # activate needed applications
             logging.info("Activating applications...")
-            self.__NC_ApplicationsInstantiation(nffg)
+            self.__NC_ApplicationsInstantiation()
             logging.info("Applications activated!")
 
             logging.info("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
@@ -137,7 +137,7 @@ class DO(object):
             logging.debug("Update NF-FG: session " + self.__session_id + " correctly updated!")
 
             # activate needed applications
-            self.__NC_ApplicationsInstantiation(new_nffg)
+            self.__NC_ApplicationsInstantiation()
             logging.debug("Applications activated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
