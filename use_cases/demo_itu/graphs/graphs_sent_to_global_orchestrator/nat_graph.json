@@ -1,21 +1,21 @@
 {
   "forwarding-graph": {
-    "name": "simple-nat-graph",
+    "name": "ISP-Graph",
     "VNFs": [
       {
         "name": "nat",
         "ports": [
           {
             "name": "data-port",
-            "id": "USER:0"
+            "id": "L2Port:0"
           },
           {
             "name": "data-port",
-            "id": "WAN:0"
+            "id": "L2Port:1"
           }
         ],
         "id": "00000001",
-        "vnf_template": "isp_nat.json"
+        "vnf_template": "8Z7K7N"
       }
     ],
     "id": "12",
@@ -47,7 +47,7 @@
           },
           "actions": [
             {
-              "output_to_port": "vnf:00000001:WAN:0"
+              "output_to_port": "vnf:00000001:L2Port:0"
             }
           ],
           "priority": 40001,
@@ -55,7 +55,7 @@
         },
         {
           "match": {
-            "port_in": "vnf:00000001:WAN:0"
+            "port_in": "vnf:00000001:L2Port:0"
           },
           "actions": [
             {
@@ -71,7 +71,7 @@
           },
           "actions": [
             {
-              "output_to_port": "vnf:00000001:USER:1"
+              "output_to_port": "vnf:00000001:L2Port:1"
             }
           ],
           "priority": 40001,
@@ -79,7 +79,7 @@
         },
         {
           "match": {
-            "port_in": "vnf:00000001:USER:1"
+            "port_in": "vnf:00000001:L2Port:1"
           },
           "actions": [
             {

@@ -19,7 +19,7 @@ In order to run ONOS on top of a mininet network, you need to use the onos.py sc
 
 ## Install applications on ONOS
 
-Inside the provided zip there are three scripts usefull to install ONOS applications needed for the demo.
+Inside the provided zip [](scripts/demo_scripts-onos.zip) there there are three scripts usefull to install ONOS applications needed for the demo.
 The NAT application should be installed only during the second step.
 
 ## Configuration

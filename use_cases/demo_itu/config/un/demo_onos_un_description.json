@@ -1,14 +1,15 @@
 {
   "netgroup-domain:informations": {
     "id": "00000001",
-    "name": "UN1",
+    "name": "universal_node",
     "type": "UN",
-    "management-address": "130.192.225.100:8080",
+    "management-address": "192.168.1.10:8080",
     "hardware-informations": {
       "interfaces": {
         "interface": [
           {
-            "name": "192.168.225.101/ens3",
+            "index": 1,
+            "name": "192.168.1.10/ens9",
             "netgroup-if-side:side": "core",
             "config": {
               "type": "ethernetCsmacd",
@@ -18,7 +19,7 @@
               "subinterface": [
                 {
                   "config": {
-                    "name": "192.168.225.101/ens3",
+                    "name": "192.168.1.10/ens9",
                     "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
@@ -30,7 +31,7 @@
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
-                  "domain-name": "netgroup-br-ex",
+                  "domain-name": "winter-br-ex",
                   "neighbor-type": "legacy-network"
                 }
               ]

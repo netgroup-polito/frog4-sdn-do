@@ -50,7 +50,7 @@
               ]
             },
             "index": 1,
-            "side": "edge"
+            "netgroup-if-side:side": "edge"
           },
           {
             "config": {
@@ -80,7 +80,7 @@
               ]
             },
             "index": 2,
-            "side": "edge"
+            "netgroup-if-side:side": "edge"
           },
           {
             "config": {
@@ -110,7 +110,7 @@
               ]
             },
             "index": 3,
-            "side": "edge"
+            "netgroup-if-side:side": "edge"
           },
           {
             "config": {
@@ -140,18 +140,18 @@
               ]
             },
             "index": 4,
-            "side": "edge"
+            "netgroup-if-side:side": "edge"
           },
           {
             "config": {
               "enabled": true
             },
-            "name": "130.192.225.154/eth1",
+            "name": "192.168.1.9/ens9",
             "subinterfaces": {
               "subinterface": [
                 {
                   "config": {
-                    "name": "eth1"
+                    "name": "192.168.1.9/ens9"
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": true
@@ -164,17 +164,17 @@
               "netgroup-neighbor:neighbor": [
                 {
                   "neighbor-type": "legacy-network",
-                  "domain-name": "netgroup-lan"
+                  "domain-name": "winter-br-ex"
                 }
               ]
             },
             "index": 5,
-            "side": "core"
+            "netgroup-if-side:side": "core"
           }
         ]
       }
     },
-    "management-address": "127.0.0.1:10000",
+    "management-address": "192.168.1.9:10000",
     "id": "00000001"
   }
 }

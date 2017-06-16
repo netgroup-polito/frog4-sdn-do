@@ -1,5 +1,5 @@
 {
-	"name": "isp_nat",
+	"name": "nat",
 	"expandable": false,
 	"uri": "nat",
 	"uri-type": "docker-registry",
