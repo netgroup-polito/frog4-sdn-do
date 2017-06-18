@@ -1,0 +1,95 @@
+{
+  "forwarding-graph": {
+    "name": "ISP-Graph",
+    "VNFs": [
+      {
+        "name": "nat",
+        "ports": [
+          {
+            "name": "data-port",
+            "id": "L2Port:0"
+          },
+          {
+            "name": "data-port",
+            "id": "L2Port:1"
+          }
+        ],
+        "id": "00000001",
+        "vnf_template": "8Z7K7N"
+      }
+    ],
+    "id": "12",
+    "end-points": [
+      {
+        "type": "interface",
+        "interface": {
+        	"if-name": "s2-eth1",
+        	"node-id": "of:0000000000000002"
+        },
+        "id": "00000001",
+	      "domain": "onos_domain"
+      },
+      {
+        "type": "interface",
+        "interface": {
+          "if-name": "s3-eth1",
+          "node-id": "of:0000000000000003"
+        },
+        "id": "00000002",
+	      "domain": "onos_domain"
+      }
+    ],
+    "big-switch": {
+      "flow-rules": [
+        {
+          "match": {
+            "port_in": "endpoint:00000002"
+          },
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:L2Port:0"
+            }
+          ],
+          "priority": 40001,
+          "id": "000000001"
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:L2Port:0"
+          },
+          "actions": [
+            {
+              "output_to_port": "endpoint:00000002"
+            }
+          ],
+          "priority": 40001,
+          "id": "000000002"
+        },
+        {
+          "match": {
+            "port_in": "endpoint:00000001"
+          },
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:L2Port:1"
+            }
+          ],
+          "priority": 40001,
+          "id": "000000003"
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:L2Port:1"
+          },
+          "actions": [
+            {
+              "output_to_port": "endpoint:00000001"
+            }
+          ],
+          "priority": 40001,
+          "id": "000000004"
+        }
+      ]
+    }
+  }
+}

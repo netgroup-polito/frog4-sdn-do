@@ -1,0 +1,95 @@
+{
+  "forwarding-graph": {
+    "id": "35890504",
+    "big-switch": {
+      "flow-rules": [
+        {
+          "match": {
+            "port_in": "endpoint:auto-generated-split_nf.00000001/ep.00000002"
+          },
+          "id": "11000000001_2",
+          "priority": 40001,
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:L2Port:0"
+            }
+          ]
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:L2Port:0"
+          },
+          "id": "11000000002_1",
+          "priority": 40001,
+          "actions": [
+            {
+              "output_to_port": "endpoint:auto-generated-split_nf.00000001/ep.00000002"
+            }
+          ]
+        },
+        {
+          "match": {
+            "port_in": "endpoint:auto-generated-split_nf.00000001/ep.00000001"
+          },
+          "id": "11000000003_2",
+          "priority": 40001,
+          "actions": [
+            {
+              "output_to_port": "vnf:00000001:L2Port:1"
+            }
+          ]
+        },
+        {
+          "match": {
+            "port_in": "vnf:00000001:L2Port:1"
+          },
+          "id": "11000000004_1",
+          "priority": 40001,
+          "actions": [
+            {
+              "output_to_port": "endpoint:auto-generated-split_nf.00000001/ep.00000001"
+            }
+          ]
+        }
+      ]
+    },
+    "name": "ISP-Graph",
+    "end-points": [
+      {
+        "id": "auto-generated-split_nf.00000001/ep.00000002",
+        "type": "gre-tunnel",
+        "gre-tunnel": {
+          "remote-ip": "192.168.1.9",
+          "gre-key": "0xc89ef4ec",
+          "local-ip": "192.168.1.10"
+        }
+      },
+      {
+        "id": "auto-generated-split_nf.00000001/ep.00000001",
+        "type": "gre-tunnel",
+        "gre-tunnel": {
+          "remote-ip": "192.168.1.9",
+          "gre-key": "0x461ada63",
+          "local-ip": "192.168.1.10"
+        }
+      }
+    ],
+    "VNFs": [
+      {
+        "id": "00000001",
+        "name": "nat",
+        "ports": [
+          {
+            "id": "L2Port:0",
+            "name": "data-port"
+          },
+          {
+            "id": "L2Port:1",
+            "name": "data-port"
+          }
+        ],
+        "vnf_template": "8Z7K7N"
+      }
+    ]
+  }
+}

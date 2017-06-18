@@ -1,0 +1,39 @@
+{
+	"name": "nat",
+	"expandable": false,
+	"uri": "nat",
+	"uri-type": "docker-registry",
+	"vnf-type": "docker",
+	"functional-capability": "nat",
+	"memory-size": 2048,
+	"root-file-system-size": 40,
+	"ephemeral-file-system-size": 0,
+	"swap-disk-size": 0,
+	"CPUrequirements": {
+		"platformType": "x86",
+		"socket": [
+			{
+				"coreNumbers": 1
+			}
+		]
+	},
+	"ports": [
+	{
+            "position": "1-1",
+            "label": "USER",
+            "min": "1",
+            "ipv4-config": "static",
+            "ipv6-config": "none",
+            "name": "eth"
+        },
+        {
+            "position": "0-0",
+            "label": "WAN",
+            "min": "1",
+            "ipv4-config": "static",
+            "ipv6-config": "none",
+            "name": "eth"
+        }
+
+    ]
+}
