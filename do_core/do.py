@@ -556,7 +556,8 @@ class DO(object):
         # configuration
         if Configuration().INITIAL_CONFIGURATION:
             self.__NC_ConfigureVnfId(application_name, self.NetManager.user, self.NetManager.nffg_id, vnf.id)
-            ConfigManager(self.NetManager.user, self.NetManager.nffg_id, vnf.id).push_initial_configuration()
+            cm = ConfigManager(self.NetManager.user, self.NetManager.nffg_id, vnf.id, vnf.functional_capability)
+            cm.push_initial_configuration()
 
     def __NC_ActivateApplication(self, application_name):
         """
