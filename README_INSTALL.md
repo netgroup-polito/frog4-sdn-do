@@ -41,34 +41,21 @@ OpenDayLight requires JAVA 7:
 
 ## Install the SDN domain orchestrator
 
-### Install system dependecies
+### Install dependecies
 
-	$ sudo apt-get install git curl sqlite3
-
-
-### Install Python libraries
-
-* [doubledecker](https://github.com/Acreo/DoubleDecker-py)
-* flask 0.12
-* flask-restplus 0.9.2
-* gunicorn 19.6.0
-* networkx 1.10
-* requests 2.9.1
-* configparser 3.5.0
-* jsonschema 2.6.0
-* sqlalchemy 1.1.6
-
-Install pip3
+	$ sudo apt-get install curl sqlite3
 	
 	$ sudo apt-get install python3-pip
 
-To install a python3 module:
-	
-	$ sudo pip3 install <module>
+	$ sudo pip3 install flask==0.12 flask-restplus==0.9.2 gunicorn==19.6.0 networkx==1.10 requests==2.9.1 configparser==3.5.0 jsonschema==2.6.0 sqlalchemy==1.1.6
 
 To check if a module is already installed and its version:
 
 	$ pip3 freeze
+	
+#### Install the DoubleDeker client
+
+	[doubledecker](https://github.com/Acreo/DoubleDecker-py)
 
 ### Clone the code of the sdn-do
 
