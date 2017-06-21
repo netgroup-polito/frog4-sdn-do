@@ -9,11 +9,10 @@
 #### ONOS
 
 ONOS requires JAVA 8:
-```sh
+
 	$ sudo add-apt-repository ppa:webupd8team/java
 	$ sudo apt-get update
 	$ sudo apt-get install oracle-java8-installer
-```
 
 It is recommended to build ONOS from source code.
 
