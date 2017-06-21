@@ -56,11 +56,9 @@ To check if a module is already installed and its version:
 
 ### Clone the code of the sdn-do
 
-```sh
 	$ git clone https://github.com/netgroup-polito/frog4-sdn-do
 	$ cd frog4-sdn-do
 	$ git submodule init && git submodule update
-```
 
 ### Write your own configuration
 
