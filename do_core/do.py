@@ -9,6 +9,7 @@ from __future__ import division
 import logging
 import copy
 
+from do_core.config_manager import ConfigManager
 from domain_information_library.domain_info import DomainInfo
 from nffg_library.nffg import FlowRule as NffgFlowrule, Action as NffgAction, VNF
 
@@ -59,6 +60,7 @@ class DO(object):
             logging.info("Session created")
             # Build the Profile Graph
             self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
+            self.NetManager.user = self.user_data.username
 
             # Set up GRE tunnels if any
             logging.info("Tunnel set up...")
@@ -141,6 +143,8 @@ class DO(object):
             logging.debug("Applications activated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
+
+            logging.info("Put NF-FG: session " + self.__session_id + " correctly updated!")
 
             # Update the resource description .json
             ResourceDescription().updateAll()
@@ -399,8 +403,6 @@ class DO(object):
         releated endpoints are been updated: in this case the flowrule or vnf is deleted
         and it is set as 'new' in order that be installed again.
         """
-        # Get domain informations from file
-        domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
 
         # List of updated endpoints
         updated_endpoints = []
@@ -435,7 +437,7 @@ class DO(object):
         # Delete the vnfs 'to_be_deleted'
         for vnf in updated_nffg.vnfs[:]:  # "[:]" keep in memory deleted items during the loop.
             if vnf.status == 'to_be_deleted':
-                vnf_model = GraphSession().getVnfByID(vnf.id)
+                vnf_model = GraphSession().getVnfByID(self.__session_id, vnf.id)
                 self.__NC_DeactivateApplication(vnf_model.application_name)
                 self.__deleteVnf(vnf)
                 updated_nffg.vnfs.remove(vnf)
@@ -459,7 +461,7 @@ class DO(object):
                 for vnf_port in vnf_port_map:
                     endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
                     if endpoint in updated_endpoints:
-                        vnf_model = GraphSession().getVnfByID(vnf.id)
+                        vnf_model = GraphSession().getVnfByID(self.__session_id, vnf.id)
                         self.__NC_DeactivateApplication(vnf_model.application_name)
                         self.__deleteVnf(vnf)
                         vnf.status = 'new'
@@ -468,7 +470,7 @@ class DO(object):
         if endpoint_string is None:
             return None
         endpoint_string = str(endpoint_string)
-        tmp2 = endpoint_string.split(':')
+        tmp2 = endpoint_string.split(':', 1)
         port2_type = tmp2[0]
         port2_id = tmp2[1]
         if port2_type == 'endpoint':
@@ -551,6 +553,10 @@ class DO(object):
         """
         self.__NC_ActivateApplication(application_name)
         self.__NC_ConfigureVnfPorts(application_name, vnf)
+        # configuration
+        if Configuration().INITIAL_CONFIGURATION:
+            self.__NC_ConfigureVnfId(application_name, self.NetManager.user, self.NetManager.nffg_id, vnf.id)
+            ConfigManager(self.NetManager.user, self.NetManager.nffg_id, vnf.id).push_initial_configuration()
 
     def __NC_ActivateApplication(self, application_name):
         """
@@ -602,6 +608,21 @@ class DO(object):
         self.__print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
         logging.info("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
 
+    def __NC_ConfigureVnfId(self, application_name, user_id, graph_id, nf_id):
+        """
+        push the nf id to an application in order to set up its configuration agent
+
+        """
+        # push configuration to set application ports
+        id_config = {'nf-id': {
+            'user-id': user_id,
+            'graph-id': graph_id,
+            'nf-id': nf_id
+        }}
+        self.NetManager.push_app_configuration(application_name, id_config)
+        self.__print("[Configured App] app-name:'"+application_name+"' ports:'"+str(id_config)+"'")
+        logging.info("[Configured App] app-name:'"+application_name+"' ports:'"+str(id_config)+"'")
+
     def __NC_DeactivateApplication(self, application_name):
         """
         Deactivate the application implementing the specified vnf
@@ -650,8 +671,8 @@ class DO(object):
             if a.output is not None:
                 port2_id = self.__getEndpointIdFromString(a.output)  # Is the 'output' destination an endpoint?
                 if port2_id is not None:
-                    out_endpoint = self.NetManager.ProfileGraph.getEndpoint(
-                        port2_id)  # Endpoint object (declared in resources.py)
+                    # Endpoint object (declared in resources.py)
+                    out_endpoint = self.NetManager.ProfileGraph.getEndpoint(port2_id)
                     break
 
         # Out Endpoint not valid

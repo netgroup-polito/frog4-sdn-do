@@ -88,6 +88,10 @@ class Configuration(object, metaclass=Singleton):
             self.__OVSDB_NODE_PORT = config.get('ovsdb', 'ovsdb_node_port')
             self.__OVSDB_IP = config.get('ovsdb', 'ovsdb_ip')
 
+            # [nf_configuration]
+            self.__INITIAL_CONFIGURATION = config.getboolean('nf_configuration', 'initial_configuration')
+            self.__CONFIG_SERVICE_ENDPOINT = config.get('nf_configuration', 'config_service_endpoint')
+
             # [messaging]
             self.__DD_ACTIVATE = config.getboolean('messaging', 'dd_activate')
             self.__DD_NAME = config.get('messaging', 'dd_name')
@@ -290,6 +294,14 @@ class Configuration(object, metaclass=Singleton):
     @property
     def DD_TENANT_KEY(self):
         return self.__DD_TENANT_KEY
+
+    @property
+    def INITIAL_CONFIGURATION(self):
+        return self.__INITIAL_CONFIGURATION
+
+    @property
+    def CONFIG_SERVICE_ENDPOINT(self):
+        return self.__CONFIG_SERVICE_ENDPOINT
 
     @property
     def DOMAIN_DESCRIPTION_TOPIC(self):

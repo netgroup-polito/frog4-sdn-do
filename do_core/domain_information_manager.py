@@ -74,17 +74,20 @@ class Messaging(object, metaclass=Singleton):
         logging.debug("Publishing domain information: " + message)
 
     def publish_domain_description(self):
-        if self.first_start is True:
-            self._cold_start()
-            self.first_start = False
-            return
-        message = self.read_domain_description_file()
+
         try:
+            if self.first_start is True:
+                self._cold_start()
+                self.first_start = False
+                return
+            message = self.read_domain_description_file()
             self.dd_client.publish(Configuration().DOMAIN_DESCRIPTION_TOPIC, message)
             logging.info("Publishing domain information...")
             logging.debug(json.dumps(json.loads(message)))
         except ConnectionError:
             raise MessagingError("DD client not registered") from None
+        except Exception as ex:
+            raise MessagingError(ex) from None
 
     @staticmethod
     def read_domain_description_file():
