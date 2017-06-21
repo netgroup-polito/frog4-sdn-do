@@ -51,7 +51,7 @@ To check if a module is already installed and its version:
 	$ pip3 freeze
 	
 #### Install the DoubleDecker client
-The frog4-orchestrator uses the [DoubleDecker](https://github.com/Acreo/DoubleDecker-py) messaging system to communicate with the domain orchestrators. Then, you need to install the DoubleDecker client.
+The SDN domain orchestrator uses the [DoubleDecker](https://github.com/Acreo/DoubleDecker-py) messaging system to communicate with the FROG4-orchestrators. Then, you need to install the DoubleDecker client.
 
 		$ git clone https://github.com/Acreo/DoubleDecker-py.git		
 		$ cd DoubleDecker-py
