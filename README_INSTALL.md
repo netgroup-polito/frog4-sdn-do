@@ -1,12 +1,8 @@
 # FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
-## Install system dependecies
-
-	$ sudo apt-get install git curl sqlite3
-
 ## Install the SDN Controller
 
-#### ONOS
+### ONOS
 
 ONOS requires JAVA 8:
 
@@ -33,8 +29,7 @@ If you need a virtual network to be managed by ONOS, follow the ONOS+Mininet tut
 
 Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
 
-#### OpenDayLight
-
+### OpenDayLight
 
 OpenDayLight requires JAVA 7:
 
@@ -44,7 +39,14 @@ OpenDayLight requires JAVA 7:
 
 [OpenDayLight - Releases and Guides](https://www.opendaylight.org/downloads)
 
-## Install Python libraries
+## Install the SDN domain orchestrator
+
+### Install system dependecies
+
+	$ sudo apt-get install git curl sqlite3
+
+
+### Install Python libraries
 
 * [doubledecker](https://github.com/Acreo/DoubleDecker-py)
 * flask 0.12
@@ -68,7 +70,7 @@ To check if a module is already installed and its version:
 
 	$ pip3 freeze
 
-## Clone the code of the sdn-do
+### Clone the code of the sdn-do
 
 ```sh
 	$ git clone https://github.com/netgroup-polito/frog4-sdn-do
@@ -76,7 +78,7 @@ To check if a module is already installed and its version:
 	$ git submodule init && git submodule update
 ```
 
-## Write your own configuration
+### Write your own configuration
 
 Edit [./default-config.ini](/config/default-config.ini) basing on instructions that you find inside the file itself and rename it in "config.ini".
 
@@ -86,7 +88,7 @@ In the config folder, make a new copy of the file OnosResourceDescription_static
 Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
 
 
-## Set the SDN Controller
+### Set the SDN Controller
 
 The section "[network_controller]" defines the name of the SDN Controller.
 
@@ -94,7 +96,7 @@ According to the SDN Controller name, edit the section [opendaylight] or [onos]
 to specify version, endpoint and credentials.
 
 
-## Create the database
+### Create the database
 ```sh
 	$ python3 -m scripts.create_database
 ```
@@ -115,11 +117,11 @@ The SDN controller should be completed with additional bundles that provides nee
 2) If you are using the sdn-do on an ovsdb-based network (e.g., Mininet) and you need to deploy graphs having GRE-endpoints or to attach phisical ports to your network, you need to install (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the ovsdb_support flag in the [configuration file](/config/default-config.ini). The configuration file also conains a section (physical_ports) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
 
 
-###Start the Domain Orchestrator (HTTP)
+# Start the Domain Orchestrator (HTTP)
 ```sh
 	$ ./start.sh -d config/your_config.ini
 ```
-## Start the Domain Orchestrator (HTTPS)
+# Start the Domain Orchestrator (HTTPS)
 
 In this case a certificate is needed.
 
@@ -140,7 +142,7 @@ Now you can run gunicorn on https:
 	main:app
 ```
 
-## Utility scripts
+# Utility scripts
 
 * Reset database and clean every switch.
 ```sh
