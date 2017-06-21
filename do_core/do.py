@@ -972,7 +972,7 @@ class DO(object):
         # Select first valid VLAN ID
         for vid_range in Configuration().ALLOWED_VLANS:
             vid = vid_range[0]
-            while vid < vid_range[1]:
+            while vid <= vid_range[1]:
                 if vid not in busy_vlan_ids:
                     return vid
                 vid = vid + 1
