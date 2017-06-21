@@ -26,12 +26,13 @@
             "config": {
               "enabled": true
             },
-            "name": "s2-eth1",
+            "name": "of:0000000000000002/s2-eth1",
             "subinterfaces": {
               "subinterface": [
                 {
                   "config": {
-                    "name": "s2-eth1"
+                    "name": "s2-eth1",
+                    "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": false
@@ -56,12 +57,13 @@
             "config": {
               "enabled": true
             },
-            "name": "s2-eth2",
+            "name": "of:0000000000000002/s2-eth2",
             "subinterfaces": {
               "subinterface": [
                 {
                   "config": {
-                    "name": "s2-eth2"
+                    "name": "s2-eth2",
+                    "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": false
@@ -86,12 +88,13 @@
             "config": {
               "enabled": true
             },
-            "name": "s3-eth1",
+            "name": "of:0000000000000003/s3-eth1",
             "subinterfaces": {
               "subinterface": [
                 {
                   "config": {
-                    "name": "s3-eth1"
+                    "name": "s3-eth1",
+                    "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": false
@@ -116,12 +119,13 @@
             "config": {
               "enabled": true
             },
-            "name": "s3-eth2",
+            "name": "of:0000000000000003/s3-eth2",
             "subinterfaces": {
               "subinterface": [
                 {
                   "config": {
-                    "name": "s3-eth2"
+                    "name": "s3-eth2",
+                    "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": false
@@ -151,7 +155,8 @@
               "subinterface": [
                 {
                   "config": {
-                    "name": "192.168.1.9/ens9"
+                    "name": "ens9",
+                    "enabled": true
                   },
                   "netgroup-if-capabilities:capabilities": {
                     "netgroup-if-capabilities:gre": true

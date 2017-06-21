@@ -1,0 +1,12 @@
+{
+    "dd": {
+        "pubkey": "F+zA5XqBesA9JGpE37YcyAz+WvKEL9nl9CQulHXitx0=",
+        "privkey": "QhEp9pwbNcOzQDtf6hnK2mQGO86PCx6NfI62AhuGP3E=",
+        "R": "4211467583870795725"
+    },
+    "9d1893275410554c6a6107c1f8a53091017233d8148f34324a6cd978d200ff68": {
+        "pubkey": "nRiTJ1QQVUxqYQfB+KUwkQFyM9gUjzQySmzZeNIA/2g=",
+        "R": "12442079414803667932",
+        "r": "public"
+    }
+}
