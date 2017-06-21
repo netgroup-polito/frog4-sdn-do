@@ -37,11 +37,10 @@ Follow the instructions provided in [](use_cases/) for particular setup needed b
 
 
 OpenDayLight requires JAVA 7:
-```sh
+
 	$ sudo add-apt-repository ppa:webupd8team/java
 	$ sudo apt-get update
 	$ sudo apt-get install oracle-java7-installer
-```
 
 [OpenDayLight - Releases and Guides](https://www.opendaylight.org/downloads)
 
