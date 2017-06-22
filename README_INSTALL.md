@@ -111,7 +111,7 @@ In the [config](/config/) folder, make a new copy of the file `description.json`
 In the section `[network_controller]` edit the field `controller_name`, by writing `OpenDayLight` or `ONOS`, according to the SDN controller that you have deployed above.
 Then, edit the section `[opendaylight]` or `[onos]` with the proper information.
 
-In the section `[messaging]`, you have to configure the connection towards the broker (note that this guide supposes that, if you need a broker, you have already installed it). Particularly, you can enable/disable the connection towards the broker, set the URL to be used to contact such a module (`dd_broker_address`) and the file containing the key to be used (`dd_tenant_key`).
+In the section `[messaging]`, you have to configure the connection towards the broker (note that this guide supposes that, if you need a broker, you have already installed it). Particularly, you can enable/disable the connection towards the broker through the field `dd_activate`, set the URL to be used to contact such a module (`dd_broker_address`) and the file containing the key to be used (`dd_tenant_key`).
 
 Finally, pay attention to all paths, which must be relative paths with respect to the `frog4-openflow-do` directory.
 
