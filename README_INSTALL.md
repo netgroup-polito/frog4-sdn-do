@@ -155,31 +155,8 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 
 # Start the SDN domain orchestrator
 
-The SDN domain orchestrator can be contacted either through HTTP or through HTTP, as described in the following.
-
-## Start the SDN domain orchestrator with HTTP
 ```sh
 	$ ./start.sh [-d conf-file]
-```
-## Start the SDN domain orchestrator with HTTPS
-
-In this case a certificate is needed.
-
-A useful guide: [Ubuntu: certificates and security](https://help.ubuntu.com/12.04/serverguide/certificates-and-security.html).
-
-Otherwise, you can generate a self-signed certificate executing this script (based on the previous link):
-```sh
-	$ cd ./keys/certificate
-	$ ./certificate.sh
-	$ cd ../..
-```
-
-Now you can run gunicorn on https:
-```sh
-	$ gunicorn -b 0.0.0.0:9000 -t 500 \
-	--certfile=keys/certificate/server.crt \
-	--keyfile=keys/certificate/server.key \
-	main:app
 ```
 
 # Utility scripts
