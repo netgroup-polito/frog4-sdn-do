@@ -2,6 +2,8 @@
 
 ## Set up the SDN network
 
+The SDN domain orchestrator can operate both on a virtual SDN network and on a physical SDN network.
+
 ### Virtual network
 If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py).
 
