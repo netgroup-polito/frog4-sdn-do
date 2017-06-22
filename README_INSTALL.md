@@ -16,7 +16,7 @@ ONOS requires JAVA 8 and some other tools:
 
 It is recommended to build ONOS from source code.
 
-Download the latest version of ONOS from the git repository:
+Download the latest version of ONOS from the git repository. Please note that this repository **must** be cloned in your home folder.
 
 	$ git clone https://gerrit.onosproject.org/onos
 
@@ -24,6 +24,17 @@ Build ONOS with buck
 
 	$ cd ONOS
 	$ tools/build/onos-buck build onos --show-output
+	
+To be able to execute the ONOS commands, execute the following steps on your home folder:
+
+	$ cd; mkdir Downloads Applications
+	$ cd Downloads
+	$ wget http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz
+	$ tar -zxvf apache-karaf-3.0.5.tar.gz -C ../Applications/
+	$ nano ~/.bashrc
+	# At the end of the file, add the following lines 
+	#   . ~/onos/tools/dev/bash_profile
+	#   export PATH=$PATH:~/Applications/apache-karaf-3.0.5/bin
 
 #### Use Cases
 
