@@ -163,6 +163,9 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 
 # Utility scripts
 
+The [scripts](https://github.com/netgroup-polito/frog4-sdn-do/tree/master/scripts) folder contains many useful scripts.
+Some examples are the following:
+
 * Reset database and clean every switch.
 ```sh
 	$ python3 -m scripts.clean_all
