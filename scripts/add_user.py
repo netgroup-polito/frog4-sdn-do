@@ -4,7 +4,7 @@ import argparse
 
 from do_core.sql.user import User
 
-os.environ.setdefault("FROG4_SDN_DO_CONF", "config/config.ini")
+os.environ.setdefault("FROG4_SDN_DO_CONF", "config/default-config.ini")
 
 
 def add_user(username, password, tenant_id=0, mail=None):
