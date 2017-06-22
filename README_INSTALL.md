@@ -82,6 +82,22 @@ Now you can install the DubleDeker as follows:
 		$ sudo apt-get install python3-setuptools python3-nacl python3-zmq python3-urwid python3-tornado
 		# install the doubledecker module and scripts
 		$ sudo python3 setup.py install
+		
+### Create the SQL database
+```sh
+	$ python3 -m scripts.create_database
+```
+Set full permissions on the database file:
+```sh
+	$ chmod 777 db.sqlite3
+```
+The only user is `admin` (username:admin, password:admin, tenant:admin_tenant).
+
+All the tables will be empty, except "user" and "tenant".
+
+#### How to create new user
+
+**TODO**
 
 ### SDN domain orchestrator configuration file
 
@@ -101,18 +117,6 @@ Finally, pay attention to all paths, which must be relative paths with respect t
 
 If you are going to execute the SDN domain orchestrator on the JOLNET, set to `true` the parameter `jolnet` in the section `[other_options]`. 
 Moreover, you have to edit the `available_ids` list in the `vlan` section, by specifying the VLAN ids that are allowd for the traffic steering within the SDN domain.
-
-### Create the database
-```sh
-	$ python3 -m scripts.create_database
-```
-Set full permissions on the database file:
-```sh
-	$ chmod 777 db.sqlite3
-```
-The only user is "admin" (username:admin, password:admin, tenant:admin_tenant).
-
-All the tables will be empty, except "user" and "tenant".
 
 ## Set up the SDN Controller
 
