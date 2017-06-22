@@ -83,7 +83,7 @@ Now you can install the DubleDeker as follows:
 		# install the doubledecker module and scripts
 		$ sudo python3 setup.py install
 
-### Write your own configuration
+### SDN domain orchestrator configuration file
 
 Edit [./default-config.ini](/config/default-config.ini) basing on instructions that you find inside the file itself and rename it in "config.ini".
 
@@ -91,6 +91,11 @@ Pay attention to all paths: they must be relative paths (respect of 'frog4-openf
 
 In the config folder, make a new copy of the file OnosResourceDescription_static.json and rename it (e.g. OnosResourceDescription.json).
 Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
+
+#### JOLNET considerations
+
+If you are going to execute the SDN domain orchestrator on the JOLNET, set to `true` the parameter `jolnet` in the section `[other_options]`. 
+Moreover, you have to edit the `available_ids` list in the `vlan` section, by specifying the VLAN ids that are allowd for the traffic steering within the SDN domain.
 
 
 #### Set the SDN Controller
