@@ -19,15 +19,17 @@ It is recommended to build ONOS from source code.
 Download the latest version of ONOS from the git repository. Please note that this repository **must** be cloned in your home folder.
 
 	$ git clone https://gerrit.onosproject.org/onos
+	$ cd onos
+	$ git checkout tags/1.9.0
 
 Build ONOS with buck
 
-	$ cd onos
 	$ tools/build/onos-buck build onos --show-output
 	
 To be able to execute the ONOS commands, execute the following steps on your home folder:
 
-	$ cd; mkdir Downloads Applications
+	$ cd ~
+	$ mkdir Downloads Applications
 	$ cd Downloads
 	$ wget http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz
 	$ tar -zxvf apache-karaf-3.0.5.tar.gz -C ../Applications/
@@ -40,7 +42,7 @@ To be able to execute the ONOS commands, execute the following steps on your hom
 
 Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
 
-### Install the OpenDaylight SDN controller
+### Install the OpenDaylight SDN controller [Deprecated]
 
 OpenDayLight requires JAVA 7:
 
@@ -153,31 +155,8 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 
 # Start the SDN domain orchestrator
 
-The SDN domain orchestrator can be contacted either through HTTP or through HTTP, as described in the following.
-
-## Start the SDN domain orchestrator with HTTP
 ```sh
 	$ ./start.sh [-d conf-file]
-```
-## Start the SDN domain orchestrator with HTTPS
-
-In this case a certificate is needed.
-
-A useful guide: [Ubuntu: certificates and security](https://help.ubuntu.com/12.04/serverguide/certificates-and-security.html).
-
-Otherwise, you can generate a self-signed certificate executing this script (based on the previous link):
-```sh
-	$ cd ./keys/certificate
-	$ ./certificate.sh
-	$ cd ../..
-```
-
-Now you can run gunicorn on https:
-```sh
-	$ gunicorn -b 0.0.0.0:9000 -t 500 \
-	--certfile=keys/certificate/server.crt \
-	--keyfile=keys/certificate/server.key \
-	main:app
 ```
 
 # Utility scripts
