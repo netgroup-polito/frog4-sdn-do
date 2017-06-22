@@ -60,6 +60,12 @@ To check if a module is already installed and its version:
 
 	$ pip3 freeze
 	
+### Clone the code of the sdn-do
+
+	$ git clone https://github.com/netgroup-polito/frog4-sdn-do
+	$ cd frog4-sdn-do
+	$ git submodule init && git submodule update
+	
 ### Install the DoubleDecker client
 The SDN domain orchestrator uses the [DoubleDecker](https://github.com/Acreo/DoubleDecker-py) messaging system to communicate with the FROG4-orchestrators. Then, you need to install the DoubleDecker client.
 
@@ -76,12 +82,6 @@ Now you can install the DubleDeker as follows:
 		$ sudo apt-get install python3-setuptools python3-nacl python3-zmq python3-urwid python3-tornado
 		# install the doubledecker module and scripts
 		$ sudo python3 setup.py install
-
-### Clone the code of the sdn-do
-
-	$ git clone https://github.com/netgroup-polito/frog4-sdn-do
-	$ cd frog4-sdn-do
-	$ git submodule init && git submodule update
 
 ### Write your own configuration
 
