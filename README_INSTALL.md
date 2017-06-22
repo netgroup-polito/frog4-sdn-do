@@ -132,6 +132,11 @@ The SDN controller should be completed with additional bundles that provides nee
 
 * If you are using the SDN domain orchestrator on an ovsdb-based network (e.g., Mininet) and you need to deploy service graphs with GRE-endpoints, or you need to attach phisical ports to your network, you **must instal**l (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the `ovsdb_support` flag in the `[ovsdb]` section of the [configuration file](/config/default-config.ini). The configuration file also conains the section `physical_ports`,) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
 
+# Adding the WEB GUI on top of the SDN domain orchestrator
+
+It is possible to configure the [FROG4 GUI](https://github.com/netgroup-polito/fg-gui), so that it can be used to interact with the SDN domain orchestrator (e.g., to deploye new service graphs, or to read the service graphs currently deployed).
+To install the GUI, follows the [instructions](https://github.com/netgroup-polito/fg-gui/blob/master/README_INSTALL.md) provided with the repository.
+
 # Start the SDN domain orchestrator
 
 The SDN domain orchestrator can be contacted either through HTTP or through HTTP, as described in the following.
