@@ -79,5 +79,5 @@ In order to discover which REST calls are supported you can see the API document
 ## Use cases
 
 Use cases examples are in the [use_cases](./use_cases) folder.
-There, for each use case you can find condifiguration scripts, NF-FG and more.
+There, for each use case you can find configuration scripts, NF-FGs and more.
 
