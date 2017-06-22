@@ -6,11 +6,11 @@ The SDN domain orchestrator supports both ONOS and OpenDaylight as SDN controlle
 
 ### Install the ONOS SDN controller
 
-ONOS requires JAVA 8:
+ONOS requires JAVA 8 and some other tools:
 
 	$ sudo add-apt-repository ppa:webupd8team/java
 	$ sudo apt-get update
-	$ sudo apt-get install oracle-java8-installer
+	$ sudo apt-get install oracle-java8-installer curl git
 
 It is recommended to build ONOS from source code.
 
