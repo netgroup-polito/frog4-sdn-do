@@ -42,7 +42,7 @@ To be able to execute the ONOS commands, execute the following steps on your hom
 
 Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
 
-### Install the OpenDaylight SDN controller
+### Install the OpenDaylight SDN controller [Deprecated]
 
 OpenDayLight requires JAVA 7:
 
