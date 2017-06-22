@@ -19,10 +19,11 @@ It is recommended to build ONOS from source code.
 Download the latest version of ONOS from the git repository. Please note that this repository **must** be cloned in your home folder.
 
 	$ git clone https://gerrit.onosproject.org/onos
+	$ cd onos
+	$ git checkout tag/1.9.0
 
 Build ONOS with buck
 
-	$ cd onos
 	$ tools/build/onos-buck build onos --show-output
 	
 To be able to execute the ONOS commands, execute the following steps on your home folder:
