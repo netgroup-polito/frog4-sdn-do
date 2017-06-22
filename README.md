@@ -1,7 +1,6 @@
 # FROG4 SDN Domain Orchestrator
 
-This orchestrator supervises an SDN based domain (e.g., OpenFlow devices managed by an ONOS Controller) - constituited only by several switches - 
-and provides traffic steering capabilities between its endpoints.
+This orchestrator supervises an SDN based domain (e.g., OpenFlow devices managed by an ONOS Controller) - constituited only by several switches - and provides traffic steering capabilities between its endpoints.
 It always affors the possibility to insert simple NFs (such as a NAT) on the flow path (the proper bundle shuld be installed on the SDN Controller)
 
 
@@ -32,7 +31,7 @@ The final json should be compliant against this [YANG data model](https://github
 
 ## Network Functions
 
-The SDN domain orchestrator also provide the possibility to seploy some NFs (implemented with an SDN application) between endpoints. The SDN Application must allow a fine Configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat)
+The SDN domain orchestrator also provide the possibility to deploy some NFs (implemented with an SDN application) between endpoints. The SDN application must allow a fine configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat)
 
 Currently just chains (endpoint to endpoint paths) with up to one NF are supported.
 
@@ -41,11 +40,8 @@ Currently just chains (endpoint to endpoint paths) with up to one NF are support
 This project leans on a SDN controller to have some network informations and
 for each openflow-based operation (e.g. create and delete flow rules).
 
-Currently, the DO supports [OpenDayLight](https://www.opendaylight.org/) and [ONOS](http://onosproject.org/), in particular:
-* ONOS (>= 1.5.0 "Falcon")
-* OpenDayLight Hydrogen Virtualization 1.0
-* OpenDayLight Helium SR4
-* OpenDayLight Lithium SR3
+Currently, the DO supports [ONOS](http://onosproject.org/) (>= 1.5.0 "Falcon")
+Support for [OpenDayLight](https://www.opendaylight.org/) has been deprecated.
 
 
 ## DoubleDecker and ResourceDescription.json
