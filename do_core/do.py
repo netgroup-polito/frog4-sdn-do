@@ -445,10 +445,10 @@ class DO(object):
                 # check if there are ports to update
                 for port in vnf.ports[:]:
                     if port.status == 'new':
-                        vnf.status = 'new'
+                        vnf.status = 'to_be_updated'
                     elif port.status == 'to_be_deleted':
                         vnf.ports.remove(port)
-                        vnf.status = 'new'
+                        vnf.status = 'to_be_updated'
                 # check if there are updated endpoints attached to the vnf
                 flows = self.NetManager.ProfileGraph.get_flows_from_vnf(vnf)
                 vnf_port_map = {}
@@ -461,10 +461,10 @@ class DO(object):
                 for vnf_port in vnf_port_map:
                     endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
                     if endpoint in updated_endpoints:
-                        vnf_model = GraphSession().getVnfByID(self.__session_id, vnf.id)
-                        self.__NC_DeactivateApplication(vnf_model.application_name)
-                        self.__deleteVnf(vnf)
-                        vnf.status = 'new'
+                        vnf.status = 'to_be_updated'
+                if vnf.status == 'to_be_updated':
+                    vnf_model = GraphSession().getVnfByID(self.__session_id, vnf.id)
+                    self.__NC_ConfigureVnfPorts(vnf_model.application_name, vnf)
 
     def __getEndpointIdFromString(self, endpoint_string):
         if endpoint_string is None:
@@ -529,11 +529,15 @@ class DO(object):
 
         # [ DETACHED VNFs ]
         for vnf in self.NetManager.ProfileGraph.get_detached_vnfs():
+            if vnf.status != 'new':
+                continue
+
             # get the name of the application
             application_name = ""
             for capability in domain_info.capabilities.functional_capabilities:
                 if capability.type == vnf.name:
                     application_name = capability.name
+                    break
             # we just need to activate the application and to pass as configuration the interfaces
             self.__NC_ProcessDetachedVnf(application_name, vnf)
             logging.debug("Activated application: " + application_name)
