@@ -58,7 +58,7 @@ Download and install OpenDaylight as described in [OpenDaylight - Releases and G
 The SDN domain orchestrator can operate both on a virtual SDN network and on a physical SDN network.
 
 ### Virtual network
-If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py).
+If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py) in order to install mininet, deploy your topology and start ONOS.
 
 After following the procedure, ONOS can be reached through its REST API at the URL: `192.168.123.1:8181`.
 
