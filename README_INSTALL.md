@@ -95,7 +95,7 @@ Set full permissions on the database file:
 ```sh
 	$ chmod 777 db.sqlite3
 ```
-The only user is `admin` (username:admin, password:admin, tenant:admin_tenant).
+The script above also adds in the database the `admin` user (`username:admin`, `password:admin`, `tenant:admin_tenant`).
 
 All the tables will be empty, except "user" and "tenant".
 
