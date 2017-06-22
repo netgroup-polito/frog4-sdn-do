@@ -1,8 +1,15 @@
 # FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
-## Install the SDN Controller
+## Set up the SDN network
 
-### ONOS
+### Virtual network
+If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py).
+
+### Physical network
+
+In this case, we assume that your switches are already deployed. Then, you just have to install the OpenFlow controller (either ONOS or OpenDaylight) as follows.
+
+#### Install the ONOS SDN controller
 
 ONOS requires JAVA 8:
 
@@ -21,15 +28,11 @@ Build ONOS with buck
 	$ cd ONOS
 	$ tools/build/onos-buck build onos --show-output
 
-If you need a virtual network to be managed by ONOS, follow the ONOS+Mininet tutorial below:
-
-[Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py)
-
-##### Use Cases
+###### Use Cases
 
 Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
 
-### OpenDayLight
+#### Install the OpenDaylight SDN controller
 
 OpenDayLight requires JAVA 7:
 
@@ -37,7 +40,7 @@ OpenDayLight requires JAVA 7:
 	$ sudo apt-get update
 	$ sudo apt-get install oracle-java7-installer
 
-[OpenDayLight - Releases and Guides](https://www.opendaylight.org/downloads)
+Download and install OpenDaylight as described in [OpenDaylight - Releases and Guides](https://www.opendaylight.org/downloads).
 
 ## Install the SDN domain orchestrator
 
