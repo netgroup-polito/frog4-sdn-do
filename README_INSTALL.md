@@ -133,7 +133,7 @@ The SDN controller should be completed with additional bundles that provides nee
 
 # Start the Domain Orchestrator (HTTP)
 ```sh
-	$ ./start.sh -d config/your_config.ini
+	$ ./start.sh [-d conf-file]
 ```
 # Start the Domain Orchestrator (HTTPS)
 
