@@ -28,7 +28,8 @@ Build ONOS with buck
 	
 To be able to execute the ONOS commands, execute the following steps on your home folder:
 
-	$ cd; mkdir Downloads Applications
+	$ cd ~
+	$ mkdir Downloads Applications
 	$ cd Downloads
 	$ wget http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz
 	$ tar -zxvf apache-karaf-3.0.5.tar.gz -C ../Applications/
