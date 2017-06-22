@@ -1,4 +1,4 @@
-# FROG4 OpenFlow Domain Orchestrator - Installation Guide
+# FROG4 SDN Domain Orchestrator - Installation Guide
 
 The following instructions have been tested on Ubuntu 16.04.
 
