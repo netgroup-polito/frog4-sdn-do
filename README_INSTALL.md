@@ -131,11 +131,15 @@ The SDN controller should be completed with additional bundles that provides nee
 2) If you are using the sdn-do on an ovsdb-based network (e.g., Mininet) and you need to deploy graphs having GRE-endpoints or to attach phisical ports to your network, you need to install (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the ovsdb_support flag in the [configuration file](/config/default-config.ini). The configuration file also conains a section (physical_ports) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
 
 
-# Start the Domain Orchestrator (HTTP)
+# Start the SDN domain orchestrator
+
+The SDN domain orchestrator can be contacted either through HTTP or through HTTP, as described in the following.
+
+## Start the SDN domain orchestrator with HTTP
 ```sh
 	$ ./start.sh [-d conf-file]
 ```
-# Start the Domain Orchestrator (HTTPS)
+## Start the SDN domain orchestrator with HTTPS
 
 In this case a certificate is needed.
 
