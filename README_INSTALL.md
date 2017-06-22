@@ -20,7 +20,7 @@ Download the latest version of ONOS from the git repository. Please note that th
 
 	$ git clone https://gerrit.onosproject.org/onos
 	$ cd onos
-	$ git checkout tag/1.9.0
+	$ git checkout tags/1.9.0
 
 Build ONOS with buck
 
