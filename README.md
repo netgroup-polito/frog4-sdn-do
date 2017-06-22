@@ -41,6 +41,7 @@ This project leans on a SDN controller to have some network informations and
 for each openflow-based operation (e.g. create and delete flow rules).
 
 Currently, the DO supports [ONOS](http://onosproject.org/) (>= 1.5.0 "Falcon")
+
 Support for [OpenDayLight](https://www.opendaylight.org/) has been deprecated.
 
 
