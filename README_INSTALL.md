@@ -22,7 +22,7 @@ Download the latest version of ONOS from the git repository. Please note that th
 
 Build ONOS with buck
 
-	$ cd ONOS
+	$ cd onos
 	$ tools/build/onos-buck build onos --show-output
 	
 To be able to execute the ONOS commands, execute the following steps on your home folder:
