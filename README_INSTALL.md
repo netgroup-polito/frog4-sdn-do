@@ -60,7 +60,7 @@ To check if a module is already installed and its version:
 
 	$ pip3 freeze
 	
-#### Install the DoubleDecker client
+### Install the DoubleDecker client
 The SDN domain orchestrator uses the [DoubleDecker](https://github.com/Acreo/DoubleDecker-py) messaging system to communicate with the FROG4-orchestrators. Then, you need to install the DoubleDecker client.
 
 		$ git clone https://github.com/Acreo/DoubleDecker-py.git		
@@ -93,7 +93,7 @@ In the config folder, make a new copy of the file OnosResourceDescription_static
 Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
 
 
-### Set the SDN Controller
+#### Set the SDN Controller
 
 The section "[network_controller]" defines the name of the SDN Controller.
 
