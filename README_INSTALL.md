@@ -38,10 +38,6 @@ To be able to execute the ONOS commands, execute the following steps on your hom
 	#   . ~/onos/tools/dev/bash_profile
 	#   export PATH=$PATH:~/Applications/apache-karaf-3.0.5/bin
 
-#### Use Cases
-
-Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
-
 ### Install the OpenDaylight SDN controller [Deprecated]
 
 OpenDayLight requires JAVA 7:
