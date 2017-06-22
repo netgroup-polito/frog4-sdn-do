@@ -124,12 +124,11 @@ Moreover, you have to edit the `available_ids` list in the `vlan` section, by sp
 
 ## Set up the SDN Controller
 
-The SDN controller should be completed with additional bundles that provides needed API to the sdn-do:
+The SDN controller should be completed with additional bundles that provides needed API to the SDN domain orchestrator:
 
-1) If you need the support to export available SDN application as NF, you need to install a nf-monitor bundle and activate it. On ONOS, you can use [this bundle](https://github.com/netgroup-polito/onos-applications/tree/master/apps-capabilities), following the instructions provided on the repository. You can enable/disable support for dynamic discovering of capabilities through the `discover_capabilities` flag in the [configuration file](/config/default-config.ini).
+* If you need to export available SDN application as NF, you **must install** a specific bundle in the SDN controller and activate it. On ONOS, you can use [this bundle](https://github.com/netgroup-polito/onos-applications/tree/master/apps-capabilities), following the instructions provided on the repository. You can enable/disable support for dynamic discovering of capabilities through the `discover_capabilities` flag in the [configuration file](/config/default-config.ini).
 
-2) If you are using the sdn-do on an ovsdb-based network (e.g., Mininet) and you need to deploy graphs having GRE-endpoints or to attach phisical ports to your network, you need to install (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the ovsdb_support flag in the [configuration file](/config/default-config.ini). The configuration file also conains a section (physical_ports) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
-
+* If you are using the SDN domain orchestrator on an ovsdb-based network (e.g., Mininet) and you need to deploy service graphs with GRE-endpoints, or you need to attach phisical ports to your network, you **must instal**l (on ONOS) the [ovsdb-rest bundle](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the `ovsdb_support` flag in the `[ovsdb]` section of the [configuration file](/config/default-config.ini). The configuration file also conains the section `physical_ports`,) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
 
 # Start the SDN domain orchestrator
 
