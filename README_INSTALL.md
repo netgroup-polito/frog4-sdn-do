@@ -85,26 +85,23 @@ Now you can install the DubleDeker as follows:
 
 ### SDN domain orchestrator configuration file
 
-Edit [./default-config.ini](/config/default-config.ini) basing on instructions that you find inside the file itself and rename it in "config.ini".
-
-Pay attention to all paths: they must be relative paths (respect of 'frog4-openflow-do' directory).
+Edit [./default-config.ini](/config/default-config.ini) following the instructions that you find inside the file itself and rename it in "config.ini".
+The most important field that you have to consider are described in the following.
 
 In the config folder, make a new copy of the file OnosResourceDescription_static.json and rename it (e.g. OnosResourceDescription.json).
 Edit the "config.ini" file in the section "[domain_description]" and change the path in the domain description file to this new file (e.g. domain_description_file = config/OnosResourceDescription.json).
+
+In the section `[network_controller]` edit the field `controller_name`, by writinf `opendaylight` or `onos`, according to the SDN controller that you have deployed above.
+Then, edit the section `[opendaylight]` or `[onos]` with the proper information.
+
+In the section `[messaging]`, you have to configure the connection towards the broker (note that this guide supposes that, if you need a broker, you have already installed it). Particularly, you can enable/diseble the connection towards the broker, set the URL to be used to contact such a module (`dd_broker_address`) and the file containing the key to be used (`dd_tenant_key`).
+
+Finally, pay attention to all paths, which must be relative paths with respect to the `frog4-openflow-do` directory.
 
 #### JOLNET considerations
 
 If you are going to execute the SDN domain orchestrator on the JOLNET, set to `true` the parameter `jolnet` in the section `[other_options]`. 
 Moreover, you have to edit the `available_ids` list in the `vlan` section, by specifying the VLAN ids that are allowd for the traffic steering within the SDN domain.
-
-
-#### Set the SDN Controller
-
-The section "[network_controller]" defines the name of the SDN Controller.
-
-According to the SDN Controller name, edit the section [opendaylight] or [onos] 
-to specify version, endpoint and credentials.
-
 
 ### Create the database
 ```sh
