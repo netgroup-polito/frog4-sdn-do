@@ -104,7 +104,7 @@ All the tables will be empty, except "user" and "tenant".
 Edit [./default-config.ini](/config/default-config.ini) following the instructions that you find inside the file itself and rename it in "config.ini".
 The most important field that you have to consider are described in the following.
 
-In the [config](/config/) folder, make a new copy of the file `OnosResourceDescription_static.json` and rename it (e.g. `OnosResourceDescription.json`). Then, in the [confgiuration file](/config/default-config.ini) section `[domain_description]`, change the path in the `domain_description_file` field so that it points to the new file (e.g. `domain_description_file = config/OnosResourceDescription.json`).
+In the [config](/config/) folder, make a new copy of the file `description.json` and rename it (e.g. `OnosResourceDescription.json`). Then, in the [confgiuration file](/config/default-config.ini) section `[domain_description]`, change the path in the `domain_description_file` field so that it points to the new file (e.g. `domain_description_file = config/OnosResourceDescription.json`).
 
 In the section `[network_controller]` edit the field `controller_name`, by writinf `opendaylight` or `onos`, according to the SDN controller that you have deployed above.
 Then, edit the section `[opendaylight]` or `[onos]` with the proper information.
