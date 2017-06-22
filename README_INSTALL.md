@@ -1,17 +1,10 @@
 # FROG4 OpenFlow Domain Orchestrator - Installation Guide
 
-## Set up the SDN network
+## Install the SDN controller 
 
-The SDN domain orchestrator can operate both on a virtual SDN network and on a physical SDN network.
+The SDN domain orchestrator supports both ONOS and OpenDaylight as SDN controllers.
 
-### Virtual network
-If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py).
-
-### Physical network
-
-In this case, we assume that your switches are already deployed. Then, you just have to install the OpenFlow controller (either ONOS or OpenDaylight) as follows.
-
-#### Install the ONOS SDN controller
+### Install the ONOS SDN controller
 
 ONOS requires JAVA 8:
 
@@ -30,11 +23,11 @@ Build ONOS with buck
 	$ cd ONOS
 	$ tools/build/onos-buck build onos --show-output
 
-###### Use Cases
+#### Use Cases
 
 Follow the instructions provided in [](use_cases/) for particular setup needed by the use-case you need to reproduce (e.g., nat-sdn-demo).
 
-#### Install the OpenDaylight SDN controller
+### Install the OpenDaylight SDN controller
 
 OpenDayLight requires JAVA 7:
 
@@ -43,6 +36,18 @@ OpenDayLight requires JAVA 7:
 	$ sudo apt-get install oracle-java7-installer
 
 Download and install OpenDaylight as described in [OpenDaylight - Releases and Guides](https://www.opendaylight.org/downloads).
+
+
+## Set up the SDN network
+
+The SDN domain orchestrator can operate both on a virtual SDN network and on a physical SDN network.
+
+### Virtual network
+If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py).
+
+### Physical network
+
+In this case, we assume that your switches are already deployed, and you know how to connect them to the SDN orchestrator.
 
 ## Install the SDN domain orchestrator
 
