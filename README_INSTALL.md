@@ -53,7 +53,7 @@ In this case, we assume that your switches are already deployed, and you know ho
 
 ### Install dependecies
 
-	$ sudo apt-get install curl sqlite3 python3-pip
+	$ sudo apt-get install curl sqlite3 python3-pip git
 	$ sudo pip3 install flask==0.12 flask-restplus==0.9.2 gunicorn==19.6.0 networkx==1.10 requests==2.9.1 configparser==3.5.0 jsonschema==2.6.0 sqlalchemy==1.1.6
 
 To check if a module is already installed and its version:
