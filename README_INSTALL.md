@@ -102,6 +102,7 @@ Now you can install the DubleDeker as follows:
 		
 ### Create the SQL database
 ```sh
+	$ cd [frog4-sdn-do]
 	$ python3 -m scripts.create_database
 ```
 Set full permissions on the database file:
