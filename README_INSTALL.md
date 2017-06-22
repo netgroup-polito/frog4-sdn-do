@@ -108,7 +108,7 @@ In the section `[domain_orchestrator]`, set the field `port` to the TCP port to 
 
 In the [config](/config/) folder, make a new copy of the file `description.json` and rename it (e.g. `OnosResourceDescription.json`). Then, in the [confgiuration file](/config/default-config.ini) section `[domain_description]`, change the path in the `domain_description_file` field so that it points to the new file (e.g. `domain_description_file = config/OnosResourceDescription.json`).
 
-In the section `[network_controller]` edit the field `controller_name`, by writinf `opendaylight` or `onos`, according to the SDN controller that you have deployed above.
+In the section `[network_controller]` edit the field `controller_name`, by writinf `OpenDayLight` or `ONOS`, according to the SDN controller that you have deployed above.
 Then, edit the section `[opendaylight]` or `[onos]` with the proper information.
 
 In the section `[messaging]`, you have to configure the connection towards the broker (note that this guide supposes that, if you need a broker, you have already installed it). Particularly, you can enable/diseble the connection towards the broker, set the URL to be used to contact such a module (`dd_broker_address`) and the file containing the key to be used (`dd_tenant_key`).
