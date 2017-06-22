@@ -112,13 +112,13 @@ Set full permissions on the database file:
 The script above also adds in the database the `admin` user (`username:admin`, `password:admin`, `tenant:admin_tenant`).
 
 All the tables will be empty, except "user" and "tenant".
+
+#### How to create new user
+
 In order to add a new user you can run the following script (where tenant and e-mail are optional parameters):
 
         $ python3 -m scripts.add_user userexample usersecretpassword -t usertenant -m userexample@a.com
 
-#### How to create new user
-
-**TODO**
 
 ### SDN domain orchestrator configuration file
 
