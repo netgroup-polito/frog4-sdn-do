@@ -22,7 +22,7 @@ Download the latest version of ONOS from the git repository. Please note that th
 	$ cd onos
 	$ git checkout tags/1.9.0
 
-Build ONOS with buck
+Build ONOS with buck:
 
 	$ tools/build/onos-buck build onos --show-output
 	
