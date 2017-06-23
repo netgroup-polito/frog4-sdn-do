@@ -31,7 +31,7 @@ The final json should be compliant against this [YANG data model](https://github
 
 ## Network Functions
 
-The SDN domain orchestrator also provide the possibility to deploy some NFs (implemented with an SDN application) between endpoints. The SDN application must allow a fine configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat)
+The SDN domain orchestrator also provide the possibility to deploy some NFs (implemented with an SDN application) between endpoints. The SDN application must allow a fine configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat).
 
 Currently just chains (endpoint to endpoint paths) with up to one NF are supported.
 
