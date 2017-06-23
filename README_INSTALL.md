@@ -156,8 +156,10 @@ Moreover, you have to edit the `available_ids` list in the `vlan` section, by sp
 The SDN controller should be completed with additional bundles that provides needed API to the SDN domain orchestrator:
 
 * If you need to export available SDN application as NF, you **must install** a specific bundle in the SDN controller and activate it. On ONOS, you can use [this bundle](https://github.com/netgroup-polito/onos-applications/tree/master/apps-capabilities), following the instructions provided on the repository. You can enable/disable support for dynamic discovering of capabilities through the `discover_capabilities` flag in the [configuration file](/config/default-config.ini).
+Note that it is enough to install the application; the SDN domain orchestrator will take care of activating it at the system bootstrapping.
 
 * If you are using the SDN domain orchestrator on an ovsdb-based network (e.g., Mininet) and you need to deploy service graphs with GRE-endpoints, or you need to attach phisical ports to your network, you **must instal**l (on ONOS) the [ovsdb-rest bundle](https://github.com/netgroup-polito/onos-applications/tree/master/ovsdb-rest). You can enable/disable support for ovsdb through the `ovsdb_support` flag in the `[ovsdb]` section of the [configuration file](/config/default-config.ini). The configuration file also conains the section `physical_ports`,) where you can specify which interface you want to add to your network, and which is the bridge that should be used to set up GRE tunnels.
+Note that it is enough to install the application; the SDN domain orchestrator will take care of activating and configuring it at the system bootstrapping.
 
 Another version of the same bundle is also available in the official [opennetworkinglab repository](https://github.com/opennetworkinglab/onos-app-samples/tree/master/ovsdb-rest).
 
