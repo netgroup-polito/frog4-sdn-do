@@ -11,16 +11,17 @@ Please, execute the following steps:
 ```
 * once you are in the mininet CLI, run all scripts for each client:
 ```
-	> h1 h1_script.sh
-	> h2 h2_script.sh
-	> h3 h3_script.sh
-	> h4 h4_script.sh
+	> h1 ./h1_script.sh
+	> h2 ./h2_script.sh
+	> h3 ./h3_script.sh
+	> h4 ./h4_script.sh
 ```
 
 ## Install applications on ONOS
 
-Inside the provided zip [](scripts/demo_scripts-onos.zip) there there are three scripts usefull to install ONOS applications needed for the demo.
-The NAT application should be installed only during the second step.
+Inside the [scripts/demo_scripts-onos](scripts/demo_scripts-onos) there there are three scripts usefull to install ONOS applications needed for the demo.
+
+The [NAT](https://github.com/netgroup-polito/onos-applications/tree/master/nat) application should be installed only during the second step.
 
 ## Configuration
 
