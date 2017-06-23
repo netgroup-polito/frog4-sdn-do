@@ -141,7 +141,7 @@ In order to add a new user you can run the following script (where tenant and e-
 ### SDN domain orchestrator configuration file
 
 Edit [./default-config.ini](/config/default-config.ini) following the instructions that you find inside the file itself.
-The most important field that you have to consider are described in the following.
+The most important fields that you have to consider are described in the following.
 
 In the section `[domain_orchestrator]`, set the field `port` to the TCP port to be used to interact with the SDN domain orchestrator through its REST API.
 
