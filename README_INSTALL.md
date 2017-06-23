@@ -161,6 +161,13 @@ Moreover, you have to edit the `available_ids` list in the `vlan` section, by sp
 
 Finally, put the flag `use_interfaces_names` in section `[other_options]` to false.
 
+
+### Domain description
+
+As mentioned above, the file `MyResourceDescription.json` contains the decsription of the domain, both from the *networking* (e.g., information about boundary interfaces) and *computing* (i.e., functional capabilities) points of view.
+
+Note that the functional capabilties should correspond to those available in the Datastore used by the OpenStack domain orchestrator.
+
 ## Set up the SDN Controller
 
 The SDN controller should be completed with additional bundles that provides needed API to the SDN domain orchestrator:
