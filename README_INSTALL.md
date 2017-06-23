@@ -64,7 +64,15 @@ For the sake of completeness, we report here the mandatory steps:
 	# Make sure that Mininet works using the following command
 	$ sudo mn --test pingall
 	
-You can create a simple network topology and start ONOS as follows:
+Edit the file `~/onos/tools/dev/mininet/onos.py`, by changing the line
+
+    ONOS_APPS = sd( 'ONOS_APPS','drivers,openflow,fwd,proxyarp,mobility' )
+
+as follows
+
+    ONOS_APPS = sd( 'ONOS_APPS','drivers,openflow' )
+		  
+You can now create a simple network topology and start ONOS as follows:
 
 	$ cd ~/onos/tools/dev/mininet
 	$ sudo mn --custom onos.py --controller onos,1 --topo tree,2,2
