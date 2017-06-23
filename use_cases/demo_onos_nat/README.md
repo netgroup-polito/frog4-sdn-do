@@ -6,10 +6,10 @@ Please, execute the following steps:
 * copy the provided onos.py into the `~/onos/tools/dev/mininet/` folder (replace the older);
 * copy in the same folder also all the `*.sh` scripts, which are needed to set up the networking of each mininet host;
 * run both Mininet and ONOS using the command:
-
+```
 	$ cd ~/onos/tools/dev/mininet
 	$ sudo mn --custom onos.py --controller onos,1 --topo tree,2,2
-
+```
 * once you are in the mininet CLI, run all scripts for each client:
 ```
 	> h1 h1_script.sh
