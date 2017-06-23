@@ -56,6 +56,19 @@ The SDN domain orchestrator can operate both on a virtual SDN network and on a p
 ### Virtual network
 If you want to deploy the SDN domain orchestrator on a virtual network managed by ONOS, please follow the ONOS+Mininet tutorial available at [Environment setup with Mininet and onos.py](https://wiki.onosproject.org/display/test/Environment+setup+with+Mininet+and+onos.py) in order to install mininet, deploy your topology and start ONOS.
 
+For completeness, we report here the mandatory steps to set up the network:
+
+	$ sudo apt-get install bridge-utils
+	$ git clone http://github.com/mininet/mininet
+	$ mininet/util/install.sh -nvfw
+	# Make sure that Mininet works using the following command
+	$ sudo mn --test pingall
+	
+You can create a simple network topology and start ONOS as follows:
+
+	$ cd ~/onos/tools/dev/mininet
+	$ sudo mn --custom onos.py --controller onos,1 --topo tree,2,2
+
 After following the procedure, ONOS can be reached through its REST API at the URL: `192.168.123.1:8181/onos/ui` .
 The username is `onos`, the password is `rocks`.
 
