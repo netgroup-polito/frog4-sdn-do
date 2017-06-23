@@ -10,11 +10,12 @@ Please, execute the following steps:
 	$ sudo mn --custom onos.py --controller onos,1 --topo tree,2,2
 
 * once you are in the mininet CLI, run all scripts for each client:
-
+```
 	> h1 h1_script.sh
 	> h2 h2_script.sh
 	> h3 h3_script.sh
 	> h4 h4_script.sh
+```
 
 ## Install applications on ONOS
 
