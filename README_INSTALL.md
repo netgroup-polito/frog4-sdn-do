@@ -159,6 +159,8 @@ Finally, pay attention to all paths, which must be relative paths with respect t
 If you are going to execute the SDN domain orchestrator on the JOLNET, set to `true` the parameter `jolnet` in the section `[other_options]`. 
 Moreover, you have to edit the `available_ids` list in the `vlan` section, by specifying the VLAN ids that are allowd for the traffic steering within the SDN domain.
 
+Finally, put the flag `use_interfaces_names` in section `[other_options]` to false.
+
 ## Set up the SDN Controller
 
 The SDN controller should be completed with additional bundles that provides needed API to the SDN domain orchestrator:
