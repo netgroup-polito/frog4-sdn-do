@@ -188,6 +188,7 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 # Start the SDN domain orchestrator
 
 ```sh
+	cd [frog4-sdn-do]
 	$ ./start.sh [-d conf-file]
 ```
 
