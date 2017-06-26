@@ -137,6 +137,12 @@ In order to add a new user you can run the following script (where tenant and e-
 
         $ python3 -m scripts.add_user userexample usersecretpassword -t usertenant -m userexample@a.com
 
+### Domain description
+
+The file [description.json](https://github.com/netgroup-polito/frog4-sdn-do/blob/master/config/description.json) contains the decsription of the domain, both from the *networking* (e.g., information about boundary interfaces) and *computing* (i.e., functional capabilities) points of view.
+
+You have to edit this file so that it actually decribes the domain under the responsibility of the SDN domain orchestrator. 
+Note that the list functional capabilties will be automaticcally filled by the domain orchestrator at runtime, based on the bundles actually available in the SDN controller.
 
 ### SDN domain orchestrator configuration file
 
@@ -161,12 +167,6 @@ Moreover, you have to edit the `available_ids` list in the `vlan` section, by sp
 
 Finally, put the flag `use_interfaces_names` in section `[other_options]` to false.
 
-
-### Domain description
-
-As mentioned above, the file `MyResourceDescription.json` contains the decsription of the domain, both from the *networking* (e.g., information about boundary interfaces) and *computing* (i.e., functional capabilities) points of view.
-
-Note that the functional capabilties should correspond to those available in the Datastore used by the OpenStack domain orchestrator.
 
 ## Set up the SDN Controller
 
