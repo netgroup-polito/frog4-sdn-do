@@ -151,7 +151,7 @@ The most important fields that you have to consider are described in the followi
 
 In the section `[domain_orchestrator]`, set the field `port` to the TCP port to be used to interact with the SDN domain orchestrator through its REST API.
 
-In the [config](/config/) folder, make a new copy of the file `description.json` and rename it (e.g. `OnosResourceDescription.json`). Then, in the [configuration file](/config/default-config.ini) section `[domain_description]`, change the path in the `domain_description_file` field so that it points to the new file (e.g. `domain_description_file = config/OnosResourceDescription.json`).
+In the [config](/config/) folder, make a new copy of the file `description.json` and rename it (e.g. `MyResourceDescription.json`). Then, in the [configuration file](/config/default-config.ini) section `[domain_description]`, change the path in the `domain_description_file` field so that it points to the new file (e.g. `domain_description_file = config/MyResourceDescription.json`).
 
 In the section `[network_controller]` edit the field `controller_name`, by writing `OpenDayLight` or `ONOS`, according to the SDN controller that you have deployed above.
 Then, edit the section `[opendaylight]` or `[onos]` with the proper information.
