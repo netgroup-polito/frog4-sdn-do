@@ -135,7 +135,7 @@ All the tables will be empty, except "user" and "tenant".
 
 In order to add a new user you can run the following script (where tenant and e-mail are optional parameters):
 
-        $ python3 -m scripts.add_user user example password usersecret -t usertenant -m userexample@a.com
+        $ python3 -m scripts.add_user user-name user-password -t user-tenant -m userexample@a.com
 
 ### Domain description
 
