@@ -139,7 +139,9 @@ In order to add a new user you can run the following script (where tenant and e-
 
 ### Domain description
 
-The file [description.json](https://github.com/netgroup-polito/frog4-sdn-do/blob/master/config/description.json) contains the decsription of the domain, both from the *networking* (e.g., information about boundary interfaces) and *computing* (i.e., functional capabilities) points of view.
+The file [description.json](https://github.com/netgroup-polito/frog4-sdn-do/blob/master/config/description.json) contains the description of the domain, both from the *networking* (e.g., information about boundary interfaces) and *computing* (i.e., functional capabilities) points of view.
+
+It is written according to the [domain information library](https://github.com/netgroup-polito/domain-information-library).
 
 You have to edit this file so that it actually decribes the domain under the responsibility of the SDN domain orchestrator. 
 Note that the list functional capabilties will be automaticcally filled by the domain orchestrator at runtime, based on the bundles actually available in the SDN controller.
