@@ -34,9 +34,9 @@ To be able to execute the ONOS commands, execute the following steps on your hom
 	$ wget http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz
 	$ tar -zxvf apache-karaf-3.0.5.tar.gz -C ../Applications/
 	$ nano ~/.bashrc
-	# At the end of the file, add the following lines 
-	#   . ~/onos/tools/dev/bash_profile
-	#   export PATH=$PATH:~/Applications/apache-karaf-3.0.5/bin
+	; At the end of the file, add the following lines 
+	;   . ~/onos/tools/dev/bash_profile
+	;   export PATH=$PATH:~/Applications/apache-karaf-3.0.5/bin
 
 ### Install the OpenDaylight SDN controller [Deprecated]
 
@@ -61,7 +61,7 @@ For the sake of completeness, we report here the mandatory steps:
 	$ sudo apt-get install bridge-utils
 	$ git clone http://github.com/mininet/mininet
 	$ mininet/util/install.sh -nvfw
-	# Make sure that Mininet works using the following command
+	; Make sure that Mininet works using the following command
 	$ sudo mn --test pingall
 	
 Edit the file `~/onos/tools/dev/mininet/onos.py`, by changing the line
@@ -188,7 +188,7 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 # Start the SDN domain orchestrator
 
 ```sh
-	cd [frog4-sdn-do]
+	$ cd [frog4-sdn-do]
 	$ ./start.sh [-d conf-file]
 ```
 
