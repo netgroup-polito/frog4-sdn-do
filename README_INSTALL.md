@@ -110,7 +110,7 @@ The SDN domain orchestrator uses the [DoubleDecker](https://github.com/Acreo/Dou
 		$ cp -r [frog4-sdn-do]/patches .
 		$ git am patches/doubledecker_client_python/0001-version-protocol-rollbacked-to-v3.patch
 		
-Now you can install the DubleDeker as follows:
+Now you can install the DoubleDecker as follows:
 
 		; install dependencies 
 		$ sudo apt-get update
