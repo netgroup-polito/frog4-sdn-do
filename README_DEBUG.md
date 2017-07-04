@@ -16,7 +16,7 @@ Create a new *Python debug configuration* with these parameters:
 
 - **Script:** path of your gunicorn installation (e.g. "/usr/local/bin/gunicorn3")
 - **Script parameters:** "-b {*address:port*} --reload -t 50000 main:app"
-- **Environment variables:** "*path/to/your/configuration/file.ini*"
+- **Environment variables:** FROG4_SDN_DO_CONF: "*path/to/your/configuration/file.ini*"
 - **Working directory:** "*/path/to/your/frog4-sdn-orchestrator*"
 
 ### Start debugging

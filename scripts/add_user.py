@@ -26,8 +26,8 @@ parser.add_argument(
     '-t',
     '--tenant',
     nargs='?',
-    default=1,
-    help='User tenant'
+    default='admin_tenant',
+    help='User tenant name (created if not present)'
 )
 parser.add_argument(
     '-m',
@@ -38,4 +38,9 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-add_user(args.user, args.password, tenant_id=args.tenant, mail=args.mail)
+tenant_ref = User().getTenantByName(args.tenant)
+if tenant_ref is None:
+    User().addTenant(args.tenant, "")
+t_id = User().getTenantByName(args.tenant).id
+
+add_user(args.user, args.password, tenant_id=t_id, mail=args.mail)

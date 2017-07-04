@@ -69,7 +69,7 @@ CREATE TABLE "port" (
 CREATE TABLE "tenant" (
   "id" varchar(64) NOT NULL,
   "name" varchar(64) NOT NULL,
-  "description" varchar(128) NOT NULL,
+  "description" varchar(128) DEFAULT NULL,
   PRIMARY KEY ("id")
 );
 INSERT INTO "tenant" ("id","name","description") VALUES ('1','admin_tenant','Admin Tenant');

@@ -8,6 +8,7 @@ from sqlalchemy import Column, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 import logging, random, time
 
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import func
 
 from do_core.sql.sql_server import get_session
@@ -77,22 +78,41 @@ class User(object):
         session = get_session()
         try:
             return session.query(UserModel).filter_by(id = user_id).one()
-        except Exception as ex:
+        except NoResultFound as ex:
             logging.error(ex)
             raise UserNotFound("User not found: "+str(user_id)+" (id)")
+
+    def addTenant(self, name, description):
+        session = get_session()
+        max_id = session.query(func.max(TenantModel.id).label("max_id")).one().max_id
+        if max_id is None:
+            tenant_id = 0
+        else:
+            tenant_id = int(max_id)+1
+        with session.begin():
+            tenant_ref = TenantModel(id=tenant_id, name=name, description=description)
+            session.add(tenant_ref)
     
     def getTenantName(self, tenant_id):
         session = get_session()
         try:
             return session.query(TenantModel).filter_by(id = tenant_id).one().name
-        except Exception as ex:
+        except NoResultFound as ex:
             logging.error(ex)
             raise TenantNotFound("Tenant not found: "+str(tenant_id))
+
+    def getTenantByName(self, tenant_name):
+        session = get_session()
+        try:
+            return session.query(TenantModel).filter_by(name=tenant_name).first()
+        except NoResultFound as ex:
+            logging.error(ex)
+            raise TenantNotFound("Tenant not found: "+str(tenant_name)+" (tenant_name)")
     
     def setPwdHash(self, user_id, pwdhash):
         session = get_session()
         with session.begin():
-            session.query(UserModel).filter_by(id=user_id).update({"pwdhash":pwdhash})
+            session.query(UserModel).filter_by(id=user_id).update({"pwdhash": pwdhash})
     
     def getNewToken(self, user_id):
         exists = True

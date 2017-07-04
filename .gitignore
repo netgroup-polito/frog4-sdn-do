@@ -6,6 +6,7 @@
 *.DS_Store
 .DS_Store
 libreria.db
+*.pyc
 
 orchestrator-core/.metadata/
 FrogOrchestrator.log
