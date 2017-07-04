@@ -5,10 +5,11 @@ Created on 2/feb/2016
 @author: gabrielecastellano
 """
 
-import requests
 import logging
-import json
-from do_core.controller_interface.rest import RestInterface
+
+import requests
+
+from do_core.rest_modules.controller_interface.rest import RestInterface
 
 
 class ONOS_Rest(RestInterface):

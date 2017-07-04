@@ -5,6 +5,7 @@ Created on Nov 10, 2015
 '''
 
 import json
+
 import networkx as nx
 
 from do_core.config import Configuration
@@ -12,17 +13,20 @@ from domain_information_library.domain_info import FunctionalCapability
 from nffg_library.nffg import NF_FG, EndPoint
 
 if Configuration().CONTROLLER_NAME == "OpenDayLight":
-    from do_core.odl.objects import Flow, Match, Action
-    from do_core.odl.rest import ODL_Rest
+    from do_core.rest_modules.odl import Flow, Match, Action
+    from do_core.rest_modules.odl import ODL_Rest
     
 elif Configuration().CONTROLLER_NAME == "ONOS":
-    from do_core.onos.objects import Flow, Selector as Match, Treatment as Action
-    from do_core.onos.rest import ONOS_Rest
+    from do_core.rest_modules.onos.objects import Flow, Selector as Match, Treatment as Action
+    from do_core.rest_modules.onos.rest import ONOS_Rest
         
 
 class NetManager:
 
     def __init__(self):
+
+        self.nffg_id = None
+        self.user = None
         
         # Controller (ODL, ONOS, etc.)
         self.ct_name = Configuration().CONTROLLER_NAME
@@ -182,12 +186,12 @@ class NetManager:
                         continue
             return flow_rules
 
-    
     def ProfileGraph_BuildFromNFFG(self, nffg):
         """
         Create a ProfileGraph with the flowrules and endpoints specified in nffg.
         :type nffg: NF_FG
         """
+        self.nffg_id = nffg.id
 
         for endpoint in nffg.end_points:
             if endpoint.status is None:

@@ -14,7 +14,7 @@ class RestInterface:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def createFlow(self, onos_endpoint, onos_user, onos_pass, jsonFlow, switch_id, flow_id):
+    def createFlow(self, onos_endpoint, onos_user, onos_pass, jsonFlow, switch_id):
         """
         Create a flow on the switch selected (Currently using OF1.0)
         Args:

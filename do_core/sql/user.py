@@ -8,6 +8,8 @@ from sqlalchemy import Column, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 import logging, random, time
 
+from sqlalchemy.sql.functions import func
+
 from do_core.sql.sql_server import get_session
 from do_core.exception import UserNotFound, TenantNotFound
 
@@ -39,12 +41,22 @@ class TenantModel(Base):
     description = Column(VARCHAR(128))
     
 
-
 class User(object):
     
     def __init__(self):
         pass
-    
+
+    def addUser(self, username, pwdhash, tenant_id, mail):
+        session = get_session()
+        max_id = session.query(func.max(UserModel.id).label("max_id")).one().max_id
+        if max_id is None:
+            user_id = 0
+        else:
+            user_id = int(max_id)+1
+        with session.begin():
+            user_ref = UserModel(id=user_id, username=username, pwdhash=pwdhash, tenant_id=tenant_id, mail=mail)
+            session.add(user_ref)
+
     def getUserByUsername(self, username):
         session = get_session()
         try:

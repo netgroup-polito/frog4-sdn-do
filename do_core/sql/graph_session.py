@@ -315,16 +315,16 @@ class GraphSession(object):
         if prev_vlan_in is None:
             raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
         
-        if prev_vlan_in<1 or prev_vlan_in>=last_vlan_in:
+        if prev_vlan_in < 1 or prev_vlan_in >= last_vlan_in:
             raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
         
         # Valid VLAN ID
         return (prev_vlan_in+1)
 
-    def getVnfByID(self, vnf_id):
+    def getVnfByID(self, session_id, vnf_id):
         try:
             session = get_session()
-            return session.query(VnfModel).filter_by(vnf_id=vnf_id).one()
+            return session.query(VnfModel).filter_by(session_id=session_id, graph_vnf_id=vnf_id).one()
         except:
             return None
 

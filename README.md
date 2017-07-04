@@ -1,7 +1,6 @@
 # FROG4 SDN Domain Orchestrator
 
-This orchestrator supervises an SDN based domain (e.g., OpenFlow devices managed by an ONOS Controller) - constituited only by several switches - 
-and provides traffic steering capabilities between its endpoints.
+This orchestrator supervises an SDN based domain (e.g., OpenFlow devices managed by an ONOS Controller) - constituited only by several switches - and provides traffic steering capabilities between its endpoints.
 It always affors the possibility to insert simple NFs (such as a NAT) on the flow path (the proper bundle shuld be installed on the SDN Controller)
 
 
@@ -32,7 +31,7 @@ The final json should be compliant against this [YANG data model](https://github
 
 ## Network Functions
 
-The SDN domain orchestrator also provide the possibility to seploy some NFs (implemented with an SDN application) between endpoints. The SDN Application must allow a fine Configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat)
+The SDN domain orchestrator also provide the possibility to deploy some NFs (implemented with an SDN application) between endpoints. The SDN application must allow a fine configuration in order to properly set physical interface with which interact. A supported application is this [ONOS NAT bundle](https://github.com/netgroup-polito/onos-applications/tree/master/nat).
 
 Currently just chains (endpoint to endpoint paths) with up to one NF are supported.
 
@@ -41,11 +40,9 @@ Currently just chains (endpoint to endpoint paths) with up to one NF are support
 This project leans on a SDN controller to have some network informations and
 for each openflow-based operation (e.g. create and delete flow rules).
 
-Currently, the DO supports [OpenDayLight](https://www.opendaylight.org/) and [ONOS](http://onosproject.org/), in particular:
-* ONOS (>= 1.5.0 "Falcon")
-* OpenDayLight Hydrogen Virtualization 1.0
-* OpenDayLight Helium SR4
-* OpenDayLight Lithium SR3
+Currently, the DO supports [ONOS](http://onosproject.org/) (>= 1.5.0 "Falcon")
+
+Support for [OpenDayLight](https://www.opendaylight.org/) has been deprecated.
 
 
 ## DoubleDecker and ResourceDescription.json
@@ -77,4 +74,10 @@ A global orchestrator should communicate through the REST APIs provided by this 
 
 REST interface provides several urls to authenticate, to send/get/delete a graph, to get the status of a graph.
 
-In order to discover which REST calls are supported you can see the API documentation at the URL {Domain_Orchestrator_Address}/api_docs once the domain orchestrator is installed and running.
+In order to discover which REST calls are supported you can see the API documentation at the URL {do-address:do-port}/api_docs once the domain orchestrator is installed and running (e.g., `127.0.0.1:10000/api_docs`).
+
+## Use cases
+
+Use cases examples are in the [use_cases](./use_cases) folder.
+There, for each use case you can find configuration scripts, NF-FGs and more.
+

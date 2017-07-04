@@ -4,7 +4,7 @@ Delete all installed flows from the switches.
 Keep in the database user and tenant informations only.
 '''
 import os
-os.environ.setdefault("FROG4_SDN_DO_CONF", "config/config.ini")
+os.environ.setdefault("FROG4_SDN_DO_CONF", "config/default-config.ini")
 import logging
 from do_core.sql.graph_session import GraphSession
 from requests.exceptions import HTTPError
