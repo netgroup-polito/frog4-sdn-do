@@ -254,10 +254,11 @@ class DO(object):
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
-            available_functions.append(functional_capability.type)
+            available_functions.append(functional_capability.type.lower())
         for vnf in nffg.vnfs:
-            if vnf.name not in available_functions:
-                raise_useless_info("The VNF '" + vnf.name + "' cannot be implemented on this domain")
+            if vnf.functional_capability.lower() not in available_functions:
+                raise_useless_info("The VNF '" + vnf.name + "'with FC'" + vnf.functional_capability +
+                                   "' cannot be implemented on this domain")
 
         '''
         Busy VLAN ID: the control on the required vlan id(s) must wait for
@@ -536,7 +537,7 @@ class DO(object):
             # get the name of the application
             application_name = ""
             for capability in domain_info.capabilities.functional_capabilities:
-                if capability.type == vnf.name:
+                if capability.type == vnf.functional_capability.lower():
                     application_name = capability.name
                     break
             # we just need to activate the application and to pass as configuration the interfaces
