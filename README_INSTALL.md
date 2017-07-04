@@ -194,6 +194,10 @@ To install the GUI, follows the [instructions](https://github.com/netgroup-polit
 	$ ./start.sh [-d conf-file]
 ```
 
+## API
+
+Once the sdn-do has been started, in order to discover REST calls it provides you can find a swagger documentation at the URL {SDN_DO_Address}/api_docs/index.html.
+
 # Utility scripts
 
 The [scripts](https://github.com/netgroup-polito/frog4-sdn-do/tree/master/scripts) folder contains many useful scripts.
