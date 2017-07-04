@@ -200,11 +200,11 @@ class unauthorizedRequest(Exception):
     def get_mess(self):
         return self.message
     
-class wrongConnectionBetweenEndpoints(Exception):
+class NoPathBetweenSwitches(Exception):
     def __init__(self, message):
         self.message = message
         # Call the base class constructor with the parameters it needs
-        super(wrongConnectionBetweenEndpoints, self).__init__(message)
+        super(NoPathBetweenSwitches, self).__init__(message)
     
     def get_mess(self):
         return self.message

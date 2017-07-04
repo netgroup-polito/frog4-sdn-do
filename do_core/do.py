@@ -18,7 +18,8 @@ from do_core.sql.graph_session import GraphSession
 from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.domain_information_manager import Messaging
-from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError
+from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, \
+    NoPathBetweenSwitches
 from requests.exceptions import HTTPError
 
 
@@ -722,7 +723,7 @@ class DO(object):
 
         # [ 3 ] No paths between the endpoints 
         logging.debug("Cannot find a link between " + in_endpoint.node_id + " and " + out_endpoint.node_id)
-        return
+        raise NoPathBetweenSwitches("Cannot find links between " + in_endpoint.node_id + " and " + out_endpoint.node_id)
 
     def __NC_CheckFlowruleOnEndpoint(self, in_endpoint, flowrule):
         """

@@ -21,8 +21,7 @@ from do_core.user_authentication import UserAuthentication
 from do_core.do import DO
 
 from do_core.exception import wrongRequest, unauthorizedRequest, sessionNotFound, NffgUselessInformations, \
-    UserNotFound, TenantNotFound, UserTokenExpired, GraphError
-
+    UserNotFound, TenantNotFound, UserTokenExpired, GraphError, NoPathBetweenSwitches
 
 nffg_ns = api.namespace('NF-FG', 'NFFG Resource')
 
@@ -97,6 +96,11 @@ class NFFGResource(Resource):
         except NffgUselessInformations as err:
             logging.exception(err)
             return err.message, 406
+
+        # Topology errors
+        except NoPathBetweenSwitches as err:
+            logging.exception(err)
+            return err.message, 422
 
         # No Results
         except UserNotFound as err:
