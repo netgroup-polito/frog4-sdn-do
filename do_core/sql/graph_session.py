@@ -437,16 +437,15 @@ class GraphSession(object):
         flow_rules_ref = session.query(FlowRuleModel).filter_by(graph_flow_rule_id=graph_flow_rule_id).filter_by(switch_id=switch_id).filter_by(type='external').order_by(asc(FlowRuleModel.internal_id)).all()
         return flow_rules_ref
 
-
     def getFlowruleOnTheSwitch(self, switch_id, port_in, nffg_fr):
         session = get_session()
-        qref = session.query(FlowRuleModel,MatchModel).\
+        qref = session.query(FlowRuleModel, MatchModel).\
             filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
-						filter(FlowRuleModel.priority == nffg_fr.priority).\
+            filter(FlowRuleModel.priority == nffg_fr.priority).\
             filter(FlowRuleModel.switch_id == switch_id).\
             filter(MatchModel.port_in == port_in).\
-						filter(MatchModel.vlan_id == nffg_fr.match.vlan_id).\
-						filter(MatchModel.vlan_priority == nffg_fr.match.vlan_priority).\
+            filter(MatchModel.vlan_id == nffg_fr.match.vlan_id).\
+            filter(MatchModel.vlan_priority == nffg_fr.match.vlan_priority).\
             filter(MatchModel.ether_type == nffg_fr.match.ether_type).\
             filter(MatchModel.source_mac == nffg_fr.match.source_mac).\
             filter(MatchModel.dest_mac == nffg_fr.match.dest_mac).\
@@ -460,12 +459,10 @@ class GraphSession(object):
         if len(qref)>0:
             return qref
         return None
-    
-    
-    
+
     def getFlowruleMatchesOnTheSwitch(self, switch_id, port_in, nffg_match):
         session = get_session()
-        qref = session.query(FlowRuleModel,MatchModel).\
+        qref = session.query(FlowRuleModel, MatchModel).\
             filter(FlowRuleModel.id == MatchModel.flow_rule_id).\
             filter(FlowRuleModel.switch_id == switch_id).\
             filter(MatchModel.port_in == port_in).\
