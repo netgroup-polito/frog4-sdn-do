@@ -592,15 +592,20 @@ class DO(object):
         for flow in flows:
             for action in flow.actions:
                 if action.output is not None:
-                    vnf_port_map[flow.match.port_in.split(':', 2)[2]] = action.output
+                    vnf_port_map[flow.match.port_in.split(':', 2)[2]] = {
+                        'output': action.output,
+                        'priority': flow.priority
+                    }
 
         # get interface names for endpoints
         for vnf_port in vnf_port_map:
-            endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port].split(':')[1])
+            endpoint = self.NetManager.ProfileGraph.getEndpoint(vnf_port_map[vnf_port]['output'].split(':')[1])
+            priority = vnf_port_map[vnf_port]['priority']
             vnf_port_map[vnf_port] = {
                 'device': endpoint.node_id,
                 'interface': endpoint.interface,
-                'vlan-id': endpoint.vlan_id
+                'vlan-id': endpoint.vlan_id,
+                'priority':  priority
             }
 
         # push configuration to set application ports
@@ -609,7 +614,8 @@ class DO(object):
             ports_configuration['ports'][port] = {
                 'device-id': vnf_port_map[port]['device'],
                 'port-number': self.NetManager.getPortName(vnf_port_map[port]['device'], vnf_port_map[port]['interface']),
-                'external-vlan': vnf_port_map[port]['vlan-id']
+                'external-vlan': vnf_port_map[port]['vlan-id'],
+                'priority': vnf_port_map[port]['priority']
             }
         if not Configuration().DEBUG_MODE:
             self.NetManager.push_app_configuration(application_name, ports_configuration)
