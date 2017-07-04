@@ -85,6 +85,8 @@ class Messaging(object, metaclass=Singleton):
             logging.debug(json.dumps(json.loads(message)))
         except ConnectionError:
             raise MessagingError("DD client not registered") from None
+        except Exception as ex:
+            raise MessagingError(ex) from None
 
     @staticmethod
     def read_domain_description_file():
