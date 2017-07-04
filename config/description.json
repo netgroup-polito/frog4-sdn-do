@@ -165,6 +165,24 @@
                 }
               ]
             },
+            "netgroup-if-ethernet:ethernet": {
+              "netgroup-vlan:vlans": {
+                "netgroup-vlan:vlan": [
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 295
+                    },
+                    "netgroup-vlan:vlan-id": 295
+                  },
+                  {
+                    "netgroup-vlan:config": {
+                      "netgroup-vlan:vlan-id": 294
+                    },
+                    "netgroup-vlan:vlan-id": 294
+                  }
+                ]
+              }
+            },
             "netgroup-neighbor:neighbors": {
               "netgroup-neighbor:neighbor": [
                 {
