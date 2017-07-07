@@ -28,7 +28,6 @@ nffg_ns = api.namespace('NF-FG', 'NFFG Resource')
 
 @nffg_ns.route('/<nffg_id>', methods=['GET', 'DELETE', 'PUT'],
                doc={'params': {'nffg_id': {'description': 'The graph ID', 'in': 'path'}}})
-@nffg_ns.route('/', methods=['GET'])
 class NFFGResource(Resource):
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
@@ -39,8 +38,9 @@ class NFFGResource(Resource):
     @nffg_ns.response(404, 'No result.')
     @nffg_ns.response(406, 'Not acceptable.')
     @nffg_ns.response(500, 'Internal Error.')
-    def put(self, nffg_id):
+    def put(self, nffg_id=None):
         """
+        Update a Network Functions Forwarding Graph
         Deploy a graph
         """
         try:
@@ -308,3 +308,40 @@ class NFFGStatusResource(Resource):
         except Exception as err:
             logging.exception(err)
             return str(err), 500
+
+@nffg_ns.route('/', methods=['PUT','GET'])
+@api.doc(responses={404: 'Graph not found'})
+class UpperLayerOrchestrator(Resource):
+
+    # This class is necessary because there is a conflict in the swagger documentation of get and put operations
+
+    NFFG_Resource = NFFGResource()
+
+    @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
+    @nffg_ns.param("nffg", "Graph to be deployed", "body", type="string", required=True)
+    @nffg_ns.response(202, 'Graph correctly deployed.')
+    @nffg_ns.response(400, 'Bad request.')
+    @nffg_ns.response(401, 'Unauthorized.')
+    @nffg_ns.response(404, 'No result.')
+    @nffg_ns.response(406, 'Not acceptable.')
+    @nffg_ns.response(500, 'Internal Error.')
+
+    def put(self):
+        """
+        Create a New Network Functions Forwarding Graph
+        Deploy a graph
+        """
+        return self.NFFG_Resource.put()
+
+    @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
+    @nffg_ns.response(200, 'Graph retrieved.')
+    @nffg_ns.response(400, 'Bad request.')
+    @nffg_ns.response(401, 'Unauthorized.')
+    @nffg_ns.response(404, 'Graph not found.')
+    @nffg_ns.response(500, 'Internal Error.')
+    def get(self):
+        """
+        Get the list of graphs currently deployed
+        Returns the list of the active graphs
+        """
+        return self.NFFG_Resource.get()
