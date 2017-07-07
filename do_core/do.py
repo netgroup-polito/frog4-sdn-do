@@ -8,6 +8,8 @@
 from __future__ import division
 import logging
 import copy
+import json
+import uuid
 
 from do_core.config_manager import ConfigManager
 from domain_information_library.domain_info import DomainInfo
@@ -44,58 +46,80 @@ class DO(object):
         if self.__print_enabled:
             print(msg)
 
-    def put_nffg(self, nffg):
+    def put_nffg(self, nffg, nffg_id):
         """
         Manage the request of NF-FG instantiation.
         """
         logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
         # Check if the NF-FG is already instantiated, update it and exit
-        if self.update_nffg(nffg) is not None:
-            return self.__session_id
+        if nffg_id is not None:
+            nffg.id = str(nffg_id)
+            self.update_nffg(nffg)
+            # just for testing purpose late i will change this part
+            #if self.update_nffg(nffg) is not None:
+                #return self.__session_id
 
         # Instantiate a new NF-FG
-        try:
-            logging.info("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
-            self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
-            logging.info("Session created")
-            # Build the Profile Graph
-            self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
-            self.NetManager.user = self.user_data.username
+        else:
 
-            # Set up GRE tunnels if any
-            logging.info("Tunnel set up...")
-            self.__NC_TunnelSetUp(nffg)
-            logging.info("Tunnel set up completed!")
+            try:
 
-            # Send flow rules to Network Controller
-            logging.info("Instantiating flow rules...")
-            self.__NC_FlowsInstantiation(nffg)
-            logging.info("Flow rules instantiated!")
+                # choose new id for the graph
+                new_nffg_id = uuid.uuid4()
+                nffg.id = str(new_nffg_id)
+                # Will be done later this part
+                # while True:
+                    #new_nffg_id = uuid.uuid4()
+                    #old_nffg_id = GraphSession().check_nffg_id(str(new_nffg_id))
+                    #if len(old_nffg_id) == 0:
+                        #nffg.id = str(new_nffg_id)
+                        #break
 
-            # activate needed applications
-            logging.info("Activating applications...")
-            self.__NC_ApplicationsInstantiation()
-            logging.info("Applications activated!")
+                logging.info("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
+                self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
+                logging.info("Session created")
+                # Build the Profile Graph
+                self.NetManager.ProfileGraph_BuildFromNFFG(nffg)
+                self.NetManager.user = self.user_data.username
 
-            logging.info("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
+                # Set up GRE tunnels if any
+                logging.info("Tunnel set up...")
+                self.__NC_TunnelSetUp(nffg)
+                logging.info("Tunnel set up completed!")
 
-            GraphSession().updateStatus(self.__session_id, 'complete')
+                # Send flow rules to Network Controller
+                logging.info("Instantiating flow rules...")
+                self.__NC_FlowsInstantiation(nffg)
+                logging.info("Flow rules instantiated!")
 
-            # Update the resource description .json
-            ResourceDescription().updateAll()
-            ResourceDescription().saveFile()
+                # activate needed applications
+                logging.info("Activating applications...")
+                self.__NC_ApplicationsInstantiation()
+                logging.info("Applications activated!")
 
-            return self.__session_id
+                logging.info("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
 
-        except MessagingError as err:
-            logging.error(err.message)
-            logging.error(err)
-        except Exception as ex:
-            logging.error(ex)
-            self.__NFFG_NC_deleteGraph()
-            GraphSession().updateError(self.__session_id)
-            raise ex
+                GraphSession().updateStatus(self.__session_id, 'complete')
+
+                # Update the resource description .json
+                ResourceDescription().updateAll()
+                ResourceDescription().saveFile()
+
+                #return self.__session_id
+
+            except MessagingError as err:
+                logging.error(err.message)
+                logging.error(err)
+            except Exception as ex:
+                logging.error(ex)
+                self.__NFFG_NC_deleteGraph()
+                GraphSession().updateError(self.__session_id)
+                raise ex
+        # return the graph id
+        response_uuid = dict()
+        response_uuid["nffg-uuid"] = nffg.id
+        return json.dumps(response_uuid)
 
     def update_nffg(self, new_nffg):
 

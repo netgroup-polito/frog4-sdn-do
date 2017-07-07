@@ -52,13 +52,11 @@ class NFFGResource(Resource):
             ValidateNF_FG().validate(nffg_dict)
             nffg = NF_FG()
             nffg.parseDict(nffg_dict)
-            nffg.id = nffg_id
 
             nc_do = DO(user_data)
             nc_do.validate_nffg(nffg)
-            nc_do.put_nffg(nffg)
-
-            return "Graph correctly deployed", 202
+            resp = Response(response=nc_do.put_nffg(nffg, nffg_id), status=202, mimetype="application/json")
+            return resp
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
