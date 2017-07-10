@@ -949,7 +949,7 @@ class GraphSession(object):
         
         # [ NF-FG ]
         nffg = NF_FG()
-        nffg.id = session_ref.graph_id
+        #nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
         nffg.description = session_ref.description
 
@@ -1064,7 +1064,10 @@ class GraphSession(object):
         nffgs = []
         for session in session_refs:
             if session.status == 'complete':
-                nffgs.append(self.getNFFG(session.session_id))
+                nffg = {}
+                nffg['graph_id'] = session.graph_id
+                nffg['graphDict'] = self.getNFFG(session.session_id)
+                nffgs.append(nffg)
         return nffgs
 
     def getNFFG_id(self, nffg_id):

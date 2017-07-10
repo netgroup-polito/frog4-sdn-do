@@ -52,10 +52,9 @@ class DO(object):
         """
         logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
-        # Check if the NF-FG is already instantiated, update it and exit
+        # Check if the NF-FG is already instantiated, update it
         if nffg_id is not None:
             nffg.id = str(nffg_id)
-            print(nffg_id)
             if self.update_nffg(nffg) is None:
                 raise NoGraphFound("EXCEPTION - Please First insert this graph then try to update it ")
 
@@ -141,6 +140,7 @@ class DO(object):
             # Get the old NFFG
             old_nffg = GraphSession().getNFFG(self.__session_id)
             logging.debug("Update NF-FG: the old session: " + old_nffg.getJSON())
+            old_nffg.id = GraphSession().get_nffg_id_by_session(self.__session_id).graph_id
 
             # Get the updated NFFG
             updated_nffg = old_nffg.diff(new_nffg)
@@ -224,8 +224,11 @@ class DO(object):
 
         logging.debug("Getting all graphs")
         nffgs = {'NF-FG': []}
-        for nffg in GraphSession().getAllNFFG():
-            nffgs['NF-FG'].append(nffg.getDict())
+        for graph in GraphSession().getAllNFFG():
+            nffg = {}
+            nffg['nffg-uuid'] =  graph["graph_id"]
+            nffg['forwarding-graph'] = (graph["graphDict"].getDict())["forwarding-graph"]
+            nffgs['NF-FG'].append(nffg)
         return nffgs
 
     def nffg_status(self, nffg_id):
