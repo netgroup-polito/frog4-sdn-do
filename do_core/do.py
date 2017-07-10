@@ -224,6 +224,8 @@ class DO(object):
 
         logging.debug("Getting all graphs")
         nffgs = {'NF-FG': []}
+        if len(GraphSession().getAllNFFG()) == 0:
+            raise sessionNotFound("No active Graph")
         for graph in GraphSession().getAllNFFG():
             nffg = {}
             nffg['nffg-uuid'] =  graph["graph_id"]

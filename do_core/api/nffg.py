@@ -32,7 +32,7 @@ class NFFGResource(Resource):
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
     @nffg_ns.param("nffg", "Graph to be deployed", "body", type="string", required=True)
-    @nffg_ns.response(202, 'Graph correctly deployed.')
+    @nffg_ns.response(201, 'Graph correctly deployed.')
     @nffg_ns.response(400, 'Bad request.')
     @nffg_ns.response(401, 'Unauthorized.')
     @nffg_ns.response(404, 'No result.')
@@ -55,7 +55,7 @@ class NFFGResource(Resource):
 
             nc_do = DO(user_data)
             nc_do.validate_nffg(nffg)
-            resp = Response(response=nc_do.put_nffg(nffg, nffg_id), status=202, mimetype="application/json")
+            resp = Response(response=nc_do.put_nffg(nffg, nffg_id), status=201, mimetype="application/json")
             return resp
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
@@ -141,7 +141,7 @@ class NFFGResource(Resource):
 
             do.delete_nffg(nffg_id)
 
-            return "Session deleted"
+            return "Session deleted", 200
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:
@@ -320,7 +320,7 @@ class UpperLayerOrchestrator(Resource):
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
     @nffg_ns.param("nffg", "Graph to be deployed", "body", type="string", required=True)
-    @nffg_ns.response(202, 'Graph correctly deployed.')
+    @nffg_ns.response(201, 'Graph correctly deployed.')
     @nffg_ns.response(400, 'Bad request.')
     @nffg_ns.response(401, 'Unauthorized.')
     @nffg_ns.response(404, 'No result.')
