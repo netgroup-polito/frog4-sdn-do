@@ -21,7 +21,7 @@ from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, \
-    NoPathBetweenSwitches
+    NoPathBetweenSwitches, NoGraphFound
 from requests.exceptions import HTTPError
 
 
@@ -55,10 +55,9 @@ class DO(object):
         # Check if the NF-FG is already instantiated, update it and exit
         if nffg_id is not None:
             nffg.id = str(nffg_id)
-            self.update_nffg(nffg)
-            # just for testing purpose late i will change this part
-            #if self.update_nffg(nffg) is not None:
-                #return self.__session_id
+            print(nffg_id)
+            if self.update_nffg(nffg) is None:
+                raise NoGraphFound("EXCEPTION - Please First insert this graph then try to update it ")
 
         # Instantiate a new NF-FG
         else:
@@ -66,15 +65,12 @@ class DO(object):
             try:
 
                 # choose new id for the graph
-                new_nffg_id = uuid.uuid4()
-                nffg.id = str(new_nffg_id)
-                # Will be done later this part
-                # while True:
-                    #new_nffg_id = uuid.uuid4()
-                    #old_nffg_id = GraphSession().check_nffg_id(str(new_nffg_id))
-                    #if len(old_nffg_id) == 0:
-                        #nffg.id = str(new_nffg_id)
-                        #break
+                while True:
+                    new_nffg_id = uuid.uuid4()
+                    old_nffg_id = GraphSession().getNFFG_id(str(new_nffg_id))
+                    if len(old_nffg_id) == 0:
+                        nffg.id = str(new_nffg_id)
+                        break
 
                 logging.info("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
                 self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
@@ -118,7 +114,7 @@ class DO(object):
                 raise ex
         # return the graph id
         response_uuid = dict()
-        response_uuid["nffg-uuid"] = nffg.id
+        response_uuid["nffg-uuid"] = GraphSession().get_nffg_id_by_session(self.__session_id).graph_id
         return json.dumps(response_uuid)
 
     def update_nffg(self, new_nffg):

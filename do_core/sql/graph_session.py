@@ -803,7 +803,8 @@ class GraphSession(object):
         with session.begin():
             graphsession_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
-                                last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
+                                last_update = datetime.datetime.now(), status='inizialization',
+                                                 description=nffg.description)
             session.add(graphsession_ref)
 
     def dbStoreMatch(self, match, flow_rule_db_id, match_db_id, port_in=None, port_in_type=None):
@@ -1066,8 +1067,10 @@ class GraphSession(object):
                 nffgs.append(self.getNFFG(session.session_id))
         return nffgs
 
+    def getNFFG_id(self, nffg_id):
+        session = get_session()
+        return session.query(GraphSessionModel.graph_id).filter_by(graph_id=nffg_id).all()
 
-
-
-
-
+    def get_nffg_id_by_session(self, session_id):
+        session = get_session()
+        return session.query(GraphSessionModel).filter_by(session_id=session_id).one()
