@@ -31,7 +31,7 @@ nffg_ns = api.namespace('NF-FG', 'NFFG Resource')
 class NFFGResource(Resource):
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
-    @nffg_ns.param("nffg", "Graph to be deployed", "body", type="string", required=True)
+    @nffg_ns.param("nffg", "Graph to be updated", "body", type="string", required=True)
     @nffg_ns.response(201, 'Graph correctly deployed.')
     @nffg_ns.response(400, 'Bad request.')
     @nffg_ns.response(401, 'Unauthorized.')
@@ -41,7 +41,7 @@ class NFFGResource(Resource):
     def put(self, nffg_id):
         """
         Update a Network Functions Forwarding Graph
-        Deploy a graph
+        Update a graph
         """
         try:
             user_data = UserAuthentication().authenticateUserFromRESTRequest(request)
