@@ -11,7 +11,6 @@ from do_core.exception import unauthorizedRequest, wrongRequest, UserTokenExpire
 from do_core.config import Configuration
 
 
-
 class UserData(object):
     
     def __init__(self, user_id=None, username=None, tenant=None, email=None):
@@ -31,9 +30,6 @@ class UserData(object):
         obj['user_id'] = self.user_id
         obj['token'] = self.token
         return json.dumps(obj)
-        
-        
-
 
 # Used only in rest_interface.py and main1.py
 # The two public functions must return a UserData object
@@ -56,47 +52,7 @@ class UserAuthentication(object):
 
     def __getTimestamp(self):
         return time.time()
-        '''
-        Timestamp:
-            import time
-            timestamp = time.time()
-            print timestamp
-            1355563265.81
-        DateTime:
-            import datetime
-            timestring = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-            print timestring
-            2012-12-15 01:21:05
-        '''
 
-
-
-    def authenticateUserFromTokenUserId(self, token, user_id):
-        '''
-        Checks the user authentication by token/user_id.
-        '''
-        exception1 = unauthorizedRequest('Invalid authentication credentials')
-        
-        if token is None: # or user_id is None:
-            raise exception1
-        
-        try:
-            logging.info("Get user credentials and check token.")
-            user = User().getUserByID(user_id)
-            logging.debug("Check the token of user "+str(user_id)+".")
-            if user.token==token and self.__isAnExpiredToken(user.token_timestamp)==False:
-                tenantName = User().getTenantName(user.tenant_id)
-                userobj = UserData(user.id, user.username, tenantName, user.mail)
-                userobj.setToken(user.token, user.token_timestamp)
-                logging.debug("Found user "+str(user_id)+" with a valid token.")
-                return userobj
-            raise Exception
-        except Exception:
-            logging.debug("User "+str(user_id)+" not found.")
-            raise exception1
-    
-    
-    
     def authenticateUserFromToken(self, token):
         '''
         Checks the user authentication by token.
@@ -126,7 +82,6 @@ class UserAuthentication(object):
         except Exception:
             logging.debug("User token "+str(token)+" not found.")
             raise exception1
-
 
 
     def authenticateUserFromCredentials(self, username, password, tenant):
@@ -165,7 +120,6 @@ class UserAuthentication(object):
             userobj.setToken(user.token, user.token_timestamp)
             logging.debug("Current token is valid.")
         return userobj
-
 
 
     def authenticateUserFromRESTRequest(self, request, payload=None):

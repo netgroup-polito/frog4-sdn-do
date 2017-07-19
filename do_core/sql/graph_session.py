@@ -284,43 +284,6 @@ class GraphSession(object):
             return session.query(FlowRuleModel).filter_by(session_id = session_id).filter_by(graph_flow_rule_id = graph_flow_rule_id).all()
 
 
-    def getFreeIngressVlanID(self, port_in, switch_id):
-        
-        # init first and last available vlan ids
-        prev_vlan_in = 1
-        last_vlan_in = 4094
-        
-        # return a free vlan_in [2,4094] for port_in@switch_id
-        vlan_ids = self.getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
-        
-        # Return the smaller vlan id
-        if len(vlan_ids)<=0:
-            return 2
-        
-        # Search an ingress vlan id suitable for the switch
-        for q in vlan_ids:
-            if(q.vlan_in is None):
-                continue
-            this_vlan_in = int(q.vlan_in)
-            
-            if (this_vlan_in-prev_vlan_in)<2 :
-                prev_vlan_in = this_vlan_in
-                continue
-            
-            if (prev_vlan_in+1)>last_vlan_in:
-                prev_vlan_in = None
-            break
-        
-        # Latest checks
-        if prev_vlan_in is None:
-            raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
-        
-        if prev_vlan_in < 1 or prev_vlan_in >= last_vlan_in:
-            raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
-        
-        # Valid VLAN ID
-        return (prev_vlan_in+1)
-
     def getVnfByID(self, session_id, vnf_id):
         try:
             session = get_session()
