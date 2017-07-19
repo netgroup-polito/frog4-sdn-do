@@ -26,6 +26,7 @@ class Configuration(object, metaclass=Singleton):
             self.conf_file = os.environ["FROG4_SDN_DO_CONF"]
         else:
             self.conf_file = "config/default-config.ini"
+        self.log_init = False
         self.initialize()
 
     def initialize(self):
@@ -36,17 +37,17 @@ class Configuration(object, metaclass=Singleton):
         ).rpartition('/')[0]
 
         try:
-            config.read(base_folder + '/' + self.conf_file)
+            config.read(str(base_folder)+'/'+self.conf_file)
 
             # [domain_orchestrator]
             self.__ORCHESTRATOR_PORT = config.get('domain_orchestrator', 'port')
             self.__ORCHESTRATOR_IP = config.get('domain_orchestrator', 'ip')
-            self.__DEBUG_MODE = config.getboolean('domain_orchestrator', 'debug')
+            self.__DEBUG_MODE = config.getboolean('domain_orchestrator', 'detached_mode')
 
             # [log]
-            self.__LOG_FILE = base_folder + "/" + config.get('log', 'file')
-            self.__LOG_VERBOSE = config.getboolean('log', 'verbose')
-            self.__LOG_DEBUG = config.getboolean('log', 'debug')
+            self.__LOG_FILE = str(base_folder)+'/'+config.get('log', 'file')
+            self.__LOG_LEVEL = config.get('log', 'log_level')
+            self.__APPEND_LOG = config.getboolean('log', 'append_log')
             self.log_configuration()
 
             # [vlan]
@@ -65,8 +66,8 @@ class Configuration(object, metaclass=Singleton):
             # [database]
             self.__DATABASE_CONNECTION = config.get('database', 'connection')
             db_file = os.path.basename(self.__DATABASE_CONNECTION)
-            self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file, base_folder + "/" + db_file)
-            self.__DATABASE_DUMP_FILE = base_folder + "/" + config.get('database', 'database_name')
+            self.__DATABASE_CONNECTION = self.__DATABASE_CONNECTION.replace(db_file, str(base_folder)+'/'+db_file)
+            self.__DATABASE_DUMP_FILE = str(base_folder)+'/'+config.get('database', 'database_name')
 
             # [network_controller]
             self.__CONTROLLER_NAME = config.get('network_controller', 'controller_name')
@@ -102,10 +103,10 @@ class Configuration(object, metaclass=Singleton):
 
             # [domain_description]
             self.__DOMAIN_DESCRIPTION_TOPIC = config.get('domain_description', 'domain_description_topic')
-            self.__DOMAIN_DESCRIPTION_FILE = base_folder + "/" + config.get('domain_description',
-                                                                            'domain_description_file')
-            self.__DOMAIN_DESCRIPTION_DYNAMIC_FILE = base_folder + "/" + config.get('domain_description',
-                                                                                    'domain_description_dynamic_file')
+            self.__DOMAIN_DESCRIPTION_FILE = str(base_folder)+"/"+config.get('domain_description',
+                                                                             'domain_description_file')
+            self.__DOMAIN_DESCRIPTION_DYNAMIC_FILE = str(base_folder)+'/'+config.get('domain_description',
+                                                                                     'domain_description_dynamic_file')
             self.__CAPABILITIES_APP_NAME = config.get('domain_description', 'capabilities_app_name')
             self.__DISCOVER_CAPABILITIES = config.getboolean('domain_description', 'discover_capabilities')
 
@@ -118,22 +119,30 @@ class Configuration(object, metaclass=Singleton):
             raise WrongConfigurationFile(str(ex))
 
     def log_configuration(self):
+        if not self.log_init and not self.__APPEND_LOG:
+            try:
+                os.remove(self.LOG_FILE)
+            except OSError:
+                pass
         log_format = '%(asctime)s.%(msecs)03d %(levelname)s %(message)s - %(filename)s:%(lineno)s'
-        if self.__LOG_DEBUG is True:
+        if self.__LOG_LEVEL == "DEBUG":
             log_level = logging.DEBUG
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
             sqlalchemy_log = logging.getLogger('sqlalchemy.engine')
             sqlalchemy_log.setLevel(logging.WARNING)
-        elif self.__LOG_VERBOSE is True:
+        elif self.__LOG_LEVEL == "INFO":
             log_level = logging.INFO
             requests_log = logging.getLogger("requests")
             requests_log.setLevel(logging.WARNING)
-        else:
+        elif self.__LOG_LEVEL == "WARNING":
             log_level = logging.WARNING
+        else:
+            log_level = logging.ERROR
         logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format,
                             datefmt='%d/%m/%Y %H:%M:%S')
         logging.info("[CONFIG] Logging just started!")
+        self.log_init = True
 
     def __set_available_vlan_ids_array(self, vid_ranges):
 
@@ -211,14 +220,6 @@ class Configuration(object, metaclass=Singleton):
     @property
     def LOG_FILE(self):
         return self.__LOG_FILE
-
-    @property
-    def LOG_VERBOSE(self):
-        return self.__LOG_VERBOSE
-
-    @property
-    def LOG_DEBUG(self):
-        return self.__LOG_DEBUG
 
     @property
     def DATABASE_CONNECTION(self):
