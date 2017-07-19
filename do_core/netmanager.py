@@ -274,6 +274,17 @@ class NetManager:
         elif self.isONOS():
             ONOS_Rest(self.ct_version).push_config(self.ct_endpoint, self.ct_username, self.ct_password, json_config)
 
+    def is_application_active(self, app_name):
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).get_application_info(self.ct_endpoint, self.ct_username,
+                                                                        self.ct_password, app_name)
+            info_dict = json.loads(json_data)
+            return info_dict["state"] == "ACTIVE"
+
     # [CAPABILITIES]
 
     def get_apps_capabilities(self):

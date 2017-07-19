@@ -8,6 +8,7 @@
 from __future__ import division
 import logging
 import copy
+import time
 
 from do_core.config_manager import ConfigManager
 from domain_information_library.domain_info import DomainInfo
@@ -251,7 +252,6 @@ class DO(object):
         domain), else raise an error.
         '''
         # VNFs inspections
-        # TODO this check is implemented comparing vnf name with fc type, in the future nffg should have vnf type
         domain_info = DomainInfo.get_from_file(Configuration().DOMAIN_DESCRIPTION_DYNAMIC_FILE)
         available_functions = []
         for functional_capability in domain_info.capabilities.functional_capabilities:
@@ -576,6 +576,15 @@ class DO(object):
             self.NetManager.activate_app(application_name)
         self.__print("[Activated App] app-name:'"+application_name+"'")
         logging.info("[Activated App] app-name:'"+application_name+"'")
+
+    def __NC_WaitForApplicationToBeActive(self, application_name):
+        """
+        Query the controller until the application result active
+        :param application_name:
+        :return:
+        """
+        while not self.NetManager.is_application_active(application_name):
+            time.sleep(0.1)
 
     def __NC_ConfigureVnfPorts(self, application_name, vnf):
         """
