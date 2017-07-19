@@ -7,6 +7,7 @@ Created on Nov 10, 2015
 import json
 
 import networkx as nx
+import time
 
 from do_core.config import Configuration
 from domain_information_library.domain_info import FunctionalCapability
@@ -58,6 +59,8 @@ class NetManager:
 
     def init_ovsdb(self):
         self.ovsdb.activate_ovsdbrest()
+        while not self.is_application_active('org.onosproject.ovsdbrest'):
+            time.sleep(0.1)
         self.ovsdb.configure_ovsdbrest()
 
     class __ProfileGraph(object):

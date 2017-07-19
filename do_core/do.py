@@ -559,6 +559,7 @@ class DO(object):
         :type vnf: VNF
         """
         self.__NC_ActivateApplication(application_name)
+        self.__NC_WaitForApplicationToBeActive(application_name)
         self.__NC_ConfigureVnfPorts(application_name, vnf)
         # configuration
         if Configuration().INITIAL_CONFIGURATION:
