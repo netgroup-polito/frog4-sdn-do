@@ -40,6 +40,7 @@ try_session()
 
 # initialize logging
 Configuration().log_configuration()
+print("[ Configuration file is: '" + Configuration().conf_file + "' ]")
 
 logging.debug("SDN Domain Orchestrator Starting...")
 

@@ -7,6 +7,7 @@ Created on Nov 10, 2015
 import json
 
 import networkx as nx
+import time
 
 from do_core.config import Configuration
 from domain_information_library.domain_info import FunctionalCapability
@@ -58,6 +59,8 @@ class NetManager:
 
     def init_ovsdb(self):
         self.ovsdb.activate_ovsdbrest()
+        while not self.is_application_active('org.onosproject.ovsdbrest'):
+            time.sleep(0.1)
         self.ovsdb.configure_ovsdbrest()
 
     class __ProfileGraph(object):
@@ -273,6 +276,17 @@ class NetManager:
             pass
         elif self.isONOS():
             ONOS_Rest(self.ct_version).push_config(self.ct_endpoint, self.ct_username, self.ct_password, json_config)
+
+    def is_application_active(self, app_name):
+        if self.isODL():
+            # TODO implement ODL application support
+            pass
+
+        elif self.isONOS():
+            json_data = ONOS_Rest(self.ct_version).get_application_info(self.ct_endpoint, self.ct_username,
+                                                                        self.ct_password, app_name)
+            info_dict = json.loads(json_data)
+            return info_dict["state"] == "ACTIVE"
 
     # [CAPABILITIES]
 
