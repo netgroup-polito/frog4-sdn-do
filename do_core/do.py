@@ -183,9 +183,10 @@ class DO(object):
             raise ex
 
         # returns the graph id
-        response_uuid = dict()
-        response_uuid["nffg-uuid"] = nffg_id
-        return json.dumps(response_uuid)
+        #response_uuid = dict()
+        #response_uuid["nffg-uuid"] = nffg_id
+        #return json.dumps(response_uuid)
+        return nffg_id
 
     def delete_nffg(self, nffg_id):
 
