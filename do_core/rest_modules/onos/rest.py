@@ -198,7 +198,7 @@ class ONOS_Rest(RestInterface):
     def get_application_info(self, onos_endpoint, onos_user, onos_pass, app_name):
         headers = {'Accept': 'application/json'}
         url = onos_endpoint+self.rest_apps_url+"/"+str(app_name)
-        response = requests.post(url, headers=headers, auth=(onos_user, onos_pass))
+        response = requests.get(url, headers=headers, auth=(onos_user, onos_pass))
 
         self.__logging_debug(response, url)
         response.raise_for_status()
