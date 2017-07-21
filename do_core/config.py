@@ -42,7 +42,7 @@ class Configuration(object, metaclass=Singleton):
             # [domain_orchestrator]
             self.__ORCHESTRATOR_PORT = config.get('domain_orchestrator', 'port')
             self.__ORCHESTRATOR_IP = config.get('domain_orchestrator', 'ip')
-            self.__DEBUG_MODE = config.getboolean('domain_orchestrator', 'detached_mode')
+            self.__DETACHED_MODE = config.getboolean('domain_orchestrator', 'detached_mode')
 
             # [log]
             self.__LOG_FILE = str(base_folder)+'/'+config.get('log', 'file')
@@ -190,8 +190,8 @@ class Configuration(object, metaclass=Singleton):
         return self.__ORCHESTRATOR_IP
 
     @property
-    def DEBUG_MODE(self):
-        return self.__DEBUG_MODE
+    def DETACHED_MODE(self):
+        return self.__DETACHED_MODE
 
     @property
     def VLAN_AVAILABLE_IDS(self):

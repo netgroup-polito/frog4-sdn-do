@@ -518,7 +518,7 @@ class DO(object):
 
                 self.__print("[New Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
                 logging.debug("[New Gre] device:'"+port.switch_id+"' port:'"+port.graph_port_id+"'")
-                if not Configuration().DEBUG_MODE:
+                if not Configuration().DETACHED_MODE:
                     self.NetManager.add_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id,
                                                    ep.local_ip, ep.remote_ip, ep.gre_key)
                 # change endpoint to an interface endpoint on the new gre interface
@@ -602,7 +602,7 @@ class DO(object):
         :param application_name:
         :return:
         """
-        if not Configuration().DEBUG_MODE:
+        if not Configuration().DETACHED_MODE:
             self.NetManager.activate_app(application_name)
         self.__print("[Activated App] app-name:'"+application_name+"'")
         logging.info("[Activated App] app-name:'"+application_name+"'")
@@ -658,7 +658,7 @@ class DO(object):
                 'external-vlan': vnf_port_map[port]['vlan-id'],
                 'priority': vnf_port_map[port]['priority']
             }
-        if not Configuration().DEBUG_MODE:
+        if not Configuration().DETACHED_MODE:
             self.NetManager.push_app_configuration(application_name, ports_configuration)
         self.__print("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
         logging.info("[Configured App] app-name:'"+application_name+"' ports:'"+str(ports_configuration)+"'")
@@ -685,7 +685,7 @@ class DO(object):
         :type application_name: str
         :return:
         """
-        if not Configuration().DEBUG_MODE:
+        if not Configuration().DETACHED_MODE:
             self.NetManager.deactivate_app(application_name)
         self.__print("[Deactivated App] app-name:'"+application_name+"'")
         logging.info("[Deactivated App] app-name:'"+application_name+"'")
@@ -1059,7 +1059,7 @@ class DO(object):
                 ResourceDescription().delete_flowrule(flow_rule_ref.id)
 
                 # CONTROLLER
-                if not Configuration().DEBUG_MODE:
+                if not Configuration().DETACHED_MODE:
                     self.NetManager.deleteFlow(flow_rule_ref.switch_id, flow_rule_ref.internal_id)
             except HTTPError as err:
                 if err.response.status_code == 404:
@@ -1101,7 +1101,7 @@ class DO(object):
             # delete from controller
             self.__print("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
             logging.debug("[Remove Gre] device:'"+Configuration().GRE_BRIDGE+"' port:'"+port.graph_port_id+"'")
-            if not Configuration().DEBUG_MODE:
+            if not Configuration().DETACHED_MODE:
                 self.NetManager.delete_gre_tunnel(Configuration().GRE_BRIDGE, port.graph_port_id)
 
     def __deleteVnf(self, vnf):
@@ -1147,7 +1147,7 @@ class DO(object):
 
         # NC/Switch: Add flow rule
         # sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
-        if not Configuration().DEBUG_MODE:
+        if not Configuration().DETACHED_MODE:
             sw_flow_name = self.NetManager.createFlow(efr)  # efr.get_flow_name()
         else:
             sw_flow_name = "debug"
