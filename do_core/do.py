@@ -55,9 +55,7 @@ class DO(object):
         logging.debug("POST NF-FG: POST from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
         # Instantiate a new NF-FG
-
         try:
-
             # choose new id for the graph
             while True:
                 new_nffg_id = uuid.uuid4()

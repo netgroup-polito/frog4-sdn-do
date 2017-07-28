@@ -220,7 +220,7 @@ class NFFGResource(Resource):
             return str(err), 500
 
     @nffg_ns.param("X-Auth-Token", "Authentication token", "header", type="string", required=True)
-    @nffg_ns.response(200, 'Graph deleted.')
+    @nffg_ns.response(204, 'Graph deleted.')
     @nffg_ns.response(400, 'Bad request.')
     @nffg_ns.response(404, 'Graph not found.')
     @nffg_ns.response(401, 'Unauthorized.')
@@ -235,7 +235,7 @@ class NFFGResource(Resource):
 
             do.delete_nffg(nffg_id)
 
-            return "Session deleted", 200
+            return "Session deleted", 204
 
         # User auth request - raised by UserAuthentication().authenticateUserFromRESTRequest
         except wrongRequest as err:

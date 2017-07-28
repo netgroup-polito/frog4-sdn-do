@@ -121,7 +121,6 @@ class UserAuthentication(object):
             logging.debug("Current token is valid.")
         return userobj
 
-
     def authenticateUserFromRESTRequest(self, request, payload=None):
         '''
         Manages the authentication process via REST.
@@ -131,8 +130,7 @@ class UserAuthentication(object):
 
         username = request.headers.get("X-Auth-User")
         password = request.headers.get("X-Auth-Pass")
-        #tenant = rrequest.headers.get("X-Auth-Tenant")
-        
+
         token = request.headers.get("X-Auth-Token")
         
         if token is not None:
@@ -141,7 +139,7 @@ class UserAuthentication(object):
         elif payload is not None and 'username' in payload.keys() and 'password' in payload.keys():
             return self.authenticateUserFromCredentials(payload['username'], payload['password'], None)
         
-        elif username is not None and password is not None: # and tenant is not None:
+        elif username is not None and password is not None:  # and tenant is not None:
             return self.authenticateUserFromCredentials(username, password, None)
         
         raise wrongRequest('Wrong authentication request: send user/password or token')
