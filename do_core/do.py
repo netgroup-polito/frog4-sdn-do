@@ -127,7 +127,7 @@ class DO(object):
             updated_nffg = old_nffg.diff(new_nffg)
             logging.debug("Update NF-FG: coming updates: " + updated_nffg.getJSON(True))
 
-            # Delete useless endpoints and flowrules, from DB and Network Controller 
+            # Delete useless endpoints and flowrules, from DB and Network Controller
             self.__NFFG_NC_DeleteAndUpdate(updated_nffg)
 
             # Update database
@@ -627,7 +627,7 @@ class DO(object):
                 'device-id': vnf_port_map[port]['device'],
                 'port-number': self.NetManager.getPortName(vnf_port_map[port]['device'], vnf_port_map[port]['interface']),
                 'external-vlan': vnf_port_map[port]['vlan-id'],
-                'priority': vnf_port_map[port]['priority']
+                'flow-priority': vnf_port_map[port]['priority']
             }
         if not Configuration().DETACHED_MODE:
             self.NetManager.push_app_configuration(application_name, ports_configuration)

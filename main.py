@@ -38,8 +38,11 @@ from do_core.netmanager import NetManager
 # Database connection test
 try_session()
 
+# load configuration
+conf = Configuration()
+
 # initialize logging
-Configuration().log_configuration()
+conf.log_configuration()
 print("[ Configuration file is: '" + Configuration().conf_file + "' ]")
 
 logging.debug("SDN Domain Orchestrator Starting...")

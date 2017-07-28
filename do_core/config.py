@@ -48,7 +48,6 @@ class Configuration(object, metaclass=Singleton):
             self.__LOG_FILE = str(base_folder)+'/'+config.get('log', 'file')
             self.__LOG_LEVEL = config.get('log', 'log_level')
             self.__APPEND_LOG = config.getboolean('log', 'append_log')
-            self.log_configuration()
 
             # [vlan]
             self.__VLAN_AVAILABLE_IDS = config.get('vlan', 'available_ids')
@@ -139,8 +138,7 @@ class Configuration(object, metaclass=Singleton):
             log_level = logging.WARNING
         else:
             log_level = logging.ERROR
-        logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format,
-                            datefmt='%d/%m/%Y %H:%M:%S')
+        logging.basicConfig(filename=self.LOG_FILE, level=log_level, format=log_format, datefmt='%d/%m/%Y %H:%M:%S')
         logging.info("[CONFIG] Logging just started!")
         self.log_init = True
 
