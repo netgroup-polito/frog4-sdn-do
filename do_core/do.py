@@ -8,7 +8,10 @@
 from __future__ import division
 import logging
 import copy
+import json
+import uuid
 import time
+
 
 from do_core.config_manager import ConfigManager
 from domain_information_library.domain_info import DomainInfo
@@ -20,7 +23,7 @@ from do_core.resource_description import ResourceDescription
 from do_core.netmanager import NetManager
 from do_core.domain_information_manager import Messaging
 from do_core.exception import sessionNotFound, GraphError, NffgUselessInformations, MessagingError, \
-    NoPathBetweenSwitches
+    NoPathBetweenSwitches, NoGraphFound
 from requests.exceptions import HTTPError
 
 
@@ -45,19 +48,25 @@ class DO(object):
         if self.__print_enabled:
             print(msg)
 
-    def put_nffg(self, nffg):
+    def post_nffg(self, nffg):
         """
         Manage the request of NF-FG instantiation.
         """
-        logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
-
-        # Check if the NF-FG is already instantiated, update it and exit
-        if self.update_nffg(nffg) is not None:
-            return self.__session_id
+        logging.debug("POST NF-FG: POST from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
 
         # Instantiate a new NF-FG
+
         try:
-            logging.info("Put NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
+
+            # choose new id for the graph
+            while True:
+                new_nffg_id = uuid.uuid4()
+                old_nffg_id = GraphSession().getNFFG_id(str(new_nffg_id))
+                if len(old_nffg_id) == 0:
+                    nffg.id = str(new_nffg_id)
+                    break
+
+            logging.info("POST NF-FG: instantiating a new nffg: " + nffg.getJSON(True))
             self.__session_id = GraphSession().addNFFG(nffg, self.user_data.user_id)
             logging.info("Session created")
             # Build the Profile Graph
@@ -79,15 +88,13 @@ class DO(object):
             self.__NC_ApplicationsInstantiation()
             logging.info("Applications activated!")
 
-            logging.info("Put NF-FG: session " + self.__session_id + " correctly instantiated!")
+            logging.info("POST NF-FG: session " + self.__session_id + " correctly instantiated!")
 
             GraphSession().updateStatus(self.__session_id, 'complete')
 
             # Update the resource description .json
             ResourceDescription().updateAll()
             ResourceDescription().saveFile()
-
-            return self.__session_id
 
         except MessagingError as err:
             logging.error(err.message)
@@ -97,16 +104,27 @@ class DO(object):
             self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
+        # returns the graph id
+        response_uuid = dict()
+        response_uuid["nffg-uuid"] = GraphSession().get_nffg_id_by_session(self.__session_id).graph_id
+        return json.dumps(response_uuid)
 
-    def update_nffg(self, new_nffg):
+    def put_nffg(self, new_nffg, nffg_id):
+        """
+        Update NF-FG.
+        """
+        logging.debug("Put NF-FG: put from user " + self.user_data.username + " on tenant " + self.user_data.tenant)
+        new_nffg.id = str(nffg_id)
 
         # Check and get the session id for this user-graph couple
         logging.debug(
             "Update NF-FG: check if the user " + self.user_data.user_id + " has already instantiated the graph " +
             new_nffg.id + ".")
         session = GraphSession().getActiveUserGraphSession(self.user_data.user_id, new_nffg.id, error_aware=True)
+        # Check if the NF-FG is already instantiated
         if session is None:
-            return None
+            raise NoGraphFound("EXCEPTION - Please First insert this graph then try to update it ")
+
         self.__session_id = session.session_id
         logging.debug("Update NF-FG: already instantiated, trying to update it")
 
@@ -122,6 +140,7 @@ class DO(object):
             # Get the old NFFG
             old_nffg = GraphSession().getNFFG(self.__session_id)
             logging.debug("Update NF-FG: the old session: " + old_nffg.getJSON())
+            old_nffg.id = GraphSession().get_nffg_id_by_session(self.__session_id).graph_id
 
             # Get the updated NFFG
             updated_nffg = old_nffg.diff(new_nffg)
@@ -162,7 +181,12 @@ class DO(object):
             self.__NFFG_NC_deleteGraph()
             GraphSession().updateError(self.__session_id)
             raise ex
-        return self.__session_id
+
+        # returns the graph id
+        #response_uuid = dict()
+        #response_uuid["nffg-uuid"] = nffg_id
+        #return json.dumps(response_uuid)
+        return nffg_id
 
     def delete_nffg(self, nffg_id):
 
@@ -205,8 +229,13 @@ class DO(object):
 
         logging.debug("Getting all graphs")
         nffgs = {'NF-FG': []}
-        for nffg in GraphSession().getAllNFFG():
-            nffgs['NF-FG'].append(nffg.getDict())
+        if len(GraphSession().getAllNFFG()) == 0:
+            raise sessionNotFound("No active Graph")
+        for graph in GraphSession().getAllNFFG():
+            nffg = {}
+            nffg['nffg-uuid'] =  graph["graph_id"]
+            nffg['forwarding-graph'] = (graph["graphDict"].getDict())["forwarding-graph"]
+            nffgs['NF-FG'].append(nffg)
         return nffgs
 
     def nffg_status(self, nffg_id):

@@ -284,43 +284,6 @@ class GraphSession(object):
             return session.query(FlowRuleModel).filter_by(session_id = session_id).filter_by(graph_flow_rule_id = graph_flow_rule_id).all()
 
 
-    def getFreeIngressVlanID(self, port_in, switch_id):
-        
-        # init first and last available vlan ids
-        prev_vlan_in = 1
-        last_vlan_in = 4094
-        
-        # return a free vlan_in [2,4094] for port_in@switch_id
-        vlan_ids = self.getVlanInIDs(port_in, switch_id) #ordered by vlan_id ASC
-        
-        # Return the smaller vlan id
-        if len(vlan_ids)<=0:
-            return 2
-        
-        # Search an ingress vlan id suitable for the switch
-        for q in vlan_ids:
-            if(q.vlan_in is None):
-                continue
-            this_vlan_in = int(q.vlan_in)
-            
-            if (this_vlan_in-prev_vlan_in)<2 :
-                prev_vlan_in = this_vlan_in
-                continue
-            
-            if (prev_vlan_in+1)>last_vlan_in:
-                prev_vlan_in = None
-            break
-        
-        # Latest checks
-        if prev_vlan_in is None:
-            raise GraphError("All vlan ID are busy on port:"+port_in+" of the "+switch_id)
-        
-        if prev_vlan_in < 1 or prev_vlan_in >= last_vlan_in:
-            raise GraphError("Invalid ingress vlan ID: "+str(prev_vlan_in+1)+" [port:"+port_in+" on "+switch_id+"]")
-        
-        # Valid VLAN ID
-        return (prev_vlan_in+1)
-
     def getVnfByID(self, session_id, vnf_id):
         try:
             session = get_session()
@@ -803,7 +766,8 @@ class GraphSession(object):
         with session.begin():
             graphsession_ref = GraphSessionModel(session_id=session_id, user_id=user_id, graph_id=nffg.id, 
                                 started_at = datetime.datetime.now(), graph_name=nffg.name,
-                                last_update = datetime.datetime.now(), status='inizialization', description=nffg.description)
+                                last_update = datetime.datetime.now(), status='inizialization',
+                                                 description=nffg.description)
             session.add(graphsession_ref)
 
     def dbStoreMatch(self, match, flow_rule_db_id, match_db_id, port_in=None, port_in_type=None):
@@ -948,7 +912,7 @@ class GraphSession(object):
         
         # [ NF-FG ]
         nffg = NF_FG()
-        nffg.id = session_ref.graph_id
+        #nffg.id = session_ref.graph_id
         nffg.name = session_ref.graph_name
         nffg.description = session_ref.description
 
@@ -1063,11 +1027,16 @@ class GraphSession(object):
         nffgs = []
         for session in session_refs:
             if session.status == 'complete':
-                nffgs.append(self.getNFFG(session.session_id))
+                nffg = {}
+                nffg['graph_id'] = session.graph_id
+                nffg['graphDict'] = self.getNFFG(session.session_id)
+                nffgs.append(nffg)
         return nffgs
 
+    def getNFFG_id(self, nffg_id):
+        session = get_session()
+        return session.query(GraphSessionModel.graph_id).filter_by(graph_id=nffg_id).all()
 
-
-
-
-
+    def get_nffg_id_by_session(self, session_id):
+        session = get_session()
+        return session.query(GraphSessionModel).filter_by(session_id=session_id).one()
