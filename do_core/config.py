@@ -6,7 +6,8 @@ Created on Oct 1, 2014
 
 '''
 
-import configparser, os, inspect, logging, json
+import configparser, os, inspect, json
+import logging
 from do_core.exception import WrongConfigurationFile
 
 
@@ -45,7 +46,7 @@ class Configuration(object, metaclass=Singleton):
             self.__DETACHED_MODE = config.getboolean('domain_orchestrator', 'detached_mode')
 
             # [log]
-            self.__LOG_FILE = str(base_folder)+'/'+config.get('log', 'file')
+            self.__LOG_FILE = config.get('log', 'file')
             self.__LOG_LEVEL = config.get('log', 'log_level')
             self.__APPEND_LOG = config.getboolean('log', 'append_log')
 
@@ -171,10 +172,10 @@ class Configuration(object, metaclass=Singleton):
                 continue
 
             vid_array.append([min_vlan_id, max_vlan_id])
-            logging.debug("[CONFIG] - Available VLAN ID - Range: '" + r + "'")
+            #logging.debug("[CONFIG] - Available VLAN ID - Range: '" + r + "'")
 
         if len(vid_array) == 0:
-            logging.error("[CONFIG] - VLAN ID - No available vlan id read from '" + vid_ranges + "'")
+            #logging.error("[CONFIG] - VLAN ID - No available vlan id read from '" + vid_ranges + "'")
             return []
         else:
             return sorted(vid_array, key=__getKey)
