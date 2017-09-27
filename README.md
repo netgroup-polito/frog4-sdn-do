@@ -56,7 +56,7 @@ under the topic "NF-FG", both at the start of the domain orchestrator and after 
 Note: set the appropriate broker address in [./config/default-config.ini](/config/default-config.ini).
 
 
-## NF-FG Library
+## NF-FG
 
 All the graphs sended via REST API must respect the NF-FG json schema.
 
@@ -67,6 +67,10 @@ Pay specifical attention to the information that are not supported by this domai
 * Flowrule actions with multiple outputs, "output_to_controller" or "output_to_queue".
 
 Note: the nf-fg library is a sub-module of this repository.
+
+#### Flows priorities:
+
+Due to default Flow rules that are deployed at the ONOS boot with a priority of 40000, if you use ONOS as controller the NFFGs to deploy must have flows with a priority greater or equal than 40001.
 
 ## REST APIs
 
